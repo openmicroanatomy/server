@@ -13,22 +13,21 @@ import java.util.*;
 
 public class Server {
 
+    private Javalin javalin = Javalin.create().start(7000);
 
-    public Server() throws IOException {
-        Javalin app = Javalin.create().start(7000);
-
-        app.get("/api/v0/properties/:slide", ctx -> {
+    public Server() {
+        javalin.get("/api/v0/properties/:slide", ctx -> {
             OpenSlide osr = getOpenslide(ctx.pathParam("slide"));
 
             Map<String, String> properties = osr.getProperties();
 
-            Gson prettyGson = new GsonBuilder().setPrettyPrinting().create();
-            String prettyJson = prettyGson.toJson(properties);
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            String json = gson.toJson(properties);
 
-            ctx.result(prettyJson);
+            ctx.result(json);
         });
 
-        app.get("/api/v0/render_region/:slide/:tileX/:tileY/:level/:tileWidth/:tileHeight", ctx -> {
+        javalin.get("/api/v0/render_region/:slide/:tileX/:tileY/:level/:tileWidth/:tileHeight", ctx -> {
             int tileX      = ctx.pathParam("tileX", Integer.class).get();
             int tileY      = ctx.pathParam("tileY", Integer.class).get();
             int level      = ctx.pathParam("level", Integer.class).get();
