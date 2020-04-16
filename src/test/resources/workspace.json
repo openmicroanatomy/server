@@ -1,0 +1,16 @@
+{
+  "workspaces": [
+    {
+      "name": "Test",
+      "projects": [
+        {
+          "id": "Test",
+          "server": "http://localhost:7000",
+          "name": "Test",
+          "description": "",
+          "thumbnail": ""
+        }
+      ]
+    }
+  ]
+}
