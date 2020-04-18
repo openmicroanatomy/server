@@ -17,9 +17,10 @@ public class HandleCreateNewWorkspace implements Handler {
 
     private Logger logger = LoggerFactory.getLogger(HandleGetWorkspace.class);
 
-
     @Override
     public void handle(Context ctx) throws Exception {
+        String workspaceToCreate = ctx.pathParam("name");
+
         File workspaceFile = new File("workspace.json");
         InputStreamReader reader = new InputStreamReader(new FileInputStream(workspaceFile));
 
@@ -27,12 +28,12 @@ public class HandleCreateNewWorkspace implements Handler {
         JsonArray workspaces = json.getAsJsonArray("workspaces");
 
         JsonObject dummyWorkspace = new JsonObject();
-        dummyWorkspace.addProperty("name", ctx.pathParam("name"));
+        dummyWorkspace.addProperty("name", workspaceToCreate);
         dummyWorkspace.add("projects", new JsonArray());
 
         workspaces.add(dummyWorkspace);
 
-        logger.info("Writing new workspace file for " + ctx.pathParam("name"));
+        logger.info("Creating new workspace: " + workspaceToCreate);
         Files.write(workspaceFile.toPath(), json.toString().getBytes());
     }
 }

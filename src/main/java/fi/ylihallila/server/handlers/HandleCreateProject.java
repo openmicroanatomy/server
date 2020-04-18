@@ -13,13 +13,14 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 
-public class HandleDeleteWorkspace implements Handler {
+public class HandleCreateProject implements Handler {
 
     private Logger logger = LoggerFactory.getLogger(HandleGetWorkspace.class);
 
     @Override
     public void handle(Context ctx) throws Exception {
-        String workspaceToDelete = ctx.pathParam("name");
+        String targetWorkspace = ctx.pathParam("workspace");
+        String projectName = ctx.pathParam("project");
 
         File workspaceFile = new File("workspace.json");
         InputStreamReader reader = new InputStreamReader(new FileInputStream(workspaceFile));
@@ -31,10 +32,16 @@ public class HandleDeleteWorkspace implements Handler {
             JsonObject workspace = workspaces.get(i).getAsJsonObject();
             String workspaceName = workspace.get("name").getAsString();
 
-            if (workspaceName.equalsIgnoreCase(workspaceToDelete)) {
-                workspaces.remove(i);
-                logger.info("Deleting workspace: " + workspaceToDelete);
-                break;
+            if (workspaceName.equalsIgnoreCase(targetWorkspace)) {
+                JsonObject project = new JsonObject(); // todo: URL escape & clean-up etc.
+                project.addProperty("id", projectName); // must be clean
+                project.addProperty("name", projectName); // can contain spaces & formatting
+                project.addProperty("description", "");
+                project.addProperty("thumbnail", "");
+                project.addProperty("server", "");
+
+                workspace.getAsJsonArray("projects").add(project);
+                logger.info("Created new project: " + projectName);
             }
         }
 
