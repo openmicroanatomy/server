@@ -50,7 +50,7 @@ public class SlideController extends BasicController {
 			   .contentType("application/json")
 			   .result(Files.readString(slidePath));
 		} else {
-			ctx.status(400);
+			ctx.status(404);
 		}
 	}
 
