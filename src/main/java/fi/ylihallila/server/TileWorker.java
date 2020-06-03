@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.ByteArrayOutputStream;
@@ -32,7 +33,9 @@ public class TileWorker implements Callable<Boolean> {
 
 	private String slideName;
 
-	public TileWorker(OpenSlide openSlide, int level, int row, int col, int tileWidth, int tileHeight, int slideWidth, int slideHeight, String slideName) {
+	private Color backgroundColor;
+
+	public TileWorker(OpenSlide openSlide, int level, int row, int col, int tileWidth, int tileHeight, int slideWidth, int slideHeight, String slideName, Color backgroundColor) {
 		this.openSlide = openSlide;
 		this.level = level;
 		this.row = row;
@@ -42,6 +45,7 @@ public class TileWorker implements Callable<Boolean> {
 		this.slideWidth = slideWidth;
 		this.slideHeight = slideHeight;
 		this.slideName = slideName;
+		this.backgroundColor = backgroundColor;
 	}
 
 	@Override
@@ -62,14 +66,25 @@ public class TileWorker implements Callable<Boolean> {
 				adjustY = tileHeight - Math.abs((tileY - slideHeight) / downsample);
 			}
 
-			BufferedImage img = new BufferedImage(tileWidth - adjustX, tileHeight - adjustY, BufferedImage.TYPE_INT_RGB);
-			int[] data = ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
+			BufferedImage temp = new BufferedImage(tileWidth - adjustX, tileHeight - adjustY, BufferedImage.TYPE_INT_ARGB_PRE);
+			int[] data = ((DataBufferInt) temp.getRaster().getDataBuffer()).getData();
 
 			openSlide.paintRegionARGB(data, tileX, tileY, level, tileWidth - adjustX, tileHeight - adjustY);
 
+			BufferedImage img = new BufferedImage(tileWidth, tileHeight, BufferedImage.TYPE_INT_RGB);
+			Graphics2D g2d = img.createGraphics();
+
+			if (backgroundColor != null) {
+				g2d.setColor(backgroundColor);
+				g2d.fillRect(0, 0, tileWidth, tileHeight);
+			}
+
+			g2d.drawImage(temp, 0, 0, tileWidth, tileHeight, null);
+			g2d.dispose();
+
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			ImageIO.write(img, "jpg", os);
-			String fileName = String.format(Configuration.FILE_FORMAT, slideName, tileX, tileY, level, tileWidth - adjustX, tileHeight - adjustY);
+			String fileName = String.format(Configuration.TILE_FILE_FORMAT, slideName, tileX, tileY, level, tileWidth - adjustX, tileHeight - adjustY);
 
 			Files.write(Path.of("tiles", fileName),
 					os.toByteArray(),
