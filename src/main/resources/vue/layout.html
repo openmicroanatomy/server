@@ -1,0 +1,35 @@
+<html>
+<head>
+    <title>OpenslideWebImageserver</title>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.4.2/dist/css/uikit.min.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.4.2/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.4.2/dist/js/uikit-icons.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/resumable.js/1.1.0/resumable.min.js" integrity="sha256-KKzsRpXRoKwBmtySgcpJdRAImf2vla49Cy7VsO1Q0I0=" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" type="text/css" href="/styles/master.css">
+
+    <script src="/webjars/vue/2.6.10/dist/vue.js"></script>
+    @componentRegistration
+</head>
+<body>
+
+<div class="uk-container uk-container-small" id="main-vue" v-cloak>
+    @routeComponent
+</div>
+
+<script>
+    var app = new Vue({
+        el: "#main-vue"
+    });
+
+    Vue.config.devtools = true;
+</script>
+
+</body>
+</html>

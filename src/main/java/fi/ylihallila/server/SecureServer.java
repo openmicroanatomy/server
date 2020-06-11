@@ -3,6 +3,8 @@ package fi.ylihallila.server;
 import fi.ylihallila.server.authentication.Auth;
 import fi.ylihallila.server.controllers.*;
 import io.javalin.Javalin;
+import io.javalin.http.staticfiles.Location;
+import io.javalin.plugin.rendering.vue.JavalinVue;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -11,6 +13,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
 import java.net.URL;
+
+import io.javalin.plugin.rendering.vue.VueComponent;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
 import static io.javalin.core.security.SecurityUtil.roles;
@@ -22,6 +26,11 @@ public class SecureServer {
     private Javalin app = Javalin.create(config -> {
         config.accessManager(Auth::accessManager);
         config.showJavalinBanner = false;
+        config.enableWebjars();
+        config.requestCacheSize = Long.MAX_VALUE;
+        config.addStaticFiles("/static", Location.CLASSPATH);
+
+        JavalinVue.rootDirectory("/vue", Location.CLASSPATH);
 
         config.server(() -> {
             Server server = new Server();
@@ -47,14 +56,9 @@ public class SecureServer {
     private ProjectController ProjectController = new ProjectController();
     private SlideController SlideController = new SlideController();
 
-
     public SecureServer() {
-        /* Authentication */
-        app.routes(() -> {
-            path("/api/v0/users", () -> {
-                get(UserController::getAllUsers, roles(ANYONE));
-                post(UserController::createUser, roles(ADMIN));
-                get("login", UserController::login, roles(STUDENT, TEACHER, ADMIN));
+        app.get("/", new VueComponent("index"),          roles(TEACHER, ADMIN));
+        app.get("/upload", new VueComponent("uploader"), roles(ADMIN));
 
         /* API */
         app.get("/api/v1/slides", SlideController::GetAllSlidesV2, roles(ANYONE));

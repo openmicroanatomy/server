@@ -1,20 +1,17 @@
 package fi.ylihallila.server;
 
+import com.google.gson.GsonBuilder;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Folder structure
