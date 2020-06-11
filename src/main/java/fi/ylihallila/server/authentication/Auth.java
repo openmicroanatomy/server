@@ -14,6 +14,7 @@ public class Auth {
 
 	private static Map<Pair<String, String>, List<Role>> userRoleMap = Map.of(
 		new Pair<>("Aaron", "salasana"), List.of(Roles.STUDENT, Roles.TEACHER, Roles.ADMIN),
+		new Pair<>("Demo", "Demo"),      List.of(Roles.STUDENT, Roles.TEACHER, Roles.ADMIN),
 		new Pair<>("", ""),	 			 List.of(Roles.ANYONE)
 	);
 
