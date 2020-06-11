@@ -46,7 +46,7 @@ public class Main {
         if (args.length == 2 && args[0].equalsIgnoreCase("--generate")) {
             new TileGenerator(args[1]);
         } else {
-            boolean secure = !(args.length == 1 && args[0].equals("--insecure"));
+            Configuration.SECURE_SERVER = !(args.length == 1 && args[0].equals("--insecure"));
 
             Files.createDirectories(Path.of("projects"));
             Files.createDirectories(Path.of("slides"));
@@ -56,11 +56,10 @@ public class Main {
             /*
              * TODO:
              *  * Copy Dummy.zip from resources to disk
-             *  * Add possibility to specify domain & port & secure-mode
+             *  * Add possibility to specify domain & port
              */
 
             try {
-                Configuration.SECURE_SERVER = secure;
                 new SecureServer();
             } catch (Exception e) {
                 e.printStackTrace();
