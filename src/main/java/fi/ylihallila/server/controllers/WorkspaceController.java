@@ -30,8 +30,7 @@ public class WorkspaceController extends BasicController {
 
 		workspaces.add(workspace);
 
-		saveWorkspace(workspaces);
-		backup(getWorkspaceFile());
+		saveAndBackup(Path.of(Configuration.WORKSPACE_FILE), workspaces);
 	}
 
 	public void deleteWorkspace(Context ctx) throws IOException {
