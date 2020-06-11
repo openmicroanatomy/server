@@ -1,7 +1,6 @@
 package fi.ylihallila.server;
 
 import com.google.gson.GsonBuilder;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +41,20 @@ public class Main {
     public static void main(String[] args) throws IOException, InterruptedException {
         if (args.length == 2 && args[0].equalsIgnoreCase("--generate")) {
             new TileGenerator(args[1]);
+        } else if (args.length >= 2 && args[0].equalsIgnoreCase("--properties")) {
+            Optional<OpenSlide> openSlide = OpenSlideCache.get(args[1]);
+
+            if (openSlide.isEmpty()) {
+                logger.error("Couldn't find slide: " + args[1]);
+                return;
+            }
+
+            Map<String, String> properties = new HashMap<>(openSlide.get().getProperties());
+            properties.put("openslide.remoteserver.uri", "");
+
+            String json = new GsonBuilder().setPrettyPrinting().create().toJson(properties);
+            Files.write(Path.of(args[1] + ".properties"), json.getBytes());
+            logger.info("Wrote slide properties to file");
         } else {
             Configuration.SECURE_SERVER = !(args.length == 1 && args[0].equals("--insecure"));
 
