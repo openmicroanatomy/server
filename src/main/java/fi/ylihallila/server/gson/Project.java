@@ -1,5 +1,7 @@
 package fi.ylihallila.server.gson;
 
+import java.util.UUID;
+
 public class Project {
 
 	private String id;
@@ -10,6 +12,10 @@ public class Project {
 
 	public String getId() {
 		return id;
+	}
+
+	public void setId(UUID uuid) {
+		setId(uuid.toString());
 	}
 
 	public void setId(String id) {
@@ -46,5 +52,16 @@ public class Project {
 
 	public void setServer(String server) {
 		this.server = server;
+	}
+
+	@Override
+	public String toString() {
+		return "Project{" +
+				"id='" + id + '\'' +
+				", name='" + name + '\'' +
+				", description='" + description + '\'' +
+				", thumbnail='" + thumbnail + '\'' +
+				", server='" + server + '\'' +
+				'}';
 	}
 }

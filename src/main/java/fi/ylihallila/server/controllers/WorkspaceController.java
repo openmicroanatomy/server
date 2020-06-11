@@ -1,12 +1,15 @@
 package fi.ylihallila.server.controllers;
 
+import fi.ylihallila.server.Configuration;
 import fi.ylihallila.server.gson.Workspace;
 import io.javalin.http.Context;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 public class WorkspaceController extends BasicController {
 
@@ -17,11 +20,14 @@ public class WorkspaceController extends BasicController {
 	}
 
 	public void createWorkspace(Context ctx) throws IOException {
+		String workspaceName = ctx.formParam("workspace-name", String.class).get();
 		List<Workspace> workspaces = getWorkspaces();
 
 		Workspace workspace = new Workspace();
-		workspace.setName(ctx.formParam("workspace-name", String.class).get());
+		workspace.setName(workspaceName);
+		workspace.setId(UUID.randomUUID());
 		workspace.setProjects(Collections.emptyList());
+
 		workspaces.add(workspace);
 
 		saveWorkspace(workspaces);
@@ -29,14 +35,15 @@ public class WorkspaceController extends BasicController {
 	}
 
 	public void deleteWorkspace(Context ctx) throws IOException {
+		String workspaceToDelete = ctx.pathParam("workspace-id", String.class).get();
+
 		List<Workspace> workspaces = getWorkspaces();
-		var success = workspaces.removeIf(project ->
-			project.getName().equalsIgnoreCase(ctx.pathParam("workspace-name"))
+		var deleted = workspaces.removeIf(workspace ->
+			workspace.getId().equalsIgnoreCase(workspaceToDelete)
 		);
 
-		if (success) {
-			saveWorkspace(workspaces);
-			backup(getWorkspaceFile());
+		if (deleted) {
+			saveAndBackup(Path.of(Configuration.WORKSPACE_FILE), workspaces);
 			ctx.status(200);
 		} else {
 			ctx.status(404);

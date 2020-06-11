@@ -2,6 +2,7 @@ package fi.ylihallila.server.controllers;
 
 import com.google.gson.Gson;
 import fi.ylihallila.server.Configuration;
+import fi.ylihallila.server.gson.Slide;
 import fi.ylihallila.server.gson.Workspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,16 +24,17 @@ public class BasicController {
 
 	private Path workspaceFile = Path.of(Configuration.WORKSPACE_FILE);
 
-	protected void saveWorkspace(Object object) throws IOException {
-		Files.write(workspaceFile, new Gson().toJson(object).getBytes());
+	protected void saveAndBackup(Path path, Object object) throws IOException {
+		save(path, object);
+		backup(path);
+	}
+
+	protected void save(Path path, Object object) throws IOException {
+		Files.write(path, new Gson().toJson(object).getBytes());
 	}
 
 	protected Path getWorkspaceFile() {
 		return workspaceFile;
-	}
-
-	protected String generateUUID() {
-		return UUID.randomUUID().toString();
 	}
 
 	private int BUFFER = 1024;
@@ -74,11 +76,6 @@ public class BasicController {
 		}
 	}
 
-	/**
-	 *
-	 * @param projectName
-	 * @return
-	 */
 	protected String getProjectFile(String projectName) {
 		return String.format(Configuration.PROJECT_FILE_FORMAT, projectName);
 	}
@@ -89,12 +86,23 @@ public class BasicController {
 
 	/**
 	 * Creates a mutable ArrayList from array
-	 * @return ArrayList of workspace
+	 * @return ArrayList of workspaces
 	 * @throws IOException When unable to read workspace file
 	 */
 	protected List<Workspace> getWorkspaces() throws IOException {
 		return new ArrayList<>(
-			Arrays.asList(new Gson().fromJson(Files.readString(workspaceFile), Workspace[].class)
+			Arrays.asList(new Gson().fromJson(Files.readString(Path.of(Configuration.WORKSPACE_FILE)), Workspace[].class)
+		));
+	}
+
+	/**
+	 * Creates a mutable ArrayList from array
+	 * @return ArrayList of slides
+	 * @throws IOException When unable to read slide file
+	 */
+	protected List<Slide> getSlides() throws IOException {
+		return new ArrayList<>(
+			Arrays.asList(new Gson().fromJson(Files.readString(Path.of(Configuration.SLIDES_FILE)), Slide[].class)
 		));
 	}
 }

@@ -56,44 +56,58 @@ public class SecureServer {
                 post(UserController::createUser, roles(ADMIN));
                 get("login", UserController::login, roles(STUDENT, TEACHER, ADMIN));
 
+        /* API */
+        app.get("/api/v1/slides", SlideController::GetAllSlidesV2, roles(ANYONE));
+
+        app.routes(() -> path("/api/v0/", () -> {
+            /* Authentication */
+            path("users", () -> {
+                get(UserController::getAllUsers,         roles(ANYONE));
+                post(UserController::createUser,         roles(ADMIN));
+                get("login", UserController::login, roles(STUDENT, TEACHER, ADMIN));
+
                 path(":username", () -> {
-                    get(UserController::getUser, roles(ADMIN));
-                    patch(UserController::updateUser, roles(ADMIN));
+                    get(UserController::getUser,       roles(ADMIN));
+                    patch(UserController::updateUser,  roles(ADMIN));
                     delete(UserController::deleteUser, roles(ADMIN));
                 });
             });
-        });
 
-        app.routes(() -> path("/api/v0/", () -> {
+            /* Upload */
+            get("upload", SlideController::upload,  roles(ANYONE));
+            post("upload", SlideController::upload, roles(ANYONE));
+
             /* Slides */
             path("slides", () -> {
                 get(SlideController::getAllSlides, roles(ANYONE));
 
-                path(":slide-name", () -> {
+                path(":slide-id", () -> {
                     get(SlideController::getSlideProperties, roles(ANYONE));
-                    get("tile/:tileX/:tileY/:level/:tileWidth/:tileHeight",
-                            SlideController::renderTile, roles(ANYONE));
+                    put(SlideController::updateSlide,        roles(TEACHER, ADMIN));
+                    delete(SlideController::deleteSlide,     roles(TEACHER, ADMIN));
+                    get("tile/:tileX/:tileY/:level/:tileWidth/:tileHeight", SlideController::renderTile, roles(ANYONE));
                 });
             });
 
             /* Workspaces */
             path("workspaces", () -> {
-                get(WorkspaceController::getWorkspaces, roles(ANYONE));
+                get(WorkspaceController::getWorkspaces,    roles(ANYONE));
                 post(WorkspaceController::createWorkspace, roles(TEACHER, ADMIN));
 
-                path(":workspace-name", () -> {
+                path(":workspace-id", () -> {
                     delete(WorkspaceController::deleteWorkspace, roles(TEACHER, ADMIN));
                 });
             });
 
+            /* Projects */
             path("projects", () -> {
                 post(ProjectController::createProject, roles(TEACHER, ADMIN));
 
-                path(":project-name", () -> {
-                    get(ProjectController::downloadProject, roles(ANYONE));
-                    put(ProjectController::updateProject, roles(TEACHER, ADMIN));
+                path(":project-id", () -> {
+                    get(ProjectController::downloadProject,  roles(ANYONE));
+                    put(ProjectController::updateProject,    roles(TEACHER, ADMIN));
                     delete(ProjectController::deleteProject, roles(TEACHER, ADMIN));
-                    post(ProjectController::uploadProject, roles(TEACHER, ADMIN));
+                    post(ProjectController::uploadProject,   roles(TEACHER, ADMIN));
                 });
             });
         }));

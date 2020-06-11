@@ -9,7 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -19,31 +22,42 @@ public class ProjectController extends BasicController {
 	private Logger logger = LoggerFactory.getLogger(ProjectController.class);
 
 	public void createProject(Context ctx) throws IOException {
-		String targetWorkspace = ctx.formParam("workspace-name", String.class).get();
+		String targetWorkspace = ctx.formParam("workspace-id", String.class).get();
 		String projectName = ctx.formParam("project-name", String.class).get();
+		String projectId = UUID.randomUUID().toString();
 
 		List<Workspace> workspaces = getWorkspaces();
 
 		Project project = new Project();
 		project.setName(projectName);
-		project.setId(projectName); 	// TODO: Support UUIDs to allow same names
+		project.setId(projectId);
 		project.setDescription(ctx.formParam("description", ""));
 		project.setThumbnail("");
 		project.setServer("");
 
+		AtomicBoolean success = new AtomicBoolean(false);
+
 		workspaces.forEach(workspace -> {
-			if (workspace.getName().equalsIgnoreCase(targetWorkspace)) {
+			if (workspace.getId().equalsIgnoreCase(targetWorkspace)) {
+				success.set(true);
 				workspace.addProject(project);
 			}
 		});
 
-		createProjectZipFile(projectName);
-		backup(getProjectFile(projectName));
-		saveWorkspace(workspaces);
+		if (success.get()) {
+			createProjectZipFile(projectId);
+			backup(getProjectFile(projectId));
+
+			saveAndBackup(Path.of(Configuration.WORKSPACE_FILE), workspaces);
+			ctx.status(200);
+		} else {
+			ctx.status(404);
+		}
 	}
 
 	public void downloadProject(Context ctx) throws IOException {
-		File file = new File(getProjectFile(ctx.pathParam("project-name")));
+		String projectId = ctx.pathParam("project-id", String.class).get();
+		File file = new File(getProjectFile(projectId));
 
 		if (!file.exists()) {
 			ctx.status(404);
@@ -59,59 +73,58 @@ public class ProjectController extends BasicController {
 	}
 
 	public void updateProject(Context ctx) throws IOException {
-		String targetProject = ctx.pathParam("project-name", String.class).get();
+		String projectId = ctx.pathParam("project-id", String.class).get();
 
 		List<Workspace> workspaces = getWorkspaces();
 		workspaces.forEach(workspace -> {
 			workspace.getProjects().forEach(project -> {
-				if (project.getName().equalsIgnoreCase(targetProject)) {
+				if (project.getId().equalsIgnoreCase(projectId)) {
 					project.setName(ctx.formParam("name", project.getName()));
 					project.setDescription(ctx.formParam("description", project.getDescription()));
 				}
 			});
 		});
 
-		saveWorkspace(workspaces);
-		backup(Configuration.WORKSPACE_FILE);
+		saveAndBackup(Path.of(Configuration.WORKSPACE_FILE), workspaces);
 	}
 
 	public void deleteProject(Context ctx) throws IOException {
-		String projectToDelete = ctx.pathParam("project-name", String.class).get();
+		String projectToDelete = ctx.pathParam("project-id", String.class).get();
 
 		List<Workspace> workspaces = getWorkspaces();
 		workspaces.forEach(workspace -> {
 			workspace.getProjects().removeIf(project ->
-				project.getName().equalsIgnoreCase(projectToDelete)
+				project.getId().equalsIgnoreCase(projectToDelete)
 			);
 		});
 
 		delete(getProjectFile(projectToDelete));
-		saveWorkspace(workspaces);
+		saveAndBackup(Path.of(Configuration.WORKSPACE_FILE), workspaces);
 		ctx.status(200);
 	}
 
 	public void uploadProject(Context ctx) throws IOException {
-		String projectName = ctx.pathParam("project-name", String.class).get();
+		String projectId = ctx.pathParam("project-id", String.class).get();
 		UploadedFile file = ctx.uploadedFile("project");
 
 		if (file == null) {
-			logger.debug("Tried to upload file, but didn't exist as form data");
+			logger.info("Tried to upload file, but didn't exist as form data");
 			ctx.status(400);
 			return;
 		}
 
-		copyInputStreamToFile(file.getContent(), new File(getProjectFile(projectName)));
-		backup(getProjectFile(projectName));
+		copyInputStreamToFile(file.getContent(), new File(getProjectFile(projectId)));
+		backup(getProjectFile(projectId));
 		ctx.status(200);
 	}
 
-	private void createProjectZipFile(String projectName) throws IOException {
+	private void createProjectZipFile(String projectId) throws IOException {
 		ZipFile zipFile = new ZipFile(new File("Dummy.zip"));
-		ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(getProjectFile(projectName)));
+		ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(getProjectFile(projectId)));
 
 		zipFile.stream().forEach(entryIn -> {
 			try {
-				String name = entryIn.getName().replace("Dummy", projectName);
+				String name = entryIn.getName().replace("Dummy", projectId);
 				ZipEntry newEntry = new ZipEntry(name);
 				zipOut.putNextEntry(newEntry);
 
