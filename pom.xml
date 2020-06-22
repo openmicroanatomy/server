@@ -33,6 +33,13 @@
         </dependency>
 
         <dependency>
+            <groupId>org.javaswift</groupId>
+            <artifactId>joss</artifactId>
+            <version>0.10.4.1</version>
+            <type>jar</type>
+        </dependency>
+
+        <dependency>
             <groupId>org.openslide</groupId>
             <artifactId>openslide</artifactId>
             <version>3.4.1_2</version>
@@ -66,9 +73,9 @@
         </dependency>
 
         <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.6</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.20</version>
         </dependency>
 
         <dependency>

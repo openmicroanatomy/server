@@ -5,6 +5,8 @@ import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,12 +58,13 @@ public class Main {
             Files.write(Path.of(args[1] + ".properties"), json.getBytes());
             logger.info("Wrote slide properties to file");
         } else {
-            Configuration.SECURE_SERVER = !(args.length == 1 && args[0].equals("--insecure"));
+            Config.SECURE_SERVER = !(args.length == 1 && args[0].equals("--insecure"));
 
             Files.createDirectories(Path.of("projects"));
             Files.createDirectories(Path.of("slides"));
             Files.createDirectories(Path.of("tiles"));
             Files.createDirectories(Path.of("backups"));
+            Files.createDirectories(Path.of("uploads"));
 
             /*
              * TODO:
@@ -72,7 +75,11 @@ public class Main {
             try {
                 new SecureServer();
             } catch (Exception e) {
-                e.printStackTrace();
+                if (e.getCause().getClass() == IllegalStateException.class) {
+                    logger.info("Add a valid keystore or run in insecure mode with --insecure launch option.");
+                }
+
+                logger.error("Launch error", e);
             }
         }
     }

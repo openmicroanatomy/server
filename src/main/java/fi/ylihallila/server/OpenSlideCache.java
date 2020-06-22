@@ -17,7 +17,7 @@ public class OpenSlideCache {
             return Optional.of(cache.get(slide));
         }
 
-        File file = new File(Path.of("slides", slide).toUri());
+        File file = new File(slide);
         if (file.exists()) {
             OpenSlide openSlide = new OpenSlide(file);
             cache.put(slide, openSlide);
