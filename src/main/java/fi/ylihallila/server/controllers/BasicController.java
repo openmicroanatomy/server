@@ -1,7 +1,7 @@
 package fi.ylihallila.server.controllers;
 
 import com.google.gson.Gson;
-import fi.ylihallila.server.Configuration;
+import fi.ylihallila.server.Config;
 import fi.ylihallila.server.gson.Slide;
 import fi.ylihallila.server.gson.Workspace;
 import org.slf4j.Logger;
@@ -15,14 +15,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
 
 public class BasicController {
 
 	private Logger logger = LoggerFactory.getLogger(BasicController.class);
 
-	private Path workspaceFile = Path.of(Configuration.WORKSPACE_FILE);
+	private Path workspaceFile = Path.of(Config.WORKSPACE_FILE);
 
 	protected void saveAndBackup(Path path, Object object) throws IOException {
 		save(path, object);
@@ -77,11 +75,11 @@ public class BasicController {
 	}
 
 	protected String getProjectFile(String projectName) {
-		return String.format(Configuration.PROJECT_FILE_FORMAT, projectName);
+		return String.format(Config.PROJECT_FILE_FORMAT, projectName);
 	}
 
 	protected String getBackupFile(String fileName) {
-		return String.format(Configuration.BACKUP_FILE_FORMAT, fileName, System.currentTimeMillis());
+		return String.format(Config.BACKUP_FILE_FORMAT, fileName, System.currentTimeMillis());
 	}
 
 	/**
@@ -89,9 +87,9 @@ public class BasicController {
 	 * @return ArrayList of workspaces
 	 * @throws IOException When unable to read workspace file
 	 */
-	protected List<Workspace> getWorkspaces() throws IOException {
+	protected ArrayList<Workspace> getWorkspaces() throws IOException {
 		return new ArrayList<>(
-			Arrays.asList(new Gson().fromJson(Files.readString(Path.of(Configuration.WORKSPACE_FILE)), Workspace[].class)
+			Arrays.asList(new Gson().fromJson(Files.readString(Path.of(Config.WORKSPACE_FILE)), Workspace[].class)
 		));
 	}
 
@@ -100,9 +98,9 @@ public class BasicController {
 	 * @return ArrayList of slides
 	 * @throws IOException When unable to read slide file
 	 */
-	protected List<Slide> getSlides() throws IOException {
+	protected ArrayList<Slide> getSlides() throws IOException {
 		return new ArrayList<>(
-			Arrays.asList(new Gson().fromJson(Files.readString(Path.of(Configuration.SLIDES_FILE)), Slide[].class)
+			Arrays.asList(new Gson().fromJson(Files.readString(Path.of(Config.SLIDES_FILE)), Slide[].class)
 		));
 	}
 }

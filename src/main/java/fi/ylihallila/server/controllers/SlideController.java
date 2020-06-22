@@ -1,8 +1,10 @@
 package fi.ylihallila.server.controllers;
 
 import com.google.gson.Gson;
-import fi.ylihallila.server.Configuration;
+import com.google.gson.GsonBuilder;
+import fi.ylihallila.server.Config;
 import fi.ylihallila.server.OpenSlideCache;
+import fi.ylihallila.server.authentication.Auth;
 import fi.ylihallila.server.gson.Slide;
 import io.javalin.http.Context;
 import org.openslide.OpenSlide;
@@ -13,14 +15,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.nio.file.*;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -48,7 +44,7 @@ public class SlideController extends BasicController {
 		}
 
 		List<Slide> slides = List.of(new Gson().fromJson(
-			Files.readString(Path.of(Configuration.SLIDES_FILE)),
+			Files.readString(Path.of(Config.SLIDES_FILE)),
 			Slide[].class
 		));
 
@@ -58,7 +54,7 @@ public class SlideController extends BasicController {
 			data.put("id", slide.getId());
 			data.put("organization", slide.getOwner());
 
-			File slideProperties = new File(String.format(Configuration.SLIDE_PROPERTIES_FILE, slide.getId()));
+			File slideProperties = new File(String.format(Config.SLIDE_PROPERTIES_FILE, slide.getId()));
 
 			if (slideProperties.exists()) {
 				try {
@@ -79,13 +75,12 @@ public class SlideController extends BasicController {
 	}
 
 	public void upload(Context ctx) throws IOException {
-		String fileName = ctx.queryParam("resumableFilename");
-		String identifier = ctx.queryParam("resumableIdentifier");
-		int totalSize = ctx.queryParam("resumableTotalSize", Integer.class).get();
-		int index = ctx.queryParam("resumableChunkNumber", Integer.class).get() - 1;
-		int buffer = ctx.queryParam("resumableChunkSize", Integer.class).get();
+		String fileName = ctx.queryParam("filename");
+		int totalSize = ctx.queryParam("fileSize", Integer.class).get();
+		int index = ctx.queryParam("chunk", Integer.class).get();
+		int buffer = ctx.queryParam("chunkSize", Integer.class).get();
 
-		logger.info(String.format("%s %s : %s / %s / %s", fileName, identifier, totalSize, index, buffer));
+		logger.info(String.format("%s %s : %s / %s", fileName, totalSize, index, buffer));
 
 		if (ctx.method().equals("GET")) { // todo: cleanup GET
 			if (buffer > totalSize) {
@@ -108,14 +103,19 @@ public class SlideController extends BasicController {
 			}
 
 			reader.close();
-		} else if (ctx.method().equals("POST")) {
+		} else if (ctx.method().equals("POST") && ctx.uploadedFile("file") != null) {
 			byte[] data = ctx.uploadedFile("file").getContent().readAllBytes();
-			logger.info("byte[] size: " + data.length);
 
-			RandomAccessFile writer = new RandomAccessFile(fileName, "rw");
+			RandomAccessFile writer = new RandomAccessFile(String.format(Config.UPLOADED_FILE, fileName), "rw");
+
 			writer.seek(index * buffer);
-			writer.write(data);
+			writer.write(data, 0, data.length);
 			writer.close();
+
+			// The file is fully uploaded we can start processing it.
+			if (Files.size(Path.of(String.format(Config.UPLOADED_FILE, fileName))) == totalSize) {
+				processUploadedSlide(ctx, fileName);
+			}
 		}
 	}
 
@@ -133,7 +133,9 @@ public class SlideController extends BasicController {
 		});
 
 		if (success.get()) {
-			saveAndBackup(Path.of(Configuration.SLIDES_FILE), slides);
+			logger.info("Slide {} edited by {}", slideId, Auth.getUsername(ctx).orElse("Unknown"));
+
+			saveAndBackup(Path.of(Config.SLIDES_FILE), slides);
 			ctx.status(200);
 		} else {
 			ctx.status(404);
@@ -147,7 +149,13 @@ public class SlideController extends BasicController {
 		var deleted = slides.removeIf(slide -> slide.getId().equalsIgnoreCase(slideId));
 
 		if (deleted) {
-			saveAndBackup(Path.of(Configuration.SLIDES_FILE), slides);
+			logger.info("Slide {} deleted by {}", slideId, Auth.getUsername(ctx).orElse("Unknown"));
+
+			Path propertiesPath = Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, slideId));
+			backup(propertiesPath);
+			Files.delete(propertiesPath);
+
+			saveAndBackup(Path.of(Config.SLIDES_FILE), slides);
 			ctx.status(200);
 		} else {
 			ctx.status(404);
@@ -160,7 +168,6 @@ public class SlideController extends BasicController {
 		} else {
 			getSlidePropertiesFromFile(ctx);
 		}
-
 	}
 
 	private void getSlidePropertiesFromFile(Context ctx) {
@@ -168,7 +175,7 @@ public class SlideController extends BasicController {
 
 		logger.info(slideId);
 
-		Path slideProperties = Path.of(String.format(Configuration.SLIDE_PROPERTIES_FILE, slideId));
+		Path slideProperties = Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, slideId));
 
 		if (slideProperties.toFile().exists()) {
 			try {
@@ -198,7 +205,7 @@ public class SlideController extends BasicController {
 		int tileWidth  = ctx.pathParam("tileWidth", Integer.class).get();
 		int tileHeight = ctx.pathParam("tileHeight", Integer.class).get();
 
-		String fileName = String.format(Configuration.TILE_FILE_FORMAT, slide, tileX, tileY, level, tileWidth, tileHeight);
+		String fileName = String.format(Config.TILE_FILE_FORMAT, slide, tileX, tileY, level, tileWidth, tileHeight);
 		InputStream is;
 
 		if (Files.exists(Path.of(fileName), LinkOption.NOFOLLOW_LINKS)) {
@@ -215,6 +222,42 @@ public class SlideController extends BasicController {
 			logger.info("Couldn't find tile [{}, {},{} / {} / {},{}]", fileName, tileX, tileY, level, tileWidth, tileHeight);
 			ctx.status(404);
 		}
+	}
+
+	private void processUploadedSlide(Context ctx, String slideName) throws IOException {
+		Optional<OpenSlide> openSlide = OpenSlideCache.get(String.format(Config.UPLOADED_FILE, slideName));
+		if (openSlide.isEmpty()) {
+			logger.error("Error when processing uploaded file. Couldn't create OpenSlide instance.");
+			return;
+		}
+
+		/* Add slide to slides.json */
+		String uuid = UUID.randomUUID().toString();
+		ArrayList<Slide> slides = getSlides();
+
+		Slide slide = new Slide();
+		slide.setName(slideName);
+		slide.setId(uuid);
+		slide.setOwner(Auth.getUsername(ctx).orElse("Unknown")); // TODO: Add "Organization" to users.
+
+		slides.add(slide);
+
+		/* Generate .properties for slide */
+		Map<String, String> properties = new HashMap<>(openSlide.get().getProperties());
+		properties.put("openslide.remoteserver.uri", String.format(Config.CSC_URL, uuid));
+
+		String json = new GsonBuilder().setPrettyPrinting().create().toJson(properties);
+		Files.write(Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, uuid)), json.getBytes());
+
+		/* Rename slide */
+		Files.move(
+			Path.of(String.format(Config.UPLOADED_FILE, slideName)),
+			Path.of(String.format(Config.UPLOADED_FILE, uuid))
+		);
+
+		/* Tile slide and upload to cloud */
+
+		saveAndBackup(Path.of(Config.SLIDES_FILE), slides);
 	}
 
 	private InputStream generateImage(String slide, int tileX, int tileY, int level, int tileWidth, int tileHeight, String fileName) throws IOException {

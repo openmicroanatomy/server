@@ -1,6 +1,7 @@
 package fi.ylihallila.server;
 
 import fi.ylihallila.server.authentication.Auth;
+import fi.ylihallila.server.authentication.Roles;
 import fi.ylihallila.server.controllers.*;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
@@ -13,8 +14,13 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 import io.javalin.plugin.rendering.vue.VueComponent;
+
+import javax.servlet.http.HttpServletRequest;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
 import static io.javalin.core.security.SecurityUtil.roles;
@@ -35,7 +41,7 @@ public class SecureServer {
         config.server(() -> {
             Server server = new Server();
 
-            if (Configuration.SECURE_SERVER) {
+            if (Config.SECURE_SERVER) {
                 config.enforceSsl = true;
 
                 ServerConnector sslConnector = new ServerConnector(server, getSslContextFactory());
@@ -99,6 +105,7 @@ public class SecureServer {
                 post(WorkspaceController::createWorkspace, roles(TEACHER, ADMIN));
 
                 path(":workspace-id", () -> {
+                    put(WorkspaceController::updateWorkspace,    roles(TEACHER, ADMIN));
                     delete(WorkspaceController::deleteWorkspace, roles(TEACHER, ADMIN));
                 });
             });

@@ -8,7 +8,6 @@ import io.javalin.http.Handler;
 import kotlin.Pair;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Auth {
 
@@ -34,16 +33,19 @@ public class Auth {
 	}
 
 	public static boolean hasPermissions(Context ctx, Set<Role> permittedRoles) {
-		List<Role> roles = getUserRoles(ctx);
-		AtomicBoolean hasPermission = new AtomicBoolean(false);
+		List<Role> userRoles = getUserRoles(ctx);
 
-		permittedRoles.forEach(role -> {
-			if (roles.contains(role)) {
-				hasPermission.set(true);
-			}
-		});
+		return permittedRoles.stream().anyMatch(userRoles::contains);
+	}
 
-		return hasPermission.get();
+	public static Optional<String> getUsername(Context ctx) {
+		try {
+			BasicAuthCredentials auth = ctx.basicAuthCredentials();
+
+			return Optional.of(auth.getUsername());
+		} catch (IllegalArgumentException e) {
+			return Optional.empty();
+		}
 	}
 
 	public static List<Role> getUserRoles(Context ctx) {

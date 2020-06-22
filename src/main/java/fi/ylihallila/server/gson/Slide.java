@@ -1,5 +1,7 @@
 package fi.ylihallila.server.gson;
 
+import java.util.UUID;
+
 public class Slide {
 
     private String name;
@@ -16,6 +18,10 @@ public class Slide {
 
     public String getId() {
         return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id.toString();
     }
 
     public void setId(String id) {

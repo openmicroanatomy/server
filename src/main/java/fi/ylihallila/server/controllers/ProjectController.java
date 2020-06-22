@@ -1,6 +1,6 @@
 package fi.ylihallila.server.controllers;
 
-import fi.ylihallila.server.Configuration;
+import fi.ylihallila.server.Config;
 import fi.ylihallila.server.gson.Project;
 import fi.ylihallila.server.gson.Workspace;
 import io.javalin.http.Context;
@@ -48,7 +48,7 @@ public class ProjectController extends BasicController {
 			createProjectZipFile(projectId);
 			backup(getProjectFile(projectId));
 
-			saveAndBackup(Path.of(Configuration.WORKSPACE_FILE), workspaces);
+			saveAndBackup(Path.of(Config.WORKSPACE_FILE), workspaces);
 			ctx.status(200);
 		} else {
 			ctx.status(404);
@@ -85,7 +85,7 @@ public class ProjectController extends BasicController {
 			});
 		});
 
-		saveAndBackup(Path.of(Configuration.WORKSPACE_FILE), workspaces);
+		saveAndBackup(Path.of(Config.WORKSPACE_FILE), workspaces);
 	}
 
 	public void deleteProject(Context ctx) throws IOException {
@@ -99,7 +99,7 @@ public class ProjectController extends BasicController {
 		});
 
 		delete(getProjectFile(projectToDelete));
-		saveAndBackup(Path.of(Configuration.WORKSPACE_FILE), workspaces);
+		saveAndBackup(Path.of(Config.WORKSPACE_FILE), workspaces);
 		ctx.status(200);
 	}
 
