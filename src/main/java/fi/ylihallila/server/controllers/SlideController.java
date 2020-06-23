@@ -4,8 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import fi.ylihallila.server.Config;
 import fi.ylihallila.server.OpenSlideCache;
-import fi.ylihallila.server.authentication.Auth;
+import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.gson.Slide;
+import fi.ylihallila.server.gson.User;
 import io.javalin.http.Context;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
@@ -52,7 +53,7 @@ public class SlideController extends BasicController {
 			HashMap<String, Object> data = new HashMap<>();
 			data.put("name", slide.getName());
 			data.put("id", slide.getId());
-			data.put("organization", slide.getOwner());
+			data.put("owner", slide.getOwner());
 
 			File slideProperties = new File(String.format(Config.SLIDE_PROPERTIES_FILE, slide.getId()));
 
@@ -76,11 +77,9 @@ public class SlideController extends BasicController {
 
 	public void upload(Context ctx) throws IOException {
 		String fileName = ctx.queryParam("filename");
-		int totalSize = ctx.queryParam("fileSize", Integer.class).get();
-		int index = ctx.queryParam("chunk", Integer.class).get();
-		int buffer = ctx.queryParam("chunkSize", Integer.class).get();
-
-		logger.info(String.format("%s %s : %s / %s", fileName, totalSize, index, buffer));
+		int totalSize   = ctx.queryParam("fileSize", Integer.class).get();
+		int buffer      = ctx.queryParam("chunkSize", Integer.class).get();
+		int index       = ctx.queryParam("chunk", Integer.class).get();
 
 		if (ctx.method().equals("GET")) { // todo: cleanup GET
 			if (buffer > totalSize) {
@@ -133,10 +132,10 @@ public class SlideController extends BasicController {
 		});
 
 		if (success.get()) {
-			logger.info("Slide {} edited by {}", slideId, Auth.getUsername(ctx).orElse("Unknown"));
-
 			saveAndBackup(Path.of(Config.SLIDES_FILE), slides);
 			ctx.status(200);
+
+			logger.info("Slide {} edited by {}", slideId, Authenticator.getUsername(ctx).orElse("Unknown"));
 		} else {
 			ctx.status(404);
 		}
@@ -149,14 +148,14 @@ public class SlideController extends BasicController {
 		var deleted = slides.removeIf(slide -> slide.getId().equalsIgnoreCase(slideId));
 
 		if (deleted) {
-			logger.info("Slide {} deleted by {}", slideId, Auth.getUsername(ctx).orElse("Unknown"));
-
 			Path propertiesPath = Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, slideId));
 			backup(propertiesPath);
 			Files.delete(propertiesPath);
 
 			saveAndBackup(Path.of(Config.SLIDES_FILE), slides);
 			ctx.status(200);
+
+			logger.info("Slide {} deleted by {}", slideId, Authenticator.getUsername(ctx).orElse("Unknown"));
 		} else {
 			ctx.status(404);
 		}
@@ -172,8 +171,6 @@ public class SlideController extends BasicController {
 
 	private void getSlidePropertiesFromFile(Context ctx) {
 		String slideId = ctx.pathParam("slide-id", String.class).get();
-
-		logger.info(slideId);
 
 		Path slideProperties = Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, slideId));
 
@@ -206,18 +203,18 @@ public class SlideController extends BasicController {
 		int tileHeight = ctx.pathParam("tileHeight", Integer.class).get();
 
 		String fileName = String.format(Config.TILE_FILE_FORMAT, slide, tileX, tileY, level, tileWidth, tileHeight);
-		InputStream is;
 
 		if (Files.exists(Path.of(fileName), LinkOption.NOFOLLOW_LINKS)) {
 			logger.info("Retrieving from disk [{}, {},{} / {} / {},{}]", fileName, tileX, tileY, level, tileWidth, tileHeight);
 
 			FileInputStream fis = new FileInputStream(Path.of(fileName).toString());
-			is = new ByteArrayInputStream(fis.readAllBytes());
-			fis.close();
+			InputStream is = new ByteArrayInputStream(fis.readAllBytes());
 
 			ctx.status(200).contentType("image/jpg");
 			ctx.result(is);
+
 			is.close();
+			fis.close();
 		} else {
 			logger.info("Couldn't find tile [{}, {},{} / {} / {},{}]", fileName, tileX, tileY, level, tileWidth, tileHeight);
 			ctx.status(404);
@@ -226,37 +223,38 @@ public class SlideController extends BasicController {
 
 	private void processUploadedSlide(Context ctx, String slideName) throws IOException {
 		Optional<OpenSlide> openSlide = OpenSlideCache.get(String.format(Config.UPLOADED_FILE, slideName));
+		User user = Authenticator.getUser(ctx);
+
 		if (openSlide.isEmpty()) {
 			logger.error("Error when processing uploaded file. Couldn't create OpenSlide instance.");
 			return;
 		}
 
 		/* Add slide to slides.json */
-		String uuid = UUID.randomUUID().toString();
+		String id = UUID.randomUUID().toString();
 		ArrayList<Slide> slides = getSlides();
 
 		Slide slide = new Slide();
 		slide.setName(slideName);
-		slide.setId(uuid);
-		slide.setOwner(Auth.getUsername(ctx).orElse("Unknown")); // TODO: Add "Organization" to users.
+		slide.setId(id);
+		slide.setOwner(user.getOrganizationId());
 
 		slides.add(slide);
 
 		/* Generate .properties for slide */
 		Map<String, String> properties = new HashMap<>(openSlide.get().getProperties());
-		properties.put("openslide.remoteserver.uri", String.format(Config.CSC_URL, uuid));
+		properties.put("openslide.remoteserver.uri", String.format(Config.CSC_URL, id));
 
 		String json = new GsonBuilder().setPrettyPrinting().create().toJson(properties);
-		Files.write(Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, uuid)), json.getBytes());
+		Files.write(Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, id)), json.getBytes());
 
 		/* Rename slide */
 		Files.move(
 			Path.of(String.format(Config.UPLOADED_FILE, slideName)),
-			Path.of(String.format(Config.UPLOADED_FILE, uuid))
+			Path.of(String.format(Config.UPLOADED_FILE, id))
 		);
 
 		/* Tile slide and upload to cloud */
-
 		saveAndBackup(Path.of(Config.SLIDES_FILE), slides);
 	}
 

@@ -1,14 +1,18 @@
 package fi.ylihallila.server.gson;
 
+import com.fasterxml.jackson.annotation.*;
+import fi.ylihallila.server.gson.resolvers.ProjectIdResolver;
+
 import java.util.UUID;
 
+@JsonIdentityInfo(scope = Project.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", resolver = ProjectIdResolver.class)
 public class Project {
 
 	private String id;
 	private String name;
 	private String description;
 	private String thumbnail;
-	private String server;
+	private String owner;
 
 	public String getId() {
 		return id;
@@ -46,12 +50,13 @@ public class Project {
 		this.thumbnail = thumbnail;
 	}
 
-	public String getServer() {
-		return server;
+
+	public String getOwner() {
+		return owner;
 	}
 
-	public void setServer(String server) {
-		this.server = server;
+	public void setOwner(String owner) {
+		this.owner = owner;
 	}
 
 	@Override
@@ -61,7 +66,7 @@ public class Project {
 				", name='" + name + '\'' +
 				", description='" + description + '\'' +
 				", thumbnail='" + thumbnail + '\'' +
-				", server='" + server + '\'' +
+				", owner='" + owner + '\'' +
 				'}';
 	}
 }

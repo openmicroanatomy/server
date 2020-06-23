@@ -2,8 +2,14 @@ package fi.ylihallila.server.controllers;
 
 import com.google.gson.Gson;
 import fi.ylihallila.server.Config;
+import fi.ylihallila.server.authentication.Authenticator;
+import fi.ylihallila.server.authentication.Roles;
+import fi.ylihallila.server.gson.Project;
 import fi.ylihallila.server.gson.Slide;
+import fi.ylihallila.server.gson.User;
 import fi.ylihallila.server.gson.Workspace;
+import fi.ylihallila.server.repositories.Repos;
+import io.javalin.http.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 
 public class BasicController {
 
@@ -74,12 +81,47 @@ public class BasicController {
 		}
 	}
 
-	protected String getProjectFile(String projectName) {
-		return String.format(Config.PROJECT_FILE_FORMAT, projectName);
+	protected String getProjectFile(String projectId) {
+		return String.format(Config.PROJECT_FILE_FORMAT, projectId);
 	}
 
 	protected String getBackupFile(String fileName) {
 		return String.format(Config.BACKUP_FILE_FORMAT, fileName, System.currentTimeMillis());
+	}
+
+	/**
+	 * Checks if the given Context (User) has write permissions to given object by an ID. An ID can represent either a
+	 * workspace or a (personal) project.
+	 * @param ctx User context
+	 * @param id Workspace / project ID
+	 * @return True if access to write (=modify), otherwise false.
+	 */
+	public boolean hasPermission(Context ctx, String id) {
+		User user = Authenticator.getUser(ctx);
+		Optional<Project> project = Repos.getProjectRepo().getById(id);
+
+		if (project.isPresent()) {
+			String owner = project.get().getOwner();
+
+			if (owner.equals(user.getId())
+					&& Authenticator.hasPermissions(ctx, Roles.MANAGE_PERSONAL_PROJECTS)) {
+				 return true;
+			} else if (owner.equals(user.getOrganizationId())
+					&& Authenticator.hasPermissions(ctx, Roles.MANAGE_PROJECTS)) {
+				return true;
+			}
+		} else {
+			Optional<Workspace> workspace = Repos.getWorkspaceRepo().getById(id);
+
+			if (workspace.isPresent() && workspace.get().getOwner().equals(user.getOrganizationId())
+					&& Authenticator.hasPermissions(ctx, Roles.MANAGE_PROJECTS)) {
+				return true;
+			}
+		}
+
+		// TODO: Add support for slides
+
+		return false;
 	}
 
 	/**

@@ -7,7 +7,12 @@ public enum Roles implements Role {
 	ANYONE,
 	STUDENT,
 	TEACHER,
-	ADMIN
+	ADMIN,
+
+	MANAGE_SLIDES,
+
+	MANAGE_PERSONAL_PROJECTS,
+	MANAGE_PROJECTS,
 
 	// todo: inheritance: admin > teacher > student > anyone
 

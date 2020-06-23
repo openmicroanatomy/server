@@ -1,7 +1,11 @@
 package fi.ylihallila.server.gson;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import fi.ylihallila.server.Util;
 import java.util.UUID;
 
+@JsonIdentityInfo(scope=Slide.class, generator=ObjectIdGenerators.PropertyGenerator.class, property="id")
 public class Slide {
 
     private String name;
@@ -29,7 +33,7 @@ public class Slide {
     }
 
     public String getOwner() {
-        return owner;
+        return Util.idToName(owner).orElse("Unknown (" + owner + ")");
     }
 
     public void setOwner(String owner) {

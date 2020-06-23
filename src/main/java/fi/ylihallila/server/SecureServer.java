@@ -1,7 +1,6 @@
 package fi.ylihallila.server;
 
-import fi.ylihallila.server.authentication.Auth;
-import fi.ylihallila.server.authentication.Roles;
+import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.controllers.*;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
@@ -14,13 +13,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.stream.Collectors;
 
 import io.javalin.plugin.rendering.vue.VueComponent;
-
-import javax.servlet.http.HttpServletRequest;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
 import static io.javalin.core.security.SecurityUtil.roles;
@@ -30,7 +24,7 @@ public class SecureServer {
 
     private Logger logger = LoggerFactory.getLogger(SecureServer.class);
     private Javalin app = Javalin.create(config -> {
-        config.accessManager(Auth::accessManager);
+        config.accessManager(Authenticator::accessManager);
         config.showJavalinBanner = false;
         config.enableWebjars();
         config.requestCacheSize = Long.MAX_VALUE;
@@ -57,10 +51,10 @@ public class SecureServer {
         });
     }).start();
 
-    private UserController UserController = new UserController();
     private WorkspaceController WorkspaceController = new WorkspaceController();
     private ProjectController ProjectController = new ProjectController();
     private SlideController SlideController = new SlideController();
+    private UserController UserController = new UserController();
 
     public SecureServer() {
         app.get("/", new VueComponent("index"),          roles(TEACHER, ADMIN));
@@ -72,20 +66,20 @@ public class SecureServer {
         app.routes(() -> path("/api/v0/", () -> {
             /* Authentication */
             path("users", () -> {
-                get(UserController::getAllUsers,         roles(ANYONE));
-                post(UserController::createUser,         roles(ADMIN));
-                get("login", UserController::login, roles(STUDENT, TEACHER, ADMIN));
+                get(UserController::getAllUsers,                     roles(ANYONE));
+                get("login", UserController::login,             roles(STUDENT, TEACHER, ADMIN));
+                get("verify", UserController::verify,           roles(ANYONE));
+                get("write/:id", UserController::hasPermission, roles(ANYONE));
 
-                path(":username", () -> {
-                    get(UserController::getUser,       roles(ADMIN));
+                path(":user-id", () -> {
+                    get(UserController::getUser,       roles(ANYONE));
                     patch(UserController::updateUser,  roles(ADMIN));
-                    delete(UserController::deleteUser, roles(ADMIN));
                 });
             });
 
             /* Upload */
-            get("upload", SlideController::upload,  roles(ANYONE));
-            post("upload", SlideController::upload, roles(ANYONE));
+            get("upload",  SlideController::upload,  roles(MANAGE_SLIDES));
+            post("upload", SlideController::upload, roles(MANAGE_SLIDES));
 
             /* Slides */
             path("slides", () -> {
@@ -93,32 +87,35 @@ public class SecureServer {
 
                 path(":slide-id", () -> {
                     get(SlideController::getSlideProperties, roles(ANYONE));
-                    put(SlideController::updateSlide,        roles(TEACHER, ADMIN));
-                    delete(SlideController::deleteSlide,     roles(TEACHER, ADMIN));
+                    put(SlideController::updateSlide,        roles(MANAGE_SLIDES));
+                    delete(SlideController::deleteSlide,     roles(MANAGE_SLIDES));
                     get("tile/:tileX/:tileY/:level/:tileWidth/:tileHeight", SlideController::renderTile, roles(ANYONE));
                 });
             });
 
             /* Workspaces */
             path("workspaces", () -> {
-                get(WorkspaceController::getWorkspaces,    roles(ANYONE));
-                post(WorkspaceController::createWorkspace, roles(TEACHER, ADMIN));
+                get(WorkspaceController::getAllWorkspaces, roles(ANYONE));
+                post(WorkspaceController::createWorkspace, roles(MANAGE_PROJECTS));
 
                 path(":workspace-id", () -> {
-                    put(WorkspaceController::updateWorkspace,    roles(TEACHER, ADMIN));
-                    delete(WorkspaceController::deleteWorkspace, roles(TEACHER, ADMIN));
+                    get(WorkspaceController::getWorkspace,       roles(ANYONE));
+                    put(WorkspaceController::updateWorkspace,    roles(MANAGE_PROJECTS));
+                    delete(WorkspaceController::deleteWorkspace, roles(MANAGE_PROJECTS));
                 });
             });
 
             /* Projects */
             path("projects", () -> {
-                post(ProjectController::createProject, roles(TEACHER, ADMIN));
+                get(ProjectController::getAllProjects,                          roles(ANYONE));
+                post(ProjectController::createProject,                          roles(MANAGE_PROJECTS));
+                post("personal", ProjectController::createPersonalProject, roles(MANAGE_PERSONAL_PROJECTS));
 
                 path(":project-id", () -> {
                     get(ProjectController::downloadProject,  roles(ANYONE));
-                    put(ProjectController::updateProject,    roles(TEACHER, ADMIN));
-                    delete(ProjectController::deleteProject, roles(TEACHER, ADMIN));
-                    post(ProjectController::uploadProject,   roles(TEACHER, ADMIN));
+                    put(ProjectController::updateProject,    roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
+                    delete(ProjectController::deleteProject, roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
+                    post(ProjectController::uploadProject,   roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
                 });
             });
         }));
@@ -137,5 +134,21 @@ public class SecureServer {
             logger.error("Couldn't start HTTPS server, no valid keystore.");
             return null;
         }
+    }
+
+    public WorkspaceController getWorkspaceController() {
+        return WorkspaceController;
+    }
+
+    public ProjectController getProjectController() {
+        return ProjectController;
+    }
+
+    public SlideController getSlideController() {
+        return SlideController;
+    }
+
+    public UserController getUserController() {
+        return UserController;
     }
 }

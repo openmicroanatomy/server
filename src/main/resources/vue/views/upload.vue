@@ -3,7 +3,7 @@
         <h1>Slide uploader</h1>
 
         <template v-if="resumable.support">
-            <div id="dropTarget">Pudota leike tähän</div>
+            <div id="dropTarget">Pudota leike tähän :)</div>
             <div id="browseButton">Etsi leike</div>
 
             <div id="resumable-progress" v-if="files">
@@ -53,7 +53,7 @@
                 this.uploading = false;
             }
         },
-        watch: {
+        /*watch: {
             resumable: function(newValue, oldValue) {
                 if (newValue.support) {
                     this.resumable.assignBrowse(document.getElementById('browseButton'));
@@ -63,7 +63,7 @@
                     this.resumable.assignDrop(null);
                 }
             }
-        },
+        },*/
         mounted: function() {
             this.resumable = new Resumable({
                 target: '/api/v0/upload',
@@ -73,6 +73,9 @@
             });
 
             var uploader = this;
+
+            this.resumable.assignBrowse(document.getElementById('browseButton'));
+            this.resumable.assignDrop(document.getElementById('dropTarget'));
 
             this.resumable.on('fileAdded', function(file) {
                 uploader.files = resumable.files;
