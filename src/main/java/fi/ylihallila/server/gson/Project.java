@@ -12,7 +12,19 @@ public class Project {
 	private String name;
 	private String description;
 	private String thumbnail;
+
+	/**
+	 * Users or Tenants GUID
+	 */
 	private String owner;
+
+	private long createdAt;
+	private long modifiedAt;
+
+	public Project() {
+		this.createdAt = System.currentTimeMillis();
+		this.modifiedAt = System.currentTimeMillis();
+	}
 
 	public String getId() {
 		return id;
@@ -50,13 +62,24 @@ public class Project {
 		this.thumbnail = thumbnail;
 	}
 
-
 	public String getOwner() {
 		return owner;
 	}
 
 	public void setOwner(String owner) {
 		this.owner = owner;
+	}
+
+	public long getCreatedAt() {
+		return createdAt;
+	}
+
+	public long getModifiedAt() {
+		return modifiedAt;
+	}
+
+	public void setModifiedAt(long modifiedAt) {
+		this.modifiedAt = modifiedAt;
 	}
 
 	@Override
@@ -67,6 +90,8 @@ public class Project {
 				", description='" + description + '\'' +
 				", thumbnail='" + thumbnail + '\'' +
 				", owner='" + owner + '\'' +
+				", createdAt=" + createdAt +
+				", modifiedAt=" + modifiedAt +
 				'}';
 	}
 }

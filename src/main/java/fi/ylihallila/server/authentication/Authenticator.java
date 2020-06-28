@@ -28,16 +28,13 @@ public class Authenticator {
 			if (permittedRoles.contains(Roles.ANYONE) || hasPermissions(ctx, permittedRoles)) {
 				handler.handle(ctx);
 			} else {
-				ctx.header(Header.WWW_AUTHENTICATE, "Basic");
-				ctx.status(401).json(new Error("Unauthorized. Use Basic authentication or provide `token` header."));
+				ctx.status(401).json(new Error("Unauthorized. Use Basic authentication or provide `Token` header."));
 			}
 		} catch (NotFoundResponse e) {
 			ctx.status(404).json(new Error(e.getMessage()));
 		} catch (UnauthorizedResponse e) {
-			ctx.header(Header.WWW_AUTHENTICATE, "Basic");
 			ctx.status(401).json(new Error(e.getLocalizedMessage()));
 		} catch (Exception e) {
-			ctx.header(Header.WWW_AUTHENTICATE, "Basic");
 			ctx.status(500).json(new Error("Internal server error"));
 			logger.error("Error while authenticating", e);
 		}
@@ -68,7 +65,7 @@ public class Authenticator {
 	}
 
 	private static Auth getAuthImpl(Context ctx) {
-		if (ctx.headerMap().containsKey("token") && !ctx.header("token").isBlank()) {
+		if (ctx.headerMap().containsKey("Token") && !ctx.header("Token").isBlank()) {
 			return tokenAuth;
 		}
 

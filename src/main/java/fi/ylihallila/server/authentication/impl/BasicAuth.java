@@ -14,7 +14,7 @@ public class BasicAuth implements Auth {
 
     private Map<Pair<String, String>, User> userMap = Map.of(
         new Pair<>("Aaron", "salasana"), new User(
-            "a6facec6-228e-41a3-a012-d2818de69084",
+            "fe034978-02d2-4612-a82d-d908b70bd1eb",
             "Aaron",
             "9f9ce49a-5101-4aa3-8c75-0d5935ad6525",
             List.of(Roles.STUDENT, Roles.TEACHER, Roles.ADMIN, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS)

@@ -15,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 // todo: wip
@@ -49,7 +51,15 @@ public class UserController extends BasicController {
 	}
 
 	public void login(Context ctx) {
-		ctx.json(Authenticator.getUserRoles(ctx));
+		User user = Authenticator.getUser(ctx);
+
+		Map<String, Object> data = new HashMap<>();
+
+		data.put("userId", user.getId());
+		data.put("organizationId", user.getOrganizationId());
+		data.put("roles", user.getRoles());
+
+		ctx.status(200).json(data);
 	}
 
 	/**

@@ -45,5 +45,6 @@ public class ProjectRepositoryJson extends AbstractJsonRepository<Project> {
         oldProject.setName(newProject.getName());
         oldProject.setOwner(newProject.getOwner());
         oldProject.setDescription(newProject.getDescription());
+        oldProject.setModifiedAt(System.currentTimeMillis());
     }
 }

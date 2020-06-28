@@ -81,7 +81,7 @@ public class ProjectController extends BasicController {
 		is.close();
 	}
 
-	public void updateProject(Context ctx) throws IOException {
+	public void updateProject(Context ctx) {
 		String projectId = ctx.pathParam("project-id", String.class).get();
 
 		IRepository<Project> repo = Repos.getProjectRepo();
@@ -89,13 +89,14 @@ public class ProjectController extends BasicController {
 		Project project = repo.getById(projectId).orElseThrow(NotFoundResponse::new);
 		project.setName(ctx.formParam("name", project.getName()));
 		project.setDescription(ctx.formParam("description", project.getDescription()));
+		project.setModifiedAt(System.currentTimeMillis());
 
 		repo.commit();
 
 		logger.info("Project {} edited by {}", projectId, Authenticator.getUsername(ctx).orElse("Unknown"));
 	}
 
-	public void deleteProject(Context ctx) throws IOException {
+	public void deleteProject(Context ctx) {
 		String id = ctx.pathParam("project-id", String.class).get();
 
 		Repos.getProjectRepo().deleteById(id);
@@ -117,6 +118,10 @@ public class ProjectController extends BasicController {
 		}
 
 		if (hasPermission(ctx, id)) {
+			Project project = Repos.getProjectRepo().getById(id).orElseThrow(NotFoundResponse::new);
+			project.setModifiedAt(System.currentTimeMillis());
+			Repos.getProjectRepo().commit();
+
 			copyInputStreamToFile(file.getContent(), new File(getProjectFile(id)));
 			backup(getProjectFile(id));
 			logger.info("Project {} updated by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
