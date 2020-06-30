@@ -2,6 +2,7 @@ package fi.ylihallila.server.controllers;
 
 import com.google.gson.Gson;
 import fi.ylihallila.server.Config;
+import fi.ylihallila.server.Util;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.authentication.Roles;
 import fi.ylihallila.server.gson.Project;
@@ -27,8 +28,6 @@ public class BasicController {
 
 	private Logger logger = LoggerFactory.getLogger(BasicController.class);
 
-	private Path workspaceFile = Path.of(Config.WORKSPACE_FILE);
-
 	protected void saveAndBackup(Path path, Object object) throws IOException {
 		save(path, object);
 		backup(path);
@@ -38,11 +37,7 @@ public class BasicController {
 		Files.write(path, new Gson().toJson(object).getBytes());
 	}
 
-	protected Path getWorkspaceFile() {
-		return workspaceFile;
-	}
-
-	private int BUFFER = 1024;
+	private final int BUFFER = 1024;
 
 	protected void copyInputStreamToFile(InputStream is, File file) throws IOException {
 		try (FileOutputStream os = new FileOutputStream(file)) {
@@ -64,7 +59,7 @@ public class BasicController {
 			backup(pathToFile);
 			Files.delete(pathToFile);
 		} catch (IOException e) {
-			logger.error("Error while deleting file", e);
+			logger.error("Error while deleting file {}", pathToFile, e);
 		}
 	}
 
@@ -74,10 +69,9 @@ public class BasicController {
 
 	protected void backup(Path pathToFile) {
 		try {
-			String fileName = pathToFile.toFile().getName();
-			Files.copy(pathToFile, Path.of(getBackupFile(fileName)));
+			Util.backup(pathToFile);
 		} catch (IOException e) {
-			logger.error("Error while backing up file", e);
+			logger.error("Error while creating a backup of {}", pathToFile, e);
 		}
 	}
 

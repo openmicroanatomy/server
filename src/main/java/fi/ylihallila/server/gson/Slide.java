@@ -33,7 +33,11 @@ public class Slide {
     }
 
     public String getOwner() {
-        return Util.idToName(owner).orElse("Unknown (" + owner + ")");
+        return owner;
+    }
+
+    public String getOwnerReadable() {
+        return Util.getHumanReadableName(owner).orElse("Unknown (" + owner + ")");
     }
 
     public void setOwner(String owner) {

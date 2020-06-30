@@ -2,6 +2,7 @@ package fi.ylihallila.server.repositories;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fi.ylihallila.server.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,10 +59,15 @@ public abstract class AbstractJsonRepository<T> implements IRepository<T> {
     }
 
     @Override
+    public boolean contains(String id) {
+        return getById(id).isPresent();
+    }
+
+    @Override
     public void commit() {
         try {
+            Util.backup(jsonPath);
             Files.write(jsonPath, mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(this.data));
-            Files.copy(jsonPath, Path.of(getBackupFile(jsonPath.getFileName().toString())));
         } catch (IOException e) {
             logger.error("Error while saving JSON data file", e);
             throw new RuntimeException(e.getLocalizedMessage(), e);

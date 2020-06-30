@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
 
 import io.javalin.plugin.rendering.vue.VueComponent;
 
@@ -29,6 +30,7 @@ public class SecureServer {
         config.enableWebjars();
         config.requestCacheSize = Long.MAX_VALUE;
         config.addStaticFiles("/static", Location.CLASSPATH);
+        config.addStaticFiles("/logos", Path.of("organizations").toAbsolutePath().toString(), Location.EXTERNAL);
 
         JavalinVue.rootDirectory("/vue", Location.CLASSPATH);
 
@@ -117,6 +119,18 @@ public class SecureServer {
                     delete(ProjectController::deleteProject, roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
                     post(ProjectController::uploadProject,   roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
                 });
+            });
+
+            /* Backups */
+            path("backups", () -> {
+                get(BackupController::getAllBackups, roles(MANAGE_PROJECTS));
+
+                get("restore/:file/:timestamp", BackupController::restore, roles(MANAGE_PROJECTS));
+            });
+
+            /* Organizations */
+            path("organizations", () -> {
+                get(OrganizationController::getAllOrganizations, roles(ANYONE));
             });
         }));
     }

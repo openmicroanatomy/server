@@ -75,7 +75,7 @@ public class Main {
             try {
                 new SecureServer();
             } catch (Exception e) {
-                if (e.getCause().getClass() == IllegalStateException.class) {
+                if (e.getCause() != null && e.getCause().getClass() == IllegalStateException.class) {
                     logger.info("Add a valid keystore or run in insecure mode with --insecure launch option.");
                 }
 

@@ -54,6 +54,7 @@ public class SlideController extends BasicController {
 			data.put("name", slide.getName());
 			data.put("id", slide.getId());
 			data.put("owner", slide.getOwner());
+			data.put("ownerReadable", slide.getOwnerReadable());
 
 			File slideProperties = new File(String.format(Config.SLIDE_PROPERTIES_FILE, slide.getId()));
 

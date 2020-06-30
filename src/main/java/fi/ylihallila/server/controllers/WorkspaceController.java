@@ -1,6 +1,7 @@
 package fi.ylihallila.server.controllers;
 
 import fi.ylihallila.server.authentication.Authenticator;
+import fi.ylihallila.server.authentication.Roles;
 import fi.ylihallila.server.gson.User;
 import fi.ylihallila.server.gson.Workspace;
 import fi.ylihallila.server.repositories.Repos;
@@ -17,10 +18,13 @@ public class WorkspaceController extends BasicController {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public void getAllWorkspaces(Context ctx) throws IOException {
-		// Middleware > File Exists
 		List<Workspace> workspaces = Repos.getWorkspaceRepo().list();
 
-		if (Authenticator.isLoggedIn(ctx)) {
+		if (ctx.queryParamMap().containsKey("owner")) {
+			workspaces.removeIf(workspace -> !workspace.getOwner().equalsIgnoreCase(ctx.queryParam("owner")));
+		}
+
+		if (Authenticator.isLoggedIn(ctx) && Authenticator.hasPermissions(ctx, Roles.MANAGE_PERSONAL_PROJECTS)) {
 			User user = Authenticator.getUser(ctx);
 
 			Workspace projects = new Workspace();

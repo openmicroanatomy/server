@@ -19,6 +19,8 @@ public interface IRepository<T> {
 
     void deleteById(String id);
 
+    boolean contains(String id);
+
     void commit();
 
     default String getBackupFile(String fileName) {
