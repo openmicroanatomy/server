@@ -53,13 +53,15 @@ public class SecureServer {
         });
     }).start();
 
-    private WorkspaceController WorkspaceController = new WorkspaceController();
-    private ProjectController ProjectController = new ProjectController();
-    private SlideController SlideController = new SlideController();
-    private UserController UserController = new UserController();
+    private final OrganizationController OrganizationController = new OrganizationController();
+    private final WorkspaceController WorkspaceController = new WorkspaceController();
+    private final ProjectController ProjectController = new ProjectController();
+    private final BackupController BackupController = new BackupController();
+    private final SlideController SlideController = new SlideController();
+    private final UserController UserController = new UserController();
 
     public SecureServer() {
-        app.get("/", new VueComponent("index"),          roles(TEACHER, ADMIN));
+        app.get("/", new VueComponent("index"),          roles(ADMIN));
         app.get("/upload", new VueComponent("uploader"), roles(ADMIN));
 
         /* API */
@@ -69,18 +71,18 @@ public class SecureServer {
             /* Authentication */
             path("users", () -> {
                 get(UserController::getAllUsers,                     roles(ANYONE));
-                get("login", UserController::login,             roles(STUDENT, TEACHER, ADMIN));
+                get("login", UserController::login,             roles(ANYONE));
                 get("verify", UserController::verify,           roles(ANYONE));
                 get("write/:id", UserController::hasPermission, roles(ANYONE));
 
                 path(":user-id", () -> {
-                    get(UserController::getUser,       roles(ANYONE));
-                    patch(UserController::updateUser,  roles(ADMIN));
+                    get(UserController::getUser,      roles(ANYONE));
+                    patch(UserController::updateUser, roles(ADMIN));
                 });
             });
 
             /* Upload */
-            get("upload",  SlideController::upload,  roles(MANAGE_SLIDES));
+            get("upload",  SlideController::upload, roles(MANAGE_SLIDES));
             post("upload", SlideController::upload, roles(MANAGE_SLIDES));
 
             /* Slides */
@@ -109,7 +111,7 @@ public class SecureServer {
 
             /* Projects */
             path("projects", () -> {
-                get(ProjectController::getAllProjects,                          roles(ANYONE));
+                get(ProjectController::getAllProjects,                          roles(ADMIN));
                 post(ProjectController::createProject,                          roles(MANAGE_PROJECTS));
                 post("personal", ProjectController::createPersonalProject, roles(MANAGE_PERSONAL_PROJECTS));
 

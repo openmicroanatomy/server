@@ -120,17 +120,6 @@ public class BasicController {
 
 	/**
 	 * Creates a mutable ArrayList from array
-	 * @return ArrayList of workspaces
-	 * @throws IOException When unable to read workspace file
-	 */
-	protected ArrayList<Workspace> getWorkspaces() throws IOException {
-		return new ArrayList<>(
-			Arrays.asList(new Gson().fromJson(Files.readString(Path.of(Config.WORKSPACE_FILE)), Workspace[].class)
-		));
-	}
-
-	/**
-	 * Creates a mutable ArrayList from array
 	 * @return ArrayList of slides
 	 * @throws IOException When unable to read slide file
 	 */

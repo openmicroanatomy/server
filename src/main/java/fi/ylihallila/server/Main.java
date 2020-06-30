@@ -21,20 +21,25 @@ import java.util.Optional;
  *
  *      server.jar
  *      workspace.json
+ *      users.json
+ *      slides.json
+ *
  *      keystore.jks
  *      Dummy.zip
  *
  *      tiles/
  *          [slide 1]/
- *              [tileX]_[tileY]_[level]_[width]_[height].jpg
+ *              [level]/[tileX]_[tileY]_[width]_[height].jpg
  *          [slide 2]/
- *  *           [tileX]_[tileY]_[level]_[width]_[height].jpg
+ *  *           [level]/[tileX]_[tileY]_[width]_[height].jpg
  *      projects/
  *          [project 1].zip
  *          [project 2].zip
  *      slides/
- *          [slide 1].svs
- *          [slide 2].svs
+ *          [slide 1].properties
+ *          [slide 2].properties
+ *      backups/
+ *          [file].[timestamp]
  */
 public class Main {
 
@@ -65,6 +70,7 @@ public class Main {
             Files.createDirectories(Path.of("tiles"));
             Files.createDirectories(Path.of("backups"));
             Files.createDirectories(Path.of("uploads"));
+            Files.createDirectories(Path.of("logos"));
 
             /*
              * TODO:

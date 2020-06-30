@@ -5,8 +5,6 @@ import io.javalin.core.security.Role;
 public enum Roles implements Role {
 
 	ANYONE,
-	STUDENT,
-	TEACHER,
 	ADMIN,
 
 	MANAGE_SLIDES,

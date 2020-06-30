@@ -126,7 +126,7 @@ public class ProjectController extends BasicController {
 			backup(getProjectFile(id));
 			logger.info("Project {} updated by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 		} else {
-			throw new UnauthorizedResponse("Unauthorized");
+			throw new UnauthorizedResponse();
 		}
 	}
 

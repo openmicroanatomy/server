@@ -17,13 +17,13 @@ public class BasicAuth implements Auth {
             "fe034978-02d2-4612-a82d-d908b70bd1eb",
             "Aaron",
             "9f9ce49a-5101-4aa3-8c75-0d5935ad6525",
-            List.of(Roles.STUDENT, Roles.TEACHER, Roles.ADMIN, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS)
+            List.of(Roles.ADMIN, Roles.MANAGE_SLIDES, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS)
         ),
         new Pair<>("Demo", "Demo"), new User(
             "5cbf3d06-071a-4065-a24a-954a1109584b",
             "Demo",
             "9f9ce49a-5101-4aa3-8c75-0d5935ad6525",
-            List.of(Roles.STUDENT, Roles.TEACHER, Roles.ADMIN, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS)
+            List.of(Roles.MANAGE_SLIDES, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS)
         )
     );
 
@@ -80,10 +80,10 @@ public class BasicAuth implements Auth {
             if (userMap.containsKey(pair)) {
                 return userMap.get(pair);
             } else {
-                throw new UnauthorizedResponse("Unauthorized");
+                throw new UnauthorizedResponse();
             }
         } catch (IllegalArgumentException e) {
-            throw new UnauthorizedResponse("Unauthorized");
+            throw new UnauthorizedResponse();
         }
     }
 }
