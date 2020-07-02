@@ -13,21 +13,19 @@ import java.util.*;
 
 public abstract class AbstractJsonRepository<T> implements IRepository<T> {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = Util.getMapper();
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
     private Path jsonPath;
+    private JavaType type;
+
     private List<T> data;
 
     public AbstractJsonRepository(final Path jsonPath, JavaType type) {
+        this.jsonPath = jsonPath;
+        this.type = type;
 
-        try {
-            this.jsonPath = jsonPath;
-            this.data = mapper.readValue(jsonPath.toFile(), type);
-        } catch (IOException e) {
-            this.jsonPath = null;
-            this.data = Collections.emptyList();
-            logger.error("Error when constructing " + getClass().getName() + " repository", e);
-        }
+        refresh();
     }
 
     public List<T> getData() {
@@ -71,6 +69,15 @@ public abstract class AbstractJsonRepository<T> implements IRepository<T> {
         } catch (IOException e) {
             logger.error("Error while saving JSON data file", e);
             throw new RuntimeException(e.getLocalizedMessage(), e);
+        }
+    }
+
+    public synchronized void refresh() {
+        try {
+            this.data = mapper.readValue(jsonPath.toFile(), type);
+        } catch (IOException e) {
+            this.data = Collections.emptyList();
+            logger.error("Error when constructing / refreshing " + getClass().getName() + " repository", e);
         }
     }
 }

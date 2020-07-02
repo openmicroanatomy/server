@@ -1,6 +1,7 @@
 package fi.ylihallila.server.gson;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import java.util.ArrayList;
@@ -13,6 +14,8 @@ public class Workspace {
 	private String id;
 	private String name;
 	private String owner;
+
+	@JsonIdentityReference
 	private List<Project> projects = new ArrayList<>();
 
 	public Workspace() {

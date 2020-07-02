@@ -16,7 +16,7 @@ public class BackupController extends BasicController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public void getAllBackups(Context ctx) throws IOException {
-        List<Backup> backups = Util.getBackups(null);
+        List<Backup> backups = Util.getBackups(backup -> backup.getType().equals(Backup.BackupType.PROJECT));
 
         ctx.json(backups);
     }

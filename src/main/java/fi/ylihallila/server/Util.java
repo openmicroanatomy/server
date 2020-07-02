@@ -1,11 +1,15 @@
 package fi.ylihallila.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.SerializerCache;
 import fi.ylihallila.server.gson.Backup;
 import fi.ylihallila.server.repositories.Repos;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -14,6 +18,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Util {
+
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    public static ObjectMapper getMapper() {
+        return mapper;
+    }
 
     private final static Logger logger = LoggerFactory.getLogger(Util.class);
 
@@ -26,10 +36,23 @@ public class Util {
         logger.debug("Creating backup of {}", filePath);
 
         String fileName = filePath.getFileName().toString();
+        List<Backup> backups = getBackups(backup -> backup.getFilename().equalsIgnoreCase(fileName));
+
+        Backup previousBackup = backups.get(backups.size() - 1);
+        String previousBackupHash = DigestUtils.sha1Hex(Files.readAllBytes(previousBackup.getFilepath()));
+        String newBackupHash = DigestUtils.sha1Hex(Files.readAllBytes(filePath));
+
+        if (previousBackupHash.equals(newBackupHash)) { // TODO: Doesn't work, ZipUtil broken.
+            logger.debug("Abort creating backup. New version identical to previous.");
+            return;
+        }
+
         Files.copy(
             filePath,
             Path.of(String.format(Config.BACKUP_FILE_FORMAT, fileName, System.currentTimeMillis()))
         );
+
+        logger.debug("Backup created.");
     }
 
 

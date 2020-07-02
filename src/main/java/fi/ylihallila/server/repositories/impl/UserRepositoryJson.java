@@ -1,7 +1,7 @@
 package fi.ylihallila.server.repositories.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.ylihallila.server.Config;
+import fi.ylihallila.server.Util;
 import fi.ylihallila.server.gson.User;
 import fi.ylihallila.server.repositories.AbstractJsonRepository;
 
@@ -12,7 +12,7 @@ import java.util.Optional;
 public class UserRepositoryJson extends AbstractJsonRepository<User> {
 
     public UserRepositoryJson() {
-        super(Path.of(Config.USERS_FILE), new ObjectMapper().getTypeFactory().constructParametricType(List.class, User.class));
+        super(Path.of(Config.USERS_FILE), Util.getMapper().getTypeFactory().constructParametricType(List.class, User.class));
     }
 
     @Override

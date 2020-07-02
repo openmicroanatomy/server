@@ -79,8 +79,12 @@ public class BasicController {
 		return String.format(Config.PROJECT_FILE_FORMAT, projectId);
 	}
 
-	protected String getBackupFile(String fileName) {
-		return String.format(Config.BACKUP_FILE_FORMAT, fileName, System.currentTimeMillis());
+	protected String getBackupFile(String filename) {
+		return String.format(Config.BACKUP_FILE_FORMAT, filename, System.currentTimeMillis());
+	}
+
+	protected String getBackupFile(String filename, String timestamp) {
+		return String.format(Config.BACKUP_FILE_FORMAT, filename, timestamp);
 	}
 
 	/**

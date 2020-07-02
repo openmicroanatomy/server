@@ -3,7 +3,7 @@ package fi.ylihallila.server.gson.resolvers;
 import com.fasterxml.jackson.annotation.ObjectIdGenerator;
 import com.fasterxml.jackson.annotation.ObjectIdResolver;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import fi.ylihallila.server.Util;
 import fi.ylihallila.server.gson.Project;
 
 import java.io.IOException;
@@ -19,7 +19,7 @@ public class ProjectIdResolver implements ObjectIdResolver {
     @Override
     public Object resolveId(ObjectIdGenerator.IdKey idKey) {
         try {
-            List<Project> projects = new ObjectMapper().readValue(Path.of("projects.json").toFile(), new TypeReference<>() { });
+            List<Project> projects = Util.getMapper().readValue(Path.of("projects.json").toFile(), new TypeReference<>() { });
             String id = (String) idKey.key;
 
             return projects.stream().filter(project -> project.getId().equalsIgnoreCase(id)).findFirst().orElse(null);

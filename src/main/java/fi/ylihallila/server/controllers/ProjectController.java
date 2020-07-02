@@ -67,7 +67,14 @@ public class ProjectController extends BasicController {
 
 	public void downloadProject(Context ctx) throws IOException {
 		String id = ctx.pathParam("project-id", String.class).get();
-		File file = new File(getProjectFile(id));
+
+		File file;
+
+		if (ctx.queryParamMap().containsKey("timestamp")) {
+			file = new File(getBackupFile(id + ".zip", ctx.queryParam("timestamp")));
+		} else {
+			file = new File(getProjectFile(id));
+		}
 
 		if (!file.exists()) {
 			ctx.status(404);

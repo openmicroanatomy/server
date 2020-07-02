@@ -37,7 +37,6 @@ public class Backup {
         }
     }
 
-    @JsonIgnore
     public String getBaseName() {
         return FileNameUtils.getBaseName(filename);
     }
@@ -96,7 +95,7 @@ public class Backup {
                 '}';
     }
 
-    private enum BackupType {
+    public enum BackupType {
 
         PROJECT,
         OTHER
