@@ -19,7 +19,7 @@ import io.javalin.plugin.rendering.vue.VueComponent;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
 import static io.javalin.core.security.SecurityUtil.roles;
-import static fi.ylihallila.server.authentication.Roles.*;
+import static fi.ylihallila.remote.commons.Roles.*;
 
 public class SecureServer {
 
@@ -70,14 +70,14 @@ public class SecureServer {
         app.routes(() -> path("/api/v0/", () -> {
             /* Authentication */
             path("users", () -> {
-                get(UserController::getAllUsers,                     roles(ANYONE));
+                get(UserController::getAllUsers,                roles(MANAGE_USERS));
                 get("login", UserController::login,             roles(ANYONE));
                 get("verify", UserController::verify,           roles(ANYONE));
                 get("write/:id", UserController::hasPermission, roles(ANYONE));
 
                 path(":user-id", () -> {
-                    get(UserController::getUser,      roles(ANYONE));
-                    patch(UserController::updateUser, roles(ADMIN));
+                    get(UserController::getUser,    roles(MANAGE_USERS));
+                    put(UserController::updateUser, roles(MANAGE_USERS));
                 });
             });
 

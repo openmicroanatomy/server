@@ -2,6 +2,7 @@ package fi.ylihallila.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.SerializerCache;
+import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.gson.Backup;
 import fi.ylihallila.server.repositories.Repos;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -38,14 +39,14 @@ public class Util {
         String fileName = filePath.getFileName().toString();
         List<Backup> backups = getBackups(backup -> backup.getFilename().equalsIgnoreCase(fileName));
 
-        Backup previousBackup = backups.get(backups.size() - 1);
-        String previousBackupHash = DigestUtils.sha1Hex(Files.readAllBytes(previousBackup.getFilepath()));
-        String newBackupHash = DigestUtils.sha1Hex(Files.readAllBytes(filePath));
-
-        if (previousBackupHash.equals(newBackupHash)) { // TODO: Doesn't work, ZipUtil broken.
-            logger.debug("Abort creating backup. New version identical to previous.");
-            return;
-        }
+//        Backup previousBackup = backups.get(backups.size() - 1);
+//        String previousBackupHash = DigestUtils.sha1Hex(Files.readAllBytes(previousBackup.getFilepath()));
+//        String newBackupHash = DigestUtils.sha1Hex(Files.readAllBytes(filePath));
+//
+//        if (previousBackupHash.equals(newBackupHash)) { // TODO: Doesn't work: 1) ZipUtil broken. 2) Gives IndexOutOfBounds when no previous backups
+//            logger.debug("Abort creating backup. New version identical to previous.");
+//            return;
+//        }
 
         Files.copy(
             filePath,

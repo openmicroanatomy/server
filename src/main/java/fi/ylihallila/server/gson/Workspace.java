@@ -15,7 +15,7 @@ public class Workspace {
 	private String name;
 	private String owner;
 
-	@JsonIdentityReference
+	@JsonIdentityReference(alwaysAsId = true)
 	private List<Project> projects = new ArrayList<>();
 
 	public Workspace() {

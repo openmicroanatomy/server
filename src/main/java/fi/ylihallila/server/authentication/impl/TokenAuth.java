@@ -7,7 +7,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
-import fi.ylihallila.server.authentication.Roles;
+import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.gson.User;
 import fi.ylihallila.server.repositories.Repos;
 import io.javalin.core.security.Role;
@@ -26,14 +26,13 @@ import java.util.Set;
 
 public class TokenAuth implements Auth {
 
+    private static JwkProvider provider;
     private static final Logger logger = LoggerFactory.getLogger(TokenAuth.class);
 
     public TokenAuth() {
         try {
             provider = new UrlJwkProvider(new URL("https://login.microsoftonline.com/common/discovery/keys"));
         } catch (IOException e) {
-            provider = null;
-
             logger.error(e.getLocalizedMessage(), e);
         }
     }
@@ -71,7 +70,7 @@ public class TokenAuth implements Auth {
     }
 
     @Override
-    public List<Roles> getUserRoles(Context ctx) {
+    public Set<Roles> getUserRoles(Context ctx) {
         DecodedJWT jwt = validate(ctx);
 
         return getUser(jwt).getRoles();
@@ -88,8 +87,6 @@ public class TokenAuth implements Auth {
 
         throw new NotFoundResponse("No user found with given OID");
     }
-
-    private static JwkProvider provider;
 
     public static DecodedJWT validate(Context ctx) {
         String token = ctx.header("token", String.class).get();

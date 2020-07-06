@@ -100,6 +100,8 @@ public class ProjectController extends BasicController {
 
 		repo.commit();
 
+		Repos.getWorkspaceRepo().refresh();
+
 		logger.info("Project {} edited by {}", projectId, Authenticator.getUsername(ctx).orElse("Unknown"));
 	}
 

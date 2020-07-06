@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import fi.ylihallila.server.Config;
 import fi.ylihallila.server.Util;
 import fi.ylihallila.server.authentication.Authenticator;
-import fi.ylihallila.server.authentication.Roles;
+import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.gson.Project;
 import fi.ylihallila.server.gson.Slide;
 import fi.ylihallila.server.gson.User;

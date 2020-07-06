@@ -2,24 +2,19 @@ package fi.ylihallila.server.controllers;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import fi.ylihallila.server.authentication.Authenticator;
-import fi.ylihallila.server.authentication.Roles;
+import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
 import fi.ylihallila.server.gson.Error;
-import fi.ylihallila.server.gson.Project;
 import fi.ylihallila.server.gson.User;
-import fi.ylihallila.server.gson.Workspace;
 import fi.ylihallila.server.repositories.IRepository;
 import fi.ylihallila.server.repositories.Repos;
 import io.javalin.http.Context;
+import io.javalin.http.NotFoundResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
-// todo: wip
 public class UserController extends BasicController {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -47,7 +42,37 @@ public class UserController extends BasicController {
 	}
 
 	public void updateUser(Context ctx) {
+		IRepository<User> repo = Repos.getUserRepo();
+		String id = ctx.pathParam("user-id");
+		User user = repo.getById(id).orElseThrow(NotFoundResponse::new);
 
+		Set<Roles> roles = user.getRoles();
+
+		var modified = false;
+		for (Roles role : Roles.getModifiableRoles()) {
+			if (ctx.formParamMap().containsKey(role.name())) {
+				var addRole = ctx.formParam(role.name(), Boolean.class).get();
+
+				if (addRole) {
+					roles.add(role);
+				} else {
+					roles.remove(role);
+				}
+
+				modified = true;
+			}
+		}
+
+		if (modified) {
+			user.setRoles(roles);
+			repo.commit();
+			ctx.status(200);
+
+			logger.info("Roles of {} were edited by {}. New values: {}", id, Authenticator.getUsername(ctx).orElse("Unknown"), ctx.formParamMap());
+		} else {
+			ctx.status(400);
+			logger.debug("{} tried to edit user {} but formParams were incorrect: {}", Authenticator.getUsername(ctx).orElse("Unknown"), id, ctx.formParamMap());
+		}
 	}
 
 	public void login(Context ctx) {
@@ -71,19 +96,20 @@ public class UserController extends BasicController {
 		DecodedJWT jwt = TokenAuth.validate(ctx);
 		String id = jwt.getClaim("oid").asString();
 
-		IRepository<User> userRepo = Repos.getUserRepo();
-		Optional<User> query = userRepo.getById(id);
+		IRepository<User> repo = Repos.getUserRepo();
+		Optional<User> query = repo.getById(id);
 
 		if (query.isEmpty()) {
 			User user = new User();
-			user.setName(jwt.getClaim("name").asString());
 			user.setId(id);
-			user.setRoles(Collections.emptyList());
+			user.setName(jwt.getClaim("name").asString());
+			user.setEmail(jwt.getClaim("email").asString());
 			user.setOrganizationId(jwt.getClaim("tid").asString());
+			user.setRoles(Set.of(Roles.MANAGE_PERSONAL_PROJECTS));
 
-			userRepo.insert(user);
+			repo.insert(user);
 
-			ctx.json(Collections.emptyList());
+			ctx.json(user.getRoles());
 		} else {
 			ctx.json(query.get().getRoles());
 		}

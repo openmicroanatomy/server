@@ -1,0 +1,3 @@
+[submodule "remoteservercommons"]
+	path = remoteservercommons
+	url = https://github.com/yli-hallila/remoteservercommons

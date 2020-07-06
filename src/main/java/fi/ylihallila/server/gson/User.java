@@ -1,10 +1,12 @@
 package fi.ylihallila.server.gson;
 
 import com.fasterxml.jackson.annotation.*;
-import fi.ylihallila.server.authentication.Roles;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.Util;
 import fi.ylihallila.server.gson.resolvers.UserIdResolver;
 
-import java.util.List;
+import java.util.Set;
 
 @JsonIdentityInfo(scope = User.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", resolver = UserIdResolver.class)
 public class User {
@@ -21,6 +23,16 @@ public class User {
     private String name;
 
     /**
+     * Email for this user. Also used to identify user.
+     */
+    private String email;
+
+    /**
+     * Human readable presentation of @var organizationId;
+     */
+    private String organization;
+
+    /**
      * Azure AD tenant GUID. Provided by Microsoft Open ID
      */
     private String organizationId;
@@ -28,9 +40,9 @@ public class User {
     /**
      * Roles for this user.
      */
-    private List<Roles> roles;
+    private Set<Roles> roles;
 
-    public User(String id, String name, String organizationId, List<Roles> roles) {
+    public User(String id, String name, String organizationId, Set<Roles> roles) {
         this.id = id;
         this.name = name;
         this.organizationId = organizationId;
@@ -55,6 +67,19 @@ public class User {
         return name;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    @JsonSerialize
+    public String getOrganization() {
+        return Util.getHumanReadableName(organizationId).orElse("Unknown (" + organizationId + ")");
+    }
+
     public String getOrganizationId() {
         return organizationId;
     }
@@ -63,19 +88,20 @@ public class User {
         this.organizationId = organization;
     }
 
-    public List<Roles> getRoles() {
+    public Set<Roles> getRoles() {
         return roles;
     }
 
-    public void setRoles(List<Roles> roles) {
+    public void setRoles(Set<Roles> roles) {
         this.roles = roles;
     }
 
     @Override
     public String toString() {
         return "User{" +
-                "id='" + getId() + '\'' +
-                ", name='" + getName() + '\'' +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", email='" + email + '\'' +
                 ", organizationId='" + organizationId + '\'' +
                 ", roles=" + roles +
                 '}';

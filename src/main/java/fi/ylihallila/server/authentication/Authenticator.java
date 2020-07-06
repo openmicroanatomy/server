@@ -1,16 +1,13 @@
 package fi.ylihallila.server.authentication;
 
+import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.authentication.impl.Auth;
 import fi.ylihallila.server.authentication.impl.BasicAuth;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
 import fi.ylihallila.server.gson.Error;
 import fi.ylihallila.server.gson.User;
 import io.javalin.core.security.Role;
-import io.javalin.core.util.Header;
-import io.javalin.http.Context;
-import io.javalin.http.Handler;
-import io.javalin.http.NotFoundResponse;
-import io.javalin.http.UnauthorizedResponse;
+import io.javalin.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,10 +25,16 @@ public class Authenticator {
 			if (permittedRoles.contains(Roles.ANYONE) || hasPermissions(ctx, permittedRoles)) {
 				handler.handle(ctx);
 			} else {
-				ctx.status(401).json(new Error("Unauthorized. Use Basic authentication or provide `Token` header."));
+				if (isLoggedIn(ctx)) {
+					ctx.status(403).json(new Error("Unauthorized. User lacks required permissions to access this resource."));
+				} else {
+					ctx.status(401).json(new Error("Forbidden. Use Basic authentication or provide `Token` header."));
+				}
 			}
 		} catch (NotFoundResponse e) {
 			ctx.status(404).json(new Error(e.getMessage()));
+		} catch (BadRequestResponse e) {
+			ctx.status(400).json(new Error("Bad Request. " + e.getLocalizedMessage()));
 		} catch (UnauthorizedResponse e) {
 			ctx.status(401).json(new Error(e.getLocalizedMessage()));
 		} catch (Exception e) {
@@ -60,7 +63,7 @@ public class Authenticator {
 		return getAuthImpl(ctx).getUsername(ctx);
 	}
 
-	public static List<Roles> getUserRoles(Context ctx) {
+	public static Set<Roles> getUserRoles(Context ctx) {
 		return getAuthImpl(ctx).getUserRoles(ctx);
 	}
 

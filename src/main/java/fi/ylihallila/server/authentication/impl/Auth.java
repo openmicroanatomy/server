@@ -1,11 +1,10 @@
 package fi.ylihallila.server.authentication.impl;
 
-import fi.ylihallila.server.authentication.Roles;
+import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.gson.User;
 import io.javalin.core.security.Role;
 import io.javalin.http.Context;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -19,6 +18,6 @@ public interface Auth {
 
     boolean hasPermissions(Context ctx, Set<Role> permittedRoles);
 
-    List<Roles> getUserRoles(Context ctx);
+    Set<Roles> getUserRoles(Context ctx);
 
 }

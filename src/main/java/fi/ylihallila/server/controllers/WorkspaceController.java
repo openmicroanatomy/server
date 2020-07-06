@@ -1,23 +1,27 @@
 package fi.ylihallila.server.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import fi.ylihallila.server.Util;
 import fi.ylihallila.server.authentication.Authenticator;
-import fi.ylihallila.server.authentication.Roles;
+import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.gson.User;
 import fi.ylihallila.server.gson.Workspace;
+import fi.ylihallila.server.gson.WorkspaceExpanded;
 import fi.ylihallila.server.repositories.Repos;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 
 public class WorkspaceController extends BasicController {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public void getAllWorkspaces(Context ctx) throws IOException {
+	public void getAllWorkspaces(Context ctx) throws JsonProcessingException {
 		List<Workspace> workspaces = Repos.getWorkspaceRepo().list();
 
 		if (ctx.queryParamMap().containsKey("owner")) {
@@ -36,7 +40,12 @@ public class WorkspaceController extends BasicController {
 			workspaces.add(projects);
 		}
 
-		ctx.status(200).json(workspaces);
+		ObjectMapper temp = Util.getMapper().copy();
+		SimpleModule simpleModule = new SimpleModule();
+		simpleModule.setMixInAnnotation(Workspace.class, WorkspaceExpanded.class);
+		temp.registerModule(simpleModule);
+
+		ctx.status(200).contentType("application/json").result(temp.writeValueAsString(workspaces));
 	}
 
 	public void getWorkspace(Context ctx) {
