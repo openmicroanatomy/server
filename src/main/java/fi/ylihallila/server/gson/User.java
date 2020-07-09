@@ -75,6 +75,9 @@ public class User {
         this.email = email;
     }
 
+    /**
+     * Returns the users organization name.
+     */
     @JsonSerialize
     public String getOrganization() {
         return Util.getHumanReadableName(organizationId).orElse("Unknown (" + organizationId + ")");

@@ -8,9 +8,25 @@ import java.util.UUID;
 @JsonIdentityInfo(scope = Project.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", resolver = ProjectIdResolver.class)
 public class Project {
 
+	/**
+	 * UUID representing this project.
+	 */
 	private String id;
+
+	/**
+	 * Name of the project. Visible in QuPath.
+	 */
 	private String name;
+
+	/**
+	 * Description for this project. Optional. Visible in QuPath.
+	 */
 	private String description;
+
+	/**
+	 * URL to project thumbnail. Visible in QuPath.
+	 * @beta
+	 */
 	private String thumbnail;
 
 	/**
@@ -18,7 +34,14 @@ public class Project {
 	 */
 	private String owner;
 
+	/**
+	 * Unix timestamp as milliseconds. When was this project first created.
+	 */
 	private long createdAt;
+
+	/**
+	 * Unix timestamp as milliseconds. When this project was last modified.
+	 */
 	private long modifiedAt;
 
 	public Project() {

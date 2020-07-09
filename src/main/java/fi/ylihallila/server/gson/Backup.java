@@ -17,11 +17,29 @@ public class Backup {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    /**
+     * Filename, including file extension.
+     */
     private String filename;
+
+    /**
+     * Unix timestamp as milliseconds. Represents when the backup was created.
+     */
     private long timestamp;
+
+    /**
+     * If backup is of a project, converts the ID to a human readable format.
+     */
     private String readable;
 
+    /**
+     * Path to backup file.
+     */
     private Path filepath;
+
+    /**
+     * Type of backup. Only Projects can be restored.
+     */
     private BackupType type;
 
     public Backup(String filename, long timestamp) {
@@ -37,6 +55,9 @@ public class Backup {
         }
     }
 
+    /**
+     * Returns filename without extension.
+     */
     public String getBaseName() {
         return FileNameUtils.getBaseName(filename);
     }
@@ -62,6 +83,10 @@ public class Backup {
         return type;
     }
 
+    /**
+     * Tries to restore this backup.
+     * @throws IOException if an I/O error occurs
+     */
     public void restore() throws IOException {
         logger.debug("Restoring backup {}@{}", filename, timestamp);
 
@@ -82,6 +107,10 @@ public class Backup {
         logger.debug("Successfully restored backup.");
     }
 
+    /**
+     * Deletes the backup file.
+     * @throws IOException if an I/O error occurs
+     */
     public void delete() throws IOException {
         Files.delete(filepath);
     }

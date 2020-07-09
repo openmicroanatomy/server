@@ -8,8 +8,19 @@ import java.util.UUID;
 @JsonIdentityInfo(scope=Slide.class, generator=ObjectIdGenerators.PropertyGenerator.class, property="id")
 public class Slide {
 
-    private String name;
+    /**
+     * UUID representing this slide.
+     */
     private String id;
+
+    /**
+     * Name of this slide.
+     */
+    private String name;
+
+    /**
+     * UUID of the slide owner. Can be either an organization or a specific user.
+     */
     private String owner;
 
     public String getName() {
@@ -36,6 +47,10 @@ public class Slide {
         return owner;
     }
 
+    /**
+     * Converts the ID to a human readable format.
+     * @return Organizations name, users name and if couldn't find ID: "Unknown (id)"
+     */
     public String getOwnerReadable() {
         return Util.getHumanReadableName(owner).orElse("Unknown (" + owner + ")");
     }

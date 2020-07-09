@@ -2,6 +2,9 @@ package fi.ylihallila.server.gson;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 
+/**
+ * Simple class to print errors via @see Context.json();
+ */
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class Error {
 

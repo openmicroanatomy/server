@@ -19,14 +19,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Util {
+    private final static Logger logger = LoggerFactory.getLogger(Util.class);
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * ObjectMapper used everywhere in the application. Using this is advised, as
+     * constructing new instances of ObjectMapper is resource consuming.
+     *
+     * @return ObjectMapper
+     */
     public static ObjectMapper getMapper() {
         return mapper;
     }
-
-    private final static Logger logger = LoggerFactory.getLogger(Util.class);
 
     /**
      * Creates a backup of given filePath. A backup is created only when 10 minutes have passed
@@ -56,12 +61,12 @@ public class Util {
         logger.debug("Backup created.");
     }
 
-
     /**
+     * Returns a list of all backups. An additional filter can be provided.
      *
-     * @param filter
-     * @return
-     * @throws IOException
+     * @param filter Filter or null.
+     * @return List of backups or an empty list.
+     * @throws IOException if an I/O error occurs
      */
     public synchronized static List<Backup> getBackups(Predicate<? super Backup> filter) throws IOException {
         Stream<Path> files = Files.list(Path.of(Config.BACKUP_FOLDER));
@@ -85,19 +90,32 @@ public class Util {
         return backups.stream().filter(filter).sorted(Comparator.comparingLong(Backup::getTimestamp)).collect(Collectors.toList());
     }
 
-    private static Map<String, String> knownTenants = Map.of(
+    /**
+     * List of known Microsoft Azure AD GUIDs mapped to their respective names.
+     */
+    private static final Map<String, String> knownTenants = Map.of(
     "9f9ce49a-5101-4aa3-8c75-0d5935ad6525", "University of Oulu",
     "3f66cfe2-34d7-4783-b684-b6ff0a66b9b9", "University of Jogador",
     "a1d90ab7-88d9-49cd-bb61-7661d3371ccb", "University of Putsnik"
     );
 
+    public static Map<String, String> getKnownTenants() {
+        return knownTenants;
+    }
+
+    /**
+     * Cache of human readable formats for IDs.
+     *
+     * @beta WeakHashMaps idea is to periodically refresh the cache (organization or users
+     * name might occasionally change)
+     */
     private static WeakHashMap<String, String> cache = new WeakHashMap<>();
 
     /**
      * Tries to get a human readable version of a ID. The ID can represent: Users, Slides,
      * Workspaces, Projects or Backups.
-     * @param id UUID
-     * @return
+     * @param id UUID of organization, project, user or workspace.
+     * @return Human readable name or Optional.empty(); if unable to find.
      */
     public static Optional<String> getHumanReadableName(String id) {
         if (knownTenants.containsKey(id)) {
@@ -123,13 +141,6 @@ public class Util {
         return Optional.empty();
     }
 
-    /**
-     *
-     * @return
-     */
-    public static Map<String, String> getKnownTenants() {
-        return knownTenants;
-    }
 
     private static Optional<String> cacheAndReturn(String id, String name) {
         cache.put(id, name);

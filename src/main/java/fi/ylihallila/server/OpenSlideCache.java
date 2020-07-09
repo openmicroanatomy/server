@@ -10,17 +10,25 @@ import java.util.Optional;
 
 public class OpenSlideCache {
 
-    private static HashMap<String, OpenSlide> cache = new HashMap<>();
+    private static final HashMap<String, OpenSlide> cache = new HashMap<>();
 
-    public static Optional<OpenSlide> get(String slide) throws IOException {
-        if (cache.containsKey(slide)) {
-            return Optional.of(cache.get(slide));
+    /**
+     * Gets an OpenSlide instance for a given slide. Tries to look
+     * for slides where the server.jar file is located.
+     *
+     * @param filename slide filename
+     * @return empty if not found
+     * @throws IOException if an I/O error occurs, e.g. when file not found
+     */
+    public static Optional<OpenSlide> get(String filename) throws IOException {
+        if (cache.containsKey(filename)) {
+            return Optional.of(cache.get(filename));
         }
 
-        File file = new File(slide);
+        File file = new File(filename);
         if (file.exists()) {
             OpenSlide openSlide = new OpenSlide(file);
-            cache.put(slide, openSlide);
+            cache.put(filename, openSlide);
 
             return Optional.of(openSlide);
         }

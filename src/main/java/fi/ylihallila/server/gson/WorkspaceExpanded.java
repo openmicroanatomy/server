@@ -9,13 +9,15 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Copy of @see Workspace
+ * Copy of Workspace
  *
- * Used as a Mixin at @see WorkspaceController when listing all workspaces.
+ * Used as a Mixin in WorkspaceController when listing all workspaces.
  *
  * @link <a href="https://stackoverflow.com/questions/43075332">Possible alternative for future</a>
+ * @see Workspace
+ * @see fi.ylihallila.server.controllers.WorkspaceController
  */
-@JsonIdentityInfo(scope = Workspace.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+@JsonIdentityInfo(scope = WorkspaceExpanded.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class WorkspaceExpanded {
 
     private String id;

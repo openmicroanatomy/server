@@ -8,11 +8,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Remember to update WorkspaceExpanded also when updating this class.
+ *
+ * @see WorkspaceExpanded
+ */
 @JsonIdentityInfo(scope = Workspace.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Workspace {
 
+	/**
+	 * UUID representing this workspace.
+	 */
 	private String id;
+
+	/**
+	 * Workspace name. Visible in QuPath.
+	 */
 	private String name;
+
+	/**
+	 * UUID of the workspace owner, usually an organization. Only users which are part
+	 * of this organization can edit the projects withing this workspace.
+	 */
 	private String owner;
 
 	@JsonIdentityReference(alwaysAsId = true)
