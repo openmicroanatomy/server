@@ -46,7 +46,9 @@ public class Main {
     private static Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        if (args.length == 2 && args[0].equalsIgnoreCase("--generate")) {
+        if (args.length == 1 && args[0].equalsIgnoreCase("--tiler")) {
+            new Tiler();
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("--generate")) {
             new TileGenerator(args[1]);
         } else if (args.length == 2 && args[0].equalsIgnoreCase("--properties")) {
             new PropertiesGenerator(args[1]);
@@ -59,6 +61,7 @@ public class Main {
             Files.createDirectories(Path.of("backups"));
             Files.createDirectories(Path.of("uploads"));
             Files.createDirectories(Path.of("logos"));
+            Files.createDirectories(Path.of("organizations"));
 
             /*
              * TODO:

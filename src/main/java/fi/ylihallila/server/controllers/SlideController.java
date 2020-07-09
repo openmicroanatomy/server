@@ -54,7 +54,7 @@ public class SlideController extends BasicController {
 			data.put("name", slide.getName());
 			data.put("id", slide.getId());
 			data.put("owner", slide.getOwner());
-			data.put("ownerReadable", slide.getOwnerReadable());
+			data.put("ownerReadable", slide.getOwnerReadable()); // todo: rename "owner" and "ownerId"
 
 			File slideProperties = new File(String.format(Config.SLIDE_PROPERTIES_FILE, slide.getId()));
 
@@ -231,7 +231,8 @@ public class SlideController extends BasicController {
 			return;
 		}
 
-		/* Add slide to slides.json */
+		// Add slide to slides.json
+
 		String id = UUID.randomUUID().toString();
 		ArrayList<Slide> slides = getSlides();
 
@@ -242,44 +243,26 @@ public class SlideController extends BasicController {
 
 		slides.add(slide);
 
-		/* Generate .properties for slide */
+		saveAndBackup(Path.of(Config.SLIDES_FILE), slides); // TODO: SlideRepository
+
+		// Generate .properties for slide
+
 		Map<String, String> properties = new HashMap<>(openSlide.get().getProperties());
 		properties.put("openslide.remoteserver.uri", String.format(Config.CSC_URL, id));
 
 		String json = new GsonBuilder().setPrettyPrinting().create().toJson(properties);
 		Files.write(Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, id)), json.getBytes());
 
-		/* Rename slide */
+		// Rename slide
+
 		Files.move(
 			Path.of(String.format(Config.UPLOADED_FILE, slideName)),
-			Path.of(String.format(Config.UPLOADED_FILE, id))
+			Path.of(String.format(Config.PENDING_SLIDES, id))
 		);
 
-		/* Tile slide and upload to cloud */
-		saveAndBackup(Path.of(Config.SLIDES_FILE), slides);
-	}
+		// Generate tiles for slide and upload to Allas
 
-	private InputStream generateImage(String slide, int tileX, int tileY, int level, int tileWidth, int tileHeight, String fileName) throws IOException {
-		Optional<OpenSlide> openSlide = OpenSlideCache.get(slide);
-		if (openSlide.isEmpty()) {
-			return InputStream.nullInputStream();
-		}
 
-		BufferedImage img = new BufferedImage(tileWidth, tileHeight, BufferedImage.TYPE_INT_RGB);
-		int[] data = ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
 
-		openSlide.get().paintRegionARGB(data, tileX, tileY, level, tileWidth, tileHeight);
-
-		ByteArrayOutputStream os = new ByteArrayOutputStream();
-		ImageIO.write(img, "jpg", os);
-		InputStream is = new ByteArrayInputStream(os.toByteArray());
-
-		Files.write(Path.of("tiles", fileName),
-				os.toByteArray(),
-				StandardOpenOption.WRITE);
-
-		os.flush();
-
-		return is;
 	}
 }

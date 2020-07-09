@@ -1,5 +1,6 @@
 package fi.ylihallila.server;
 
+import fi.ylihallila.server.archivers.TileArchive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,9 @@ public class TileWorker implements Runnable {
 	private final int tileWidth;
 	private final int tileHeight;
 
-	public TileWorker(int downsample, int level, int row, int col, int offsetX, int offsetY, int tileWidth, int tileHeight, int slideWidth, int slideHeight, String slideName, Color bgColor) {
+	private final TileArchive archive;
+
+	public TileWorker(int downsample, int level, int row, int col, int offsetX, int offsetY, int tileWidth, int tileHeight, int slideWidth, int slideHeight, String slideName, Color bgColor, TileArchive archive) {
 		this.slideName = slideName;
 		this.bgColor = bgColor;
 		this.level = level;
@@ -44,6 +47,8 @@ public class TileWorker implements Runnable {
 
 		this.tileHeight = tileHeight - adjustY;
 		this.tileWidth  = tileWidth  - adjustX;
+
+		this.archive = archive;
 	}
 
 	@Override
@@ -76,7 +81,7 @@ public class TileWorker implements Runnable {
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			ImageIO.write(img, "jpg", os);
 
-			TileGenerator.addImageToArchive(os.toByteArray(), tileX + "_" + tileY + "_" + tileWidth + "_" + tileHeight + ".jpg");
+			archive.addTile(tileX + "_" + tileY + "_" + tileWidth + "_" + tileHeight + ".jpg", os.toByteArray());
 
 			os.flush();
 		} catch (Exception e) {

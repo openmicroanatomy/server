@@ -1,5 +1,7 @@
 package fi.ylihallila.server;
 
+import fi.ylihallila.server.archivers.TarTileArchive;
+import fi.ylihallila.server.archivers.TileArchive;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.utils.IOUtils;
@@ -24,7 +26,6 @@ public class TileGenerator {
 	}
 
 	static {
-		System.loadLibrary("openslide-jni");
 		ImageIO.setUseCache(false);
 	}
 
@@ -39,8 +40,8 @@ public class TileGenerator {
 		int slideWidth  = readIntegerProperty("openslide.level[0].width");
 		int levels      = readIntegerProperty("openslide.level-count");
 
-		int tileHeight = readIntegerPropertyOrDefault("openslide.level[0].tile-height", 256);
-		int tileWidth  = readIntegerPropertyOrDefault("openslide.level[0].tile-width",  256);
+		int tileHeight = 1024; //readIntegerPropertyOrDefault("openslide.level[0].tile-height", 256);
+		int tileWidth  = 1024; //readIntegerPropertyOrDefault("openslide.level[0].tile-width",  256);
 
 		int boundsX = 0; //readIntegerPropertyOrDefault(OpenSlide.PROPERTY_NAME_BOUNDS_X, 0);
 		int boundsY = 0; //readIntegerPropertyOrDefault(OpenSlide.PROPERTY_NAME_BOUNDS_Y, 0);
@@ -51,7 +52,7 @@ public class TileGenerator {
 		double boundsYMultiplier = 1;
 		double boundsXMultiplier = 1;
 
-		if (boundsHeight > 0 || boundsWidth > 0) {
+		if (boundsHeight > 0 || boundsWidth > 0) { // todo: whats the point of boundsXYmultiplier?
 			boundsYMultiplier = 1.0 * boundsHeight / slideHeight;
 			boundsXMultiplier = 1.0 * boundsWidth  / slideWidth;
 		}
@@ -67,7 +68,7 @@ public class TileGenerator {
 
 			int downsample = (int) readDoubleProperty("openslide.level[" + level + "].downsample");
 
-			constructArchive(slideName, level);
+			TileArchive archive = new TarTileArchive(slideName, level);
 
 			for (int row = 0; row <= rows; row++) {
 				for (int col = 0; col <= cols; col++) {
@@ -77,7 +78,8 @@ public class TileGenerator {
 						tileWidth, tileHeight,
 						slideWidth, slideHeight,
 						slideName,
-						backgroundColor
+						backgroundColor,
+						archive
 					));
 				}
 			}
@@ -86,41 +88,17 @@ public class TileGenerator {
 			int tiles = (int) Math.ceil(1.0 * levelHeight / tileHeight) * (int) Math.ceil(1.0 * levelWidth / tileWidth);
 
 			synchronized (executor) {
-				while (!executor.isQuiescent() || (System.currentTimeMillis() - start > 300000)) {
+				while (!executor.isQuiescent() && (System.currentTimeMillis() - start < 300000)) {
 					System.out.print("\rProcessing tiles [L=" + level + "; generated ~" + (tiles - executor.getQueuedSubmissionCount()) +" / ~" + tiles + " tiles]");
 					executor.wait(100);
 				}
 			}
 
-			saveArchive();
+			archive.save();
 		}
 
 		long endTime = System.currentTimeMillis();
 		System.out.print("\rTook " + (endTime - startTime) / 1000.000 + " seconds to generate tiles.");
-	}
-
-	private static TarArchiveOutputStream tarOs;
-
-	private static void constructArchive(String slideName, int level) throws FileNotFoundException {
-		FileOutputStream fos = new FileOutputStream(slideName + "-level-" + level + "-tiles.tar");
-		tarOs = new TarArchiveOutputStream(fos);
-	}
-
-	public static synchronized void addImageToArchive(byte[] data, String filename) throws IOException {
-		TarArchiveEntry entry = new TarArchiveEntry(filename);
-		entry.setSize(data.length);
-
-		tarOs.putArchiveEntry(entry);
-
-		ByteArrayInputStream is = new ByteArrayInputStream(data);
-		IOUtils.copy(is, tarOs);
-		is.close();
-
-		tarOs.closeArchiveEntry();
-	}
-
-	private static void saveArchive() throws IOException {
-		tarOs.close();
 	}
 
 	private Color getBackgroundColor() {
