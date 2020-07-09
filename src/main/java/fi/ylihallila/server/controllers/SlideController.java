@@ -12,9 +12,6 @@ import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -248,21 +245,16 @@ public class SlideController extends BasicController {
 		// Generate .properties for slide
 
 		Map<String, String> properties = new HashMap<>(openSlide.get().getProperties());
-		properties.put("openslide.remoteserver.uri", String.format(Config.CSC_URL, id));
+		properties.put("openslide.remoteserver.uri", String.format(Config.ALLAS_URL, id)); // TODO: Rename remote.tile.uri
 
 		String json = new GsonBuilder().setPrettyPrinting().create().toJson(properties);
 		Files.write(Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, id)), json.getBytes());
 
-		// Rename slide
+		// Move slide to slides pending tiling. See Tiler for further processing.
 
 		Files.move(
 			Path.of(String.format(Config.UPLOADED_FILE, slideName)),
 			Path.of(String.format(Config.PENDING_SLIDES, id))
 		);
-
-		// Generate tiles for slide and upload to Allas
-
-
-
 	}
 }

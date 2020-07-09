@@ -8,8 +8,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Searches slides directory for slides that are pending upload and submits them to the TileGenerator, which
- * tiles & uploads the tiles to Allas Object Storage.
+ * Searches the slides directory for slides that are pending upload and submits
+ * them to the TileGenerator, which tiles & saves the tiles using
+ * the Storage Provider defined in the server configuration.
  */
 public class Tiler implements Runnable {
 

@@ -81,7 +81,7 @@ public class TileWorker implements Runnable {
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			ImageIO.write(img, "jpg", os);
 
-			archive.addTile(tileX + "_" + tileY + "_" + tileWidth + "_" + tileHeight + ".jpg", os.toByteArray());
+			archive.addTile(level + "_"+ tileX + "_" + tileY + "_" + tileWidth + "_" + tileHeight + ".jpg", os.toByteArray());
 
 			os.flush();
 		} catch (Exception e) {

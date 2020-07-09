@@ -2,9 +2,8 @@ package fi.ylihallila.server;
 
 import fi.ylihallila.server.archivers.TarTileArchive;
 import fi.ylihallila.server.archivers.TileArchive;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.utils.IOUtils;
+import fi.ylihallila.server.storage.Allas;
+import fi.ylihallila.server.storage.StorageProvider;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.io.*;
+import java.util.UUID;
 import java.util.concurrent.*;
 
 public class TileGenerator {
@@ -59,6 +59,13 @@ public class TileGenerator {
 
 		Color backgroundColor = getBackgroundColor();
 
+		String id = getOrGenerateUUID(slideName);
+
+		StorageProvider tileStorage = new Allas.Builder()
+		   .setConfigDefaults()
+		   .setContainer(id)
+		   .build();
+
 		for (int level = levels - 1; level >= 0; level--) {
 			int levelHeight = (int) (readIntegerProperty("openslide.level[" + level + "].height") * boundsYMultiplier);
 			int levelWidth  = (int) (readIntegerProperty("openslide.level[" + level + "].width")  * boundsXMultiplier);
@@ -68,7 +75,7 @@ public class TileGenerator {
 
 			int downsample = (int) readDoubleProperty("openslide.level[" + level + "].downsample");
 
-			TileArchive archive = new TarTileArchive(slideName, level);
+			TileArchive tileArchive = new TarTileArchive(slideName, level);
 
 			for (int row = 0; row <= rows; row++) {
 				for (int col = 0; col <= cols; col++) {
@@ -79,7 +86,7 @@ public class TileGenerator {
 						slideWidth, slideHeight,
 						slideName,
 						backgroundColor,
-						archive
+						tileArchive
 					));
 				}
 			}
@@ -94,11 +101,27 @@ public class TileGenerator {
 				}
 			}
 
-			archive.save();
+			File archive = tileArchive.save();
+
+			logger.debug("Starting archive upload to Allas");
+			tileStorage.commitArchive(archive);
+			logger.debug("Archive upload finished");
 		}
 
 		long endTime = System.currentTimeMillis();
 		System.out.print("\rTook " + (endTime - startTime) / 1000.000 + " seconds to generate tiles.");
+	}
+
+	/**
+	 * This method checks if the slide name is a valid UUID. If Slide name is a UUID the method
+	 * returns that, otherwise it generates a new UUID.
+	 */
+	private String getOrGenerateUUID(String slideName) {
+		try {
+			return UUID.fromString(slideName).toString();
+		} catch (IllegalArgumentException e) {
+			return UUID.randomUUID().toString();
+		}
 	}
 
 	private Color getBackgroundColor() {

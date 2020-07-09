@@ -25,7 +25,7 @@ public class Config {
     public final static String UPLOADED_FILE         = "uploads/%s";
     public final static String SLIDES_FILE           = "slides.json";
     public final static String USERS_FILE            = "users.json";
-    public final static String CSC_URL               = "https://a3s.fi:443/swift/v1/AUTH_692aca385d42495ca2efbae12c3d9366/%s/{tileX}_{tileY}_{level}_{tileWidth}_{tileHeight}.jpg";
+    public final static String ALLAS_URL             = "https://a3s.fi:443/swift/v1/AUTH_692aca385d42495ca2efbae12c3d9366/%s/tiles/{level}_{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
 
     public static boolean SECURE_SERVER;
 

@@ -8,16 +8,16 @@ import java.io.File;
 public interface StorageProvider {
 
     /**
-     * Upload a single file.
+     * Save a single file.
      *
-     * @param file file to upload
+     * @param file file to save.
      */
     void commitFile(File file);
 
     /**
-     * Upload a archive.
+     * Save an archive.
      *
-     * @param file archive to upload.
+     * @param file archive to save.
      */
     void commitArchive(File file);
 
