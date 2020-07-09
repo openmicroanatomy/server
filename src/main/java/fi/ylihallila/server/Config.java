@@ -12,6 +12,15 @@ public class Config {
     public final static String PROJECTS_FOLDER       = "projects/";
     public final static String TILE_FILE_FORMAT      = "tiles/%s/%s/%s_%s_%s_%s.png";
     public final static String WORKSPACE_FILE        = "workspace.json";
+
+    /**
+     * Slides that are pending tiling & upload to <a href="https://docs.csc.fi/data/Allas/">Allas</a>.
+     * These files are scanned regularly by the tiler. (@see Tiler)
+     */
+    public final static String PENDING_SLIDES        = "slides/%s.pending";
+
+    public final static String SLIDES_DIRECTORY      = "slides";
+
     public final static String BACKUP_FOLDER         = "backups/";
     public final static String UPLOADED_FILE         = "uploads/%s";
     public final static String SLIDES_FILE           = "slides.json";
