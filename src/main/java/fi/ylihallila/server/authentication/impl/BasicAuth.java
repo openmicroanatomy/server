@@ -1,7 +1,7 @@
 package fi.ylihallila.server.authentication.impl;
 
 import fi.ylihallila.remote.commons.Roles;
-import fi.ylihallila.server.gson.User;
+import fi.ylihallila.server.models.User;
 import io.javalin.core.security.BasicAuthCredentials;
 import io.javalin.core.security.Role;
 import io.javalin.http.Context;

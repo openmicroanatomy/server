@@ -2,7 +2,7 @@ package fi.ylihallila.server.repositories.impl;
 
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.Util;
-import fi.ylihallila.server.gson.User;
+import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.repositories.AbstractJsonRepository;
 
 import java.nio.file.Path;

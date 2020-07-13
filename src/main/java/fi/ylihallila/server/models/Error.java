@@ -1,4 +1,4 @@
-package fi.ylihallila.server.gson;
+package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 

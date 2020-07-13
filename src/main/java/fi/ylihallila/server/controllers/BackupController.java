@@ -2,7 +2,7 @@ package fi.ylihallila.server.controllers;
 
 import fi.ylihallila.server.Util;
 import fi.ylihallila.server.authentication.Authenticator;
-import fi.ylihallila.server.gson.Backup;
+import fi.ylihallila.server.models.Backup;
 import io.javalin.http.Context;
 import io.javalin.http.UnauthorizedResponse;
 import org.slf4j.Logger;

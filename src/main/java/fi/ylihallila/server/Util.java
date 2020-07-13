@@ -1,7 +1,7 @@
 package fi.ylihallila.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fi.ylihallila.server.gson.Backup;
+import fi.ylihallila.server.models.Backup;
 import fi.ylihallila.server.repositories.Repos;
 import fi.ylihallila.server.util.Constants;
 import org.slf4j.Logger;

@@ -1,7 +1,7 @@
-package fi.ylihallila.server.gson;
+package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.*;
-import fi.ylihallila.server.gson.resolvers.ProjectIdResolver;
+import fi.ylihallila.server.models.resolvers.ProjectIdResolver;
 
 import java.util.UUID;
 

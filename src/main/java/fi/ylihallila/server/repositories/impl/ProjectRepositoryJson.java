@@ -1,8 +1,7 @@
 package fi.ylihallila.server.repositories.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.ylihallila.server.Util;
-import fi.ylihallila.server.gson.Project;
+import fi.ylihallila.server.models.Project;
 import fi.ylihallila.server.repositories.AbstractJsonRepository;
 import fi.ylihallila.server.repositories.Repos;
 

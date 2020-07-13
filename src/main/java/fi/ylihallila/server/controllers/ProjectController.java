@@ -1,8 +1,8 @@
 package fi.ylihallila.server.controllers;
 
 import fi.ylihallila.server.authentication.Authenticator;
-import fi.ylihallila.server.gson.Project;
-import fi.ylihallila.server.gson.User;
+import fi.ylihallila.server.models.Project;
+import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.repositories.Repository;
 import fi.ylihallila.server.repositories.Repos;
 import io.javalin.http.Context;

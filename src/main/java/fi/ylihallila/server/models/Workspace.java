@@ -1,4 +1,4 @@
-package fi.ylihallila.server.gson;
+package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;

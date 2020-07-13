@@ -1,10 +1,10 @@
-package fi.ylihallila.server.gson;
+package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.Util;
-import fi.ylihallila.server.gson.resolvers.UserIdResolver;
+import fi.ylihallila.server.models.resolvers.UserIdResolver;
 
 import java.util.Set;
 

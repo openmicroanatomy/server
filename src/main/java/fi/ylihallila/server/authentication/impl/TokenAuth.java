@@ -8,7 +8,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
 import fi.ylihallila.remote.commons.Roles;
-import fi.ylihallila.server.gson.User;
+import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.repositories.Repos;
 import io.javalin.core.security.Role;
 import io.javalin.http.Context;
@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URL;
 import java.security.interfaces.RSAPublicKey;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
