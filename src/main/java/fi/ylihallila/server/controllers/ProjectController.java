@@ -3,7 +3,7 @@ package fi.ylihallila.server.controllers;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.gson.Project;
 import fi.ylihallila.server.gson.User;
-import fi.ylihallila.server.repositories.IRepository;
+import fi.ylihallila.server.repositories.Repository;
 import fi.ylihallila.server.repositories.Repos;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
@@ -91,7 +91,7 @@ public class ProjectController extends BasicController {
 	public void updateProject(Context ctx) {
 		String projectId = ctx.pathParam("project-id", String.class).get();
 
-		IRepository<Project> repo = Repos.getProjectRepo();
+		Repository<Project> repo = Repos.getProjectRepo();
 
 		Project project = repo.getById(projectId).orElseThrow(NotFoundResponse::new);
 		project.setName(ctx.formParam("name", project.getName()));

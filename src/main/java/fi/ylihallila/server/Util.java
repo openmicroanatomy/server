@@ -1,16 +1,13 @@
 package fi.ylihallila.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.SerializerCache;
-import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.gson.Backup;
 import fi.ylihallila.server.repositories.Repos;
-import org.apache.commons.codec.digest.DigestUtils;
+import fi.ylihallila.server.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -55,7 +52,7 @@ public class Util {
 
         Files.copy(
             filePath,
-            Path.of(String.format(Config.BACKUP_FILE_FORMAT, fileName, System.currentTimeMillis()))
+            Path.of(String.format(Constants.BACKUP_FILE_FORMAT, fileName, System.currentTimeMillis()))
         );
 
         logger.debug("Backup created.");
@@ -69,7 +66,7 @@ public class Util {
      * @throws IOException if an I/O error occurs
      */
     public synchronized static List<Backup> getBackups(Predicate<? super Backup> filter) throws IOException {
-        Stream<Path> files = Files.list(Path.of(Config.BACKUP_FOLDER));
+        Stream<Path> files = Files.list(Path.of(Constants.BACKUP_FOLDER));
 
         List<Backup> backups = new ArrayList<>();
 

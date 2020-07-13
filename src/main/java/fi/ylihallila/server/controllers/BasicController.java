@@ -1,7 +1,7 @@
 package fi.ylihallila.server.controllers;
 
 import com.google.gson.Gson;
-import fi.ylihallila.server.Config;
+import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.Util;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.remote.commons.Roles;
@@ -76,15 +76,15 @@ public class BasicController {
 	}
 
 	protected String getProjectFile(String projectId) {
-		return String.format(Config.PROJECT_FILE_FORMAT, projectId);
+		return String.format(Constants.PROJECT_FILE_FORMAT, projectId);
 	}
 
 	protected String getBackupFile(String filename) {
-		return String.format(Config.BACKUP_FILE_FORMAT, filename, System.currentTimeMillis());
+		return String.format(Constants.BACKUP_FILE_FORMAT, filename, System.currentTimeMillis());
 	}
 
 	protected String getBackupFile(String filename, String timestamp) {
-		return String.format(Config.BACKUP_FILE_FORMAT, filename, timestamp);
+		return String.format(Constants.BACKUP_FILE_FORMAT, filename, timestamp);
 	}
 
 	/**
@@ -129,7 +129,7 @@ public class BasicController {
 	 */
 	protected ArrayList<Slide> getSlides() throws IOException {
 		return new ArrayList<>(
-			Arrays.asList(new Gson().fromJson(Files.readString(Path.of(Config.SLIDES_FILE)), Slide[].class)
+			Arrays.asList(new Gson().fromJson(Files.readString(Path.of(Constants.SLIDES_FILE)), Slide[].class)
 		));
 	}
 }

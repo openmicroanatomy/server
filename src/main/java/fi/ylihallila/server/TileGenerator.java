@@ -1,9 +1,11 @@
 package fi.ylihallila.server;
 
+import com.google.gson.GsonBuilder;
 import fi.ylihallila.server.archivers.TarTileArchive;
 import fi.ylihallila.server.archivers.TileArchive;
 import fi.ylihallila.server.storage.Allas;
 import fi.ylihallila.server.storage.StorageProvider;
+import fi.ylihallila.server.util.Constants;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +13,10 @@ import org.slf4j.LoggerFactory;
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -19,11 +25,7 @@ public class TileGenerator {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final ForkJoinPool executor = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
 
-	private static OpenSlide openSlide;
-
-	public static OpenSlide getOpenSlide() {
-		return openSlide;
-	}
+	private final OpenSlide openSlide;
 
 	static {
 		ImageIO.setUseCache(false);
@@ -32,9 +34,21 @@ public class TileGenerator {
 	// TODO: Catch exceptions so generation can try and continue.
 
 	public TileGenerator(String slideName) throws IOException, InterruptedException {
+		this(new File(slideName));
+	}
+
+	public TileGenerator(Path path ) throws IOException, InterruptedException {
+		this(path.toFile());
+	}
+
+	public TileGenerator(File slide) throws IOException, InterruptedException {
 		long startTime = System.currentTimeMillis();
 
-		openSlide = new OpenSlide(new File(slideName));
+		openSlide = new OpenSlide(slide);
+
+		String id = getOrGenerateUUID(slide.getName());
+
+		Color backgroundColor = getBackgroundColor();
 
 		int slideHeight = readIntegerProperty("openslide.level[0].height");
 		int slideWidth  = readIntegerProperty("openslide.level[0].width");
@@ -49,17 +63,15 @@ public class TileGenerator {
 		int boundsHeight = 0; //readIntegerPropertyOrDefault(OpenSlide.PROPERTY_NAME_BOUNDS_WIDTH, slideHeight);
 		int boundsWidth  = 0; //readIntegerPropertyOrDefault(OpenSlide.PROPERTY_NAME_BOUNDS_HEIGHT, slideWidth);
 
+		// These multipliers are used to calculate the levelHeight and levelWidth
+		// as only the level 0 boundHeight and boundWidth is known.
 		double boundsYMultiplier = 1;
 		double boundsXMultiplier = 1;
 
-		if (boundsHeight > 0 || boundsWidth > 0) { // todo: whats the point of boundsXYmultiplier?
+		if (boundsHeight > 0 && boundsWidth > 0) {
 			boundsYMultiplier = 1.0 * boundsHeight / slideHeight;
 			boundsXMultiplier = 1.0 * boundsWidth  / slideWidth;
 		}
-
-		Color backgroundColor = getBackgroundColor();
-
-		String id = getOrGenerateUUID(slideName);
 
 		StorageProvider tileStorage = new Allas.Builder()
 		   .setConfigDefaults()
@@ -75,7 +87,7 @@ public class TileGenerator {
 
 			int downsample = (int) readDoubleProperty("openslide.level[" + level + "].downsample");
 
-			TileArchive tileArchive = new TarTileArchive(slideName, level);
+			TileArchive tileArchive = new TarTileArchive(id, level);
 
 			for (int row = 0; row <= rows; row++) {
 				for (int col = 0; col <= cols; col++) {
@@ -84,15 +96,16 @@ public class TileGenerator {
 						boundsX, boundsY,
 						tileWidth, tileHeight,
 						slideWidth, slideHeight,
-						slideName,
+						id,
 						backgroundColor,
+						openSlide,
 						tileArchive
 					));
 				}
 			}
 
 			float start = System.currentTimeMillis();
-			int tiles = (int) Math.ceil(1.0 * levelHeight / tileHeight) * (int) Math.ceil(1.0 * levelWidth / tileWidth);
+			int tiles = rows * cols;
 
 			synchronized (executor) {
 				while (!executor.isQuiescent() && (System.currentTimeMillis() - start < 300000)) {
@@ -104,17 +117,20 @@ public class TileGenerator {
 			File archive = tileArchive.save();
 
 			logger.debug("Starting archive upload to Allas");
-			tileStorage.commitArchive(archive);
+			tileStorage.commitArchive(archive); // TODO: Commit async
 			logger.debug("Archive upload finished");
 		}
 
+		generateProperties(id, tileStorage);
+
 		long endTime = System.currentTimeMillis();
-		System.out.print("\rTook " + (endTime - startTime) / 1000.000 + " seconds to generate tiles.");
+		System.out.print("\rTook " + (endTime - startTime) / 1000.0 + " seconds to generate & upload tiles.");
 	}
 
 	/**
 	 * This method checks if the slide name is a valid UUID. If Slide name is a UUID the method
-	 * returns that, otherwise it generates a new UUID.
+	 * returns that, otherwise it generates a new UUID. This is to ensure that all slides are
+	 * saved as a UUID.
 	 */
 	private String getOrGenerateUUID(String slideName) {
 		try {
@@ -124,6 +140,10 @@ public class TileGenerator {
 		}
 	}
 
+	/**
+	 * Parses the OpenSlide configuration for background color.
+	 * @return background color or null
+	 */
 	private Color getBackgroundColor() {
 		Color color = null;
 
@@ -145,6 +165,26 @@ public class TileGenerator {
 		return color;
 	}
 
+	/**
+	 * Generates the .properties file for this slide and adds property
+	 * `openslide.remoteserver.uri` based on {@link StorageProvider#getTilesURI()}
+	 *
+	 * @param id id of the slide.
+	 * @param storageProvider StorageProvider used to upload this slide.
+	 */
+	private void generateProperties(String id, StorageProvider storageProvider) {
+		Map<String, String> properties = new HashMap<>(openSlide.getProperties());
+		properties.put("openslide.remoteserver.uri", storageProvider.getTilesURI().replace("{id}", id));
+
+		String json = new GsonBuilder().setPrettyPrinting().create().toJson(properties);
+
+		try {
+			Files.write(Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, id)), json.getBytes());
+		} catch (IOException e) {
+			logger.error("Error while saving {} properties file", id, e);
+		}
+	}
+
 	private String readStringProperty(String property) {
 		return openSlide.getProperties().get(property);
 	}
@@ -153,15 +193,7 @@ public class TileGenerator {
 		return Double.parseDouble(openSlide.getProperties().get(property));
 	}
 
-	private Integer readIntegerProperty(String property) {
+	private int readIntegerProperty(String property) {
 		return Integer.parseInt(openSlide.getProperties().get(property));
-	}
-
-	private Integer readIntegerPropertyOrDefault(String property, Integer defaultValue) {
-		try {
-			return Integer.parseInt(openSlide.getProperties().get(property));
-		} catch (NumberFormatException e) {
-			return defaultValue;
-		}
 	}
 }

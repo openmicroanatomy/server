@@ -11,7 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-public abstract class AbstractJsonRepository<T> implements IRepository<T> {
+public abstract class AbstractJsonRepository<T> implements Repository<T> {
 
     private final ObjectMapper mapper = Util.getMapper();
     private final Logger logger = LoggerFactory.getLogger(getClass());

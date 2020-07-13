@@ -1,6 +1,6 @@
 package fi.ylihallila.server.storage;
 
-import fi.ylihallila.server.Config;
+import fi.ylihallila.server.util.Constants;
 import org.javaswift.joss.client.factory.AccountFactory;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.client.factory.AuthenticationMethodScope;
@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+
+import static fi.ylihallila.server.util.Config.Config;
 
 public class Allas implements StorageProvider {
 
@@ -67,7 +69,6 @@ public class Allas implements StorageProvider {
 		object.uploadObject(file);
 
         logger.debug("Uploaded file {} to Allas Bucket {}", file.getName(), container.getName());
-
     }
 
     /**
@@ -84,7 +85,9 @@ public class Allas implements StorageProvider {
     }
 
     @Override public String getTilesURI() {
-        return Config.ALLAS_URL.replace("%s", "{id}");
+        String host = account.getPublicURL();
+
+        return Constants.ALLAS_URL.replace("{host}", host);
     }
 
     public static class Builder {
@@ -97,14 +100,12 @@ public class Allas implements StorageProvider {
         }
 
         public Builder setConfigDefaults() {
-            // TODO: make actually fetch from config
-
-            factory.setUsername("")
-                    .setPassword("")
-                    .setAuthUrl("")
-                    .setDomain("")
-                    .setTenantId("")
-                    .setTenantName("")
+            factory.setUsername(Config.getString("allas.username"))
+                    .setPassword(Config.getString("allas.password"))
+                    .setAuthUrl(Config.getString("allas.auth.url"))
+                    .setDomain(Config.getString("allas.domain"))
+                    .setTenantId(Config.getString("allas.tenant.id"))
+                    .setTenantName(Config.getString("allas.tenant.name"))
                     .setAuthenticationMethod(AuthenticationMethod.KEYSTONE_V3)
                     .setAuthenticationMode(AuthenticationMethodScope.PROJECT_NAME)
                     .setMock(false);

@@ -1,8 +1,7 @@
 package fi.ylihallila.server.gson;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import fi.ylihallila.server.Config;
+import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.Util;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.slf4j.Logger;
@@ -45,7 +44,7 @@ public class Backup {
     public Backup(String filename, long timestamp) {
         this.filename = filename;
         this.timestamp = timestamp;
-        this.filepath = Path.of(String.format(Config.BACKUP_FILE_FORMAT, filename, timestamp));
+        this.filepath = Path.of(String.format(Constants.BACKUP_FILE_FORMAT, filename, timestamp));
         this.readable = Util.getHumanReadableName(getBaseName()).orElse(filename);
 
         if (filename.contains(".zip")) {
@@ -93,7 +92,7 @@ public class Backup {
         if (type == BackupType.PROJECT) {
             Files.move(
                 filepath,
-                Path.of(Config.PROJECTS_FOLDER, filename),
+                Path.of(Constants.PROJECTS_FOLDER, filename),
                 StandardCopyOption.REPLACE_EXISTING
             );
         } else {

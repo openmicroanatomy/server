@@ -1,18 +1,13 @@
 package fi.ylihallila.server;
 
-import com.google.gson.GsonBuilder;
-import org.openslide.OpenSlide;
+import fi.ylihallila.server.util.Constants;
+import fi.ylihallila.server.util.SimpleDebugger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Folder structure
@@ -48,12 +43,14 @@ public class Main {
     public static void main(String[] args) throws IOException, InterruptedException {
         if (args.length == 1 && args[0].equalsIgnoreCase("--tiler")) {
             new Tiler();
+        } else if (args.length == 1 && args[0].equalsIgnoreCase("--debug")) {
+            new SimpleDebugger();
         } else if (args.length == 2 && args[0].equalsIgnoreCase("--generate")) {
             new TileGenerator(args[1]);
         } else if (args.length == 2 && args[0].equalsIgnoreCase("--properties")) {
             new PropertiesGenerator(args[1]);
         } else {
-            Config.SECURE_SERVER = !(args.length == 1 && args[0].equals("--insecure"));
+            Constants.SECURE_SERVER = !(args.length == 1 && args[0].equals("--insecure"));
 
             Files.createDirectories(Path.of("projects"));
             Files.createDirectories(Path.of("slides"));

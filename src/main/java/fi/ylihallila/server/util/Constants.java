@@ -1,9 +1,6 @@
-package fi.ylihallila.server;
+package fi.ylihallila.server.util;
 
-import java.io.File;
-import java.nio.file.Path;
-
-public class Config {
+public class Constants {
 
     public final static String SLIDE_PROPERTIES_FILE = "slides/%s.properties";
     public final static String PROJECT_FILE_FORMAT   = "projects/%s.zip";
@@ -25,28 +22,8 @@ public class Config {
     public final static String UPLOADED_FILE         = "uploads/%s";
     public final static String SLIDES_FILE           = "slides.json";
     public final static String USERS_FILE            = "users.json";
-    public final static String ALLAS_URL             = "https://a3s.fi:443/swift/v1/AUTH_692aca385d42495ca2efbae12c3d9366/%s/tiles/{level}_{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
+    public final static String ALLAS_URL             = "{host}/{id}/tiles/{level}_{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
 
     public static boolean SECURE_SERVER;
 
-    public class Property {
-
-        private String value;
-
-        public Property(String value) {
-            this.value = value;
-        }
-
-        public String get(String... args) {
-            return String.format(value, args);
-        }
-
-        public Path asPath(String... args) {
-            return Path.of(get(args));
-        }
-
-        public File asFile(String... args) {
-            return new File(get(args));
-        }
-    }
 }

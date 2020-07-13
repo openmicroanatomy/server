@@ -6,7 +6,7 @@ import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
 import fi.ylihallila.server.gson.Error;
 import fi.ylihallila.server.gson.User;
-import fi.ylihallila.server.repositories.IRepository;
+import fi.ylihallila.server.repositories.Repository;
 import fi.ylihallila.server.repositories.Repos;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+
+import static fi.ylihallila.server.util.Config.Config;
 
 public class UserController extends BasicController {
 
@@ -26,12 +28,12 @@ public class UserController extends BasicController {
 	}
 
 	public void getAllUsers(Context ctx) {
-		IRepository<User> repo = Repos.getUserRepo();
+		Repository<User> repo = Repos.getUserRepo();
 		ctx.json(repo.list());
 	}
 
 	public void getUser(Context ctx) {
-		IRepository<User> repo = Repos.getUserRepo();
+		Repository<User> repo = Repos.getUserRepo();
 		Optional<User> query = repo.getById(ctx.pathParam("user-id"));
 
 		if (query.isPresent()) {
@@ -42,7 +44,7 @@ public class UserController extends BasicController {
 	}
 
 	public void updateUser(Context ctx) {
-		IRepository<User> repo = Repos.getUserRepo();
+		Repository<User> repo = Repos.getUserRepo();
 		String id = ctx.pathParam("user-id");
 		User user = repo.getById(id).orElseThrow(NotFoundResponse::new);
 
@@ -75,6 +77,12 @@ public class UserController extends BasicController {
 		}
 	}
 
+	/**
+	 * This method is used when authenticating with Basic Authentication. The endpoint returns usedId,
+	 * organizationId and roles. If the credentials are invalid, an NotAuthorizedException is thrown.
+
+	 * @param ctx Context
+	 */
 	public void login(Context ctx) {
 		User user = Authenticator.getUser(ctx);
 
@@ -88,15 +96,18 @@ public class UserController extends BasicController {
 	}
 
 	/**
-	 * This method checks that the given JWT token was issued by Azure AD.
-	 * If verified it also returns a list of roles for that user.
+	 * This method checks that the given JWT token was issued by Azure AD and is valid.
+	 *
+	 * If verified, returns a list of roles for that user. This endpoint *does not* return
+	 * the userId and organizationId, as these are encoded within the JWT itself.
+	 *
 	 * @param ctx Context
 	 */
 	public void verify(Context ctx) {
 		DecodedJWT jwt = TokenAuth.validate(ctx);
 		String id = jwt.getClaim("oid").asString();
 
-		IRepository<User> repo = Repos.getUserRepo();
+		Repository<User> repo = Repos.getUserRepo();
 		Optional<User> query = repo.getById(id);
 
 		if (query.isEmpty()) {
@@ -105,7 +116,10 @@ public class UserController extends BasicController {
 			user.setName(jwt.getClaim("name").asString());
 			user.setEmail(jwt.getClaim("email").asString());
 			user.setOrganizationId(jwt.getClaim("tid").asString());
-			user.setRoles(Set.of(Roles.MANAGE_PERSONAL_PROJECTS));
+
+			if (Config.getBoolean("roles.manage.personal.projects.default")) {
+				user.setRoles(Set.of(Roles.MANAGE_PERSONAL_PROJECTS));
+			}
 
 			repo.insert(user);
 

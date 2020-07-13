@@ -1,7 +1,7 @@
 package fi.ylihallila.server.repositories.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fi.ylihallila.server.Config;
+import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.gson.Project;
 import fi.ylihallila.server.gson.Workspace;
 import fi.ylihallila.server.repositories.AbstractJsonRepository;
@@ -13,7 +13,7 @@ import java.util.*;
 public class WorkspaceRepositoryJson extends AbstractJsonRepository<Workspace> {
 
     public WorkspaceRepositoryJson() {
-        super(Path.of(Config.WORKSPACE_FILE), new ObjectMapper().getTypeFactory().constructParametricType(List.class, Workspace.class));
+        super(Path.of(Constants.WORKSPACE_FILE), new ObjectMapper().getTypeFactory().constructParametricType(List.class, Workspace.class));
     }
 
     public void addProject(String id, Project project) {

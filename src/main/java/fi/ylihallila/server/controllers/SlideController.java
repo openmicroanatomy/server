@@ -2,7 +2,7 @@ package fi.ylihallila.server.controllers;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import fi.ylihallila.server.Config;
+import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.OpenSlideCache;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.gson.Slide;
@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -42,7 +44,7 @@ public class SlideController extends BasicController {
 		}
 
 		List<Slide> slides = List.of(new Gson().fromJson(
-			Files.readString(Path.of(Config.SLIDES_FILE)),
+			Files.readString(Path.of(Constants.SLIDES_FILE)),
 			Slide[].class
 		));
 
@@ -53,7 +55,7 @@ public class SlideController extends BasicController {
 			data.put("owner", slide.getOwner());
 			data.put("ownerReadable", slide.getOwnerReadable()); // todo: rename "owner" and "ownerId"
 
-			File slideProperties = new File(String.format(Config.SLIDE_PROPERTIES_FILE, slide.getId()));
+			File slideProperties = new File(String.format(Constants.SLIDE_PROPERTIES_FILE, slide.getId()));
 
 			if (slideProperties.exists()) {
 				try {
@@ -103,14 +105,14 @@ public class SlideController extends BasicController {
 		} else if (ctx.method().equals("POST") && ctx.uploadedFile("file") != null) {
 			byte[] data = ctx.uploadedFile("file").getContent().readAllBytes();
 
-			RandomAccessFile writer = new RandomAccessFile(String.format(Config.UPLOADED_FILE, fileName), "rw");
+			RandomAccessFile writer = new RandomAccessFile(String.format(Constants.UPLOADED_FILE, fileName), "rw");
 
 			writer.seek(index * buffer);
 			writer.write(data, 0, data.length);
 			writer.close();
 
 			// The file is fully uploaded we can start processing it.
-			if (Files.size(Path.of(String.format(Config.UPLOADED_FILE, fileName))) == totalSize) {
+			if (Files.size(Path.of(String.format(Constants.UPLOADED_FILE, fileName))) == totalSize) {
 				processUploadedSlide(ctx, fileName);
 			}
 		}
@@ -130,7 +132,7 @@ public class SlideController extends BasicController {
 		});
 
 		if (success.get()) {
-			saveAndBackup(Path.of(Config.SLIDES_FILE), slides);
+			saveAndBackup(Path.of(Constants.SLIDES_FILE), slides);
 			ctx.status(200);
 
 			logger.info("Slide {} edited by {}", slideId, Authenticator.getUsername(ctx).orElse("Unknown"));
@@ -146,11 +148,11 @@ public class SlideController extends BasicController {
 		var deleted = slides.removeIf(slide -> slide.getId().equalsIgnoreCase(slideId));
 
 		if (deleted) {
-			Path propertiesPath = Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, slideId));
+			Path propertiesPath = Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, slideId));
 			backup(propertiesPath);
 			Files.delete(propertiesPath);
 
-			saveAndBackup(Path.of(Config.SLIDES_FILE), slides);
+			saveAndBackup(Path.of(Constants.SLIDES_FILE), slides);
 			ctx.status(200);
 
 			logger.info("Slide {} deleted by {}", slideId, Authenticator.getUsername(ctx).orElse("Unknown"));
@@ -170,7 +172,7 @@ public class SlideController extends BasicController {
 	private void getSlidePropertiesFromFile(Context ctx) {
 		String slideId = ctx.pathParam("slide-id", String.class).get();
 
-		Path slideProperties = Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, slideId));
+		Path slideProperties = Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, slideId));
 
 		if (slideProperties.toFile().exists()) {
 			try {
@@ -200,7 +202,7 @@ public class SlideController extends BasicController {
 		int tileWidth  = ctx.pathParam("tileWidth", Integer.class).get();
 		int tileHeight = ctx.pathParam("tileHeight", Integer.class).get();
 
-		String fileName = String.format(Config.TILE_FILE_FORMAT, slide, tileX, tileY, level, tileWidth, tileHeight);
+		String fileName = String.format(Constants.TILE_FILE_FORMAT, slide, tileX, tileY, level, tileWidth, tileHeight);
 
 		if (Files.exists(Path.of(fileName), LinkOption.NOFOLLOW_LINKS)) {
 			logger.info("Retrieving from disk [{}, {},{} / {} / {},{}]", fileName, tileX, tileY, level, tileWidth, tileHeight);
@@ -220,11 +222,11 @@ public class SlideController extends BasicController {
 	}
 
 	private void processUploadedSlide(Context ctx, String slideName) throws IOException {
-		Optional<OpenSlide> openSlide = OpenSlideCache.get(String.format(Config.UPLOADED_FILE, slideName));
+		Optional<OpenSlide> openSlide = OpenSlideCache.get(String.format(Constants.UPLOADED_FILE, slideName));
 		User user = Authenticator.getUser(ctx);
 
 		if (openSlide.isEmpty()) {
-			logger.error("Error when processing uploaded file. Couldn't create OpenSlide instance.");
+			logger.error("Error when processing uploaded file. Couldn't create OpenSlide instance. Perhaps the file was corrupted during upload or the file isn't supported by OpenSlide");
 			return;
 		}
 
@@ -240,21 +242,13 @@ public class SlideController extends BasicController {
 
 		slides.add(slide);
 
-		saveAndBackup(Path.of(Config.SLIDES_FILE), slides); // TODO: SlideRepository
-
-		// Generate .properties for slide
-
-		Map<String, String> properties = new HashMap<>(openSlide.get().getProperties());
-		properties.put("openslide.remoteserver.uri", String.format(Config.ALLAS_URL, id)); // TODO: Rename remote.tile.uri
-
-		String json = new GsonBuilder().setPrettyPrinting().create().toJson(properties);
-		Files.write(Path.of(String.format(Config.SLIDE_PROPERTIES_FILE, id)), json.getBytes());
+		saveAndBackup(Path.of(Constants.SLIDES_FILE), slides); // TODO: SlideRepository
 
 		// Move slide to slides pending tiling. See Tiler for further processing.
 
 		Files.move(
-			Path.of(String.format(Config.UPLOADED_FILE, slideName)),
-			Path.of(String.format(Config.PENDING_SLIDES, id))
+			Path.of(String.format(Constants.UPLOADED_FILE, slideName)),
+			Path.of(String.format(Constants.PENDING_SLIDES, id))
 		);
 	}
 }

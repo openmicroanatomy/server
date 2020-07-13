@@ -1,6 +1,7 @@
 package fi.ylihallila.server;
 
 import fi.ylihallila.server.archivers.TileArchive;
+import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,9 +25,10 @@ public class TileWorker implements Runnable {
 	private final int tileWidth;
 	private final int tileHeight;
 
+	private final OpenSlide openSlide;
 	private final TileArchive archive;
 
-	public TileWorker(int downsample, int level, int row, int col, int offsetX, int offsetY, int tileWidth, int tileHeight, int slideWidth, int slideHeight, String slideName, Color bgColor, TileArchive archive) {
+	public TileWorker(int downsample, int level, int row, int col, int offsetX, int offsetY, int tileWidth, int tileHeight, int slideWidth, int slideHeight, String slideName, Color bgColor, OpenSlide openSlide, TileArchive archive) {
 		this.slideName = slideName;
 		this.bgColor = bgColor;
 		this.level = level;
@@ -48,6 +50,7 @@ public class TileWorker implements Runnable {
 		this.tileHeight = tileHeight - adjustY;
 		this.tileWidth  = tileWidth  - adjustX;
 
+		this.openSlide = openSlide;
 		this.archive = archive;
 	}
 
@@ -61,7 +64,7 @@ public class TileWorker implements Runnable {
 			BufferedImage temp = new BufferedImage(tileWidth, tileHeight, BufferedImage.TYPE_INT_ARGB_PRE);
 			int[] data = ((DataBufferInt) temp.getRaster().getDataBuffer()).getData();
 
-			TileGenerator.getOpenSlide().paintRegionARGB(data, tileX, tileY, level, tileWidth, tileHeight);
+			openSlide.paintRegionARGB(data, tileX, tileY, level, tileWidth, tileHeight);
 
 			BufferedImage img = new BufferedImage(tileWidth, tileHeight, BufferedImage.TYPE_INT_RGB);
 			Graphics2D g2d = img.createGraphics();

@@ -1,11 +1,11 @@
 package fi.ylihallila.server.repositories;
 
-import fi.ylihallila.server.Config;
+import fi.ylihallila.server.util.Constants;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface IRepository<T> {
+public interface Repository<T> {
 
     Optional<T> getById(String id);
 
@@ -24,6 +24,6 @@ public interface IRepository<T> {
     void commit();
 
     default String getBackupFile(String fileName) {
-        return String.format(Config.BACKUP_FILE_FORMAT, fileName, System.currentTimeMillis());
+        return String.format(Constants.BACKUP_FILE_FORMAT, fileName, System.currentTimeMillis());
     }
 }

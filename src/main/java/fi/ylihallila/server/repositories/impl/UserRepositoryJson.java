@@ -1,6 +1,6 @@
 package fi.ylihallila.server.repositories.impl;
 
-import fi.ylihallila.server.Config;
+import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.Util;
 import fi.ylihallila.server.gson.User;
 import fi.ylihallila.server.repositories.AbstractJsonRepository;
@@ -12,7 +12,7 @@ import java.util.Optional;
 public class UserRepositoryJson extends AbstractJsonRepository<User> {
 
     public UserRepositoryJson() {
-        super(Path.of(Config.USERS_FILE), Util.getMapper().getTypeFactory().constructParametricType(List.class, User.class));
+        super(Path.of(Constants.USERS_FILE), Util.getMapper().getTypeFactory().constructParametricType(List.class, User.class));
     }
 
     @Override

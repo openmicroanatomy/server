@@ -2,6 +2,7 @@ package fi.ylihallila.server;
 
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.controllers.*;
+import fi.ylihallila.server.util.Constants;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
 import io.javalin.plugin.rendering.vue.JavalinVue;
@@ -20,6 +21,7 @@ import io.javalin.plugin.rendering.vue.VueComponent;
 import static io.javalin.apibuilder.ApiBuilder.*;
 import static io.javalin.core.security.SecurityUtil.roles;
 import static fi.ylihallila.remote.commons.Roles.*;
+import static fi.ylihallila.server.util.Config.Config;
 
 public class SecureServer {
 
@@ -37,15 +39,15 @@ public class SecureServer {
         config.server(() -> {
             Server server = new Server();
 
-            if (Config.SECURE_SERVER) {
+            if (Constants.SECURE_SERVER) {
                 config.enforceSsl = true;
 
                 ServerConnector sslConnector = new ServerConnector(server, getSslContextFactory());
-                sslConnector.setPort(7000);
+                sslConnector.setPort(Config.getInt("server.port.secure"));
                 server.addConnector(sslConnector);
             } else {
                 ServerConnector connector = new ServerConnector(server);
-                connector.setPort(7777);
+                connector.setPort(Config.getInt("server.port.insecure"));
                 server.addConnector(connector);
             }
 
@@ -143,8 +145,8 @@ public class SecureServer {
 
             URL path = SecureServer.class.getProtectionDomain().getCodeSource().getLocation();
 
-            sslContextFactory.setKeyStorePath(path.toURI().resolve("keystore.jks").toASCIIString());
-            sslContextFactory.setKeyStorePassword("qwerty");
+            sslContextFactory.setKeyStorePath(path.toURI().resolve(Config.getString("ssl.keystore")).toASCIIString());
+            sslContextFactory.setKeyStorePassword(Config.getString("ssl.keystore.password"));
             return sslContextFactory;
         } catch (URISyntaxException e) {
             logger.error("Couldn't start HTTPS server, no valid keystore.");
