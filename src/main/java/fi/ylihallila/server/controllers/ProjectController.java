@@ -46,9 +46,9 @@ public class ProjectController extends BasicController {
 	}
 
 	public void createProject(Context ctx) throws IOException {
-		String targetWorkspace = ctx.formParam("workspace-id", String.class).get();
-		String projectName     = ctx.formParam("project-name", String.class).get();
-		String projectId       = UUID.randomUUID().toString();
+		String workspaceId = ctx.formParam("workspace-id", String.class).get();
+		String projectName = ctx.formParam("project-name", String.class).get();
+		String projectId    = UUID.randomUUID().toString();
 		User user = Authenticator.getUser(ctx);
 
 		Project project = new Project();
@@ -58,11 +58,12 @@ public class ProjectController extends BasicController {
 		project.setOwner(user.getOrganizationId());
 
 		Repos.getProjectRepo().insert(project);
-		Repos.getWorkspaceRepo().addProject(targetWorkspace, project);
+		Repos.getWorkspaceRepo().getById(workspaceId)
+			.ifPresent(workspace -> workspace.addProject(project));
 
 		createProjectZipFile(projectId);
 
-		logger.info("Personal project {} created by {}", projectId, user.getName());
+		logger.info("Project {} created by {}", projectId, user.getName());
 	}
 
 	public void downloadProject(Context ctx) throws IOException {
@@ -109,7 +110,6 @@ public class ProjectController extends BasicController {
 		String id = ctx.pathParam("project-id", String.class).get();
 
 		Repos.getProjectRepo().deleteById(id);
-		Repos.getWorkspaceRepo().deleteProject(id);
 
 		delete(getProjectFile(id));
 

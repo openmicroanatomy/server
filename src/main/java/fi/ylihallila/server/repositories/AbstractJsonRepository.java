@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public abstract class AbstractJsonRepository<T> implements Repository<T> {
 
@@ -33,8 +35,18 @@ public abstract class AbstractJsonRepository<T> implements Repository<T> {
     }
 
     @Override
+    public Optional<T> getOne(Predicate<T> filter) {
+        return getData().stream().filter(filter).findFirst();
+    }
+
+    @Override
+    public List<T> getMany(Predicate<T> filter) {
+        return getData().stream().filter(filter).collect(Collectors.toList());
+    }
+
+    @Override
     public List<T> list() {
-        return new ArrayList<>(data);
+        return data;
     }
 
     @Override
@@ -72,6 +84,7 @@ public abstract class AbstractJsonRepository<T> implements Repository<T> {
         }
     }
 
+    @Override
     public synchronized void refresh() {
         try {
             this.data = mapper.readValue(jsonPath.toFile(), type);

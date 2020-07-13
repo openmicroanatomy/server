@@ -16,25 +16,6 @@ public class WorkspaceRepositoryJson extends AbstractJsonRepository<Workspace> {
         super(Path.of(Constants.WORKSPACE_FILE), new ObjectMapper().getTypeFactory().constructParametricType(List.class, Workspace.class));
     }
 
-    public void addProject(String id, Project project) {
-        Optional<Workspace> query = getById(id);
-
-        if (query.isPresent()) {
-            query.get().addProject(project);
-            commit();
-        } else {
-            throw new NotFoundResponse();
-        }
-    }
-
-    public void deleteProject(String projectId) {
-        for (Workspace workspace : getData()) {
-            workspace.removeProject(projectId);
-        }
-
-        commit();
-    }
-
     @Override
     public Optional<Workspace> getById(String id) {
         for (Workspace workspace : getData()) {

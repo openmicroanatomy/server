@@ -22,7 +22,7 @@ public class WorkspaceController extends BasicController {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public void getAllWorkspaces(Context ctx) throws JsonProcessingException {
-		List<Workspace> workspaces = Repos.getWorkspaceRepo().list();
+		List<Workspace> workspaces = new ArrayList<>(Repos.getWorkspaceRepo().list());
 
 		if (ctx.queryParamMap().containsKey("owner")) {
 			workspaces.removeIf(workspace -> !workspace.getOwner().equalsIgnoreCase(ctx.queryParam("owner")));
@@ -35,7 +35,9 @@ public class WorkspaceController extends BasicController {
 			projects.setId((String) null);
 			projects.setName("My Projects");
 			projects.setOwner(user.getId());
-			projects.setProjects(Repos.getProjectRepo().getByOwner(user.getId()));
+			projects.setProjects(Repos.getProjectRepo().getMany(
+				project -> project.getOwner().equalsIgnoreCase(user.getId()))
+			);
 
 			workspaces.add(projects);
 		}

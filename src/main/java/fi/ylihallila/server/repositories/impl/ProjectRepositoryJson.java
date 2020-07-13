@@ -2,6 +2,7 @@ package fi.ylihallila.server.repositories.impl;
 
 import fi.ylihallila.server.Util;
 import fi.ylihallila.server.models.Project;
+import fi.ylihallila.server.models.Workspace;
 import fi.ylihallila.server.repositories.AbstractJsonRepository;
 import fi.ylihallila.server.repositories.Repos;
 
@@ -16,16 +17,19 @@ public class ProjectRepositoryJson extends AbstractJsonRepository<Project> {
         super(Path.of("projects.json"), Util.getMapper().getTypeFactory().constructParametricType(List.class, Project.class));
     }
 
-    public List<Project> getByOwner(String ownerId) {
-        List<Project> projects = new ArrayList<>();
+    /**
+     * Removes the project and also removes any orphans left in Workspaces.
+     *
+     * @param id id of the project to delete.
+     */
+    @Override public void deleteById(String id) {
+        super.deleteById(id);
 
-        for (Project project : getData()) {
-            if (project.getOwner().equals(ownerId)) {
-                projects.add(project);
-            }
+        for (Workspace workspace : Repos.getWorkspaceRepo().list()) {
+            workspace.removeProject(id);
         }
 
-        return projects;
+        Repos.getWorkspaceRepo().commit();
     }
 
     @Override
