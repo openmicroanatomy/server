@@ -8,12 +8,15 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
 import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.Database;
+import fi.ylihallila.server.authentication.Auth;
 import fi.ylihallila.server.models.User;
-import fi.ylihallila.server.repositories.Repos;
+import fi.ylihallila.server.util.Config;
 import io.javalin.core.security.Role;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
 import io.javalin.http.UnauthorizedResponse;
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,14 +26,29 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
 import java.util.Set;
 
+import static fi.ylihallila.server.util.Config.Config;
+
 public class TokenAuth implements Auth {
 
-    private static JwkProvider provider;
     private static final Logger logger = LoggerFactory.getLogger(TokenAuth.class);
+
+    /**
+     * GUID of Microsoft Application, used to verify that the
+     * provided JWT was supplied by our application.
+     */
+    private static final String APP_ID = Config.getString("app.id");
+
+    /**
+     * Each JWT can be signed using a different private key. JWKs provide
+     * a list of these, including the public key to verify the signature.
+
+     * @see <a href="https://tools.ietf.org/html/rfc7517">JWK specification</a>
+     */
+    private static JwkProvider provider;
 
     public TokenAuth() {
         try {
-            provider = new UrlJwkProvider(new URL("https://login.microsoftonline.com/common/discovery/keys"));
+            provider = new UrlJwkProvider(new URL(Config.getString("jwk.provider")));
         } catch (IOException e) {
             logger.error(e.getLocalizedMessage(), e);
         }
@@ -78,10 +96,16 @@ public class TokenAuth implements Auth {
     /* Private API */
 
     private User getUser(DecodedJWT jwt) {
-        Optional<User> user = Repos.getUserRepo().getById(jwt.getClaim("oid").asString());
+        Session session = Database.getSession();
+        session.beginTransaction();
 
-        if (user.isPresent()) {
-            return user.get();
+        User user = session.find(User.class, jwt.getClaim("oid").asString());
+
+        session.getTransaction();
+        session.close();
+
+        if (user != null) {
+            return user;
         }
 
         throw new NotFoundResponse("No user found with given OID");
@@ -96,7 +120,7 @@ public class TokenAuth implements Auth {
             Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(),null);
 
             JWTVerifier verifier = JWT.require(algorithm)
-                .withAudience("eccc9211-faa5-40d5-9ff9-7a5087dbcadb")
+                .withAudience(APP_ID)
                 .build();
 
             return verifier.verify(jwt);

@@ -1,4 +1,4 @@
-package fi.ylihallila.server.authentication.impl;
+package fi.ylihallila.server.authentication;
 
 import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.models.User;

@@ -1,18 +1,19 @@
 package fi.ylihallila.server.controllers;
 
+import fi.ylihallila.server.Database;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.Project;
 import fi.ylihallila.server.models.User;
-import fi.ylihallila.server.repositories.Repository;
-import fi.ylihallila.server.repositories.Repos;
+import fi.ylihallila.server.models.Workspace;
 import io.javalin.http.Context;
-import io.javalin.http.NotFoundResponse;
 import io.javalin.http.UnauthorizedResponse;
 import io.javalin.http.UploadedFile;
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.List;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -21,22 +22,32 @@ import java.util.zip.ZipOutputStream;
 public class ProjectController extends BasicController {
 
 	private Logger logger = LoggerFactory.getLogger(ProjectController.class);
+//	private Repository<Project> repo;
+
+//	@Inject
+//	public ProjectController(@ProjectRepository Repository<Project> repo) {
+//		this.repo = repo;
+//	}
 
 	public void getAllProjects(Context ctx) {
-		ctx.json(Repos.getProjectRepo().list());
+		Session session = ctx.use(Session.class);
+
+		List<Project> projects = session.createQuery("from Project", Project.class).list();
+
+		ctx.status(200).json(projects);
 	}
 
 	public void createPersonalProject(Context ctx) throws IOException {
 		String projectName = ctx.formParam("project-name", String.class).get();
-		String projectId   = UUID.randomUUID().toString();
+		String projectId = UUID.randomUUID().toString();
+		Session session = ctx.use(Session.class);
 		User user = Authenticator.getUser(ctx);
 
 		Project project = new Project();
 		project.setName("Copy of " + projectName);
 		project.setId(projectId);
-		project.setOwner(user.getId());
-
-		Repos.getProjectRepo().insert(project);
+		project.setOwner(user);
+		session.save(project);
 
 		createProjectZipFile(projectId);
 
@@ -49,17 +60,29 @@ public class ProjectController extends BasicController {
 		String workspaceId = ctx.formParam("workspace-id", String.class).get();
 		String projectName = ctx.formParam("project-name", String.class).get();
 		String projectId    = UUID.randomUUID().toString();
+		Session session = ctx.use(Session.class);
 		User user = Authenticator.getUser(ctx);
 
-		Project project = new Project();
-		project.setName(projectName);
-		project.setId(projectId);
-		project.setDescription(ctx.formParam("description", ""));
-		project.setOwner(user.getOrganizationId());
+		session.beginTransaction();
 
-		Repos.getProjectRepo().insert(project);
-		Repos.getWorkspaceRepo().getById(workspaceId)
-			.ifPresent(workspace -> workspace.addProject(project));
+		Project project = new Project();
+		project.setId(projectId);
+		project.setName(projectName);
+		project.setDescription(ctx.formParam("description", ""));
+
+		if (workspaceId.equals("personal")) {
+			project.setOwner(user);
+		} else {
+			project.setOwner(user.getOrganization().getId());
+		}
+
+		session.save(project);
+
+		if (!workspaceId.equals("personal")) {
+			Workspace workspace = session.find(Workspace.class, workspaceId);
+			workspace.addProject(project);
+			session.update(workspace);
+		}
 
 		createProjectZipFile(projectId);
 
@@ -92,16 +115,13 @@ public class ProjectController extends BasicController {
 	public void updateProject(Context ctx) {
 		String projectId = ctx.pathParam("project-id", String.class).get();
 
-		Repository<Project> repo = Repos.getProjectRepo();
+		Session session = ctx.use(Session.class);
 
-		Project project = repo.getById(projectId).orElseThrow(NotFoundResponse::new);
+		Project project = session.find(Project.class, projectId);
 		project.setName(ctx.formParam("name", project.getName()));
 		project.setDescription(ctx.formParam("description", project.getDescription()));
 		project.setModifiedAt(System.currentTimeMillis());
-
-		repo.commit();
-
-		Repos.getWorkspaceRepo().refresh();
+		session.update(project);
 
 		logger.info("Project {} edited by {}", projectId, Authenticator.getUsername(ctx).orElse("Unknown"));
 	}
@@ -109,7 +129,10 @@ public class ProjectController extends BasicController {
 	public void deleteProject(Context ctx) {
 		String id = ctx.pathParam("project-id", String.class).get();
 
-		Repos.getProjectRepo().deleteById(id);
+		Session session = ctx.use(Session.class);
+
+		Project project = session.find(Project.class, id);
+		session.delete(project);
 
 		delete(getProjectFile(id));
 
@@ -127,9 +150,11 @@ public class ProjectController extends BasicController {
 		}
 
 		if (hasPermission(ctx, id)) {
-			Project project = Repos.getProjectRepo().getById(id).orElseThrow(NotFoundResponse::new);
+			Session session = ctx.use(Session.class);
+
+			Project project = session.find(Project.class, id);
 			project.setModifiedAt(System.currentTimeMillis());
-			Repos.getProjectRepo().commit();
+			session.update(project);
 
 			copyInputStreamToFile(file.getContent(), new File(getProjectFile(id)));
 			backup(getProjectFile(id));

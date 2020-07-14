@@ -1,15 +1,15 @@
 package fi.ylihallila.server.controllers;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
+import fi.ylihallila.server.Database;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
+import fi.ylihallila.server.injections.types.ProjectRepository;
 import fi.ylihallila.server.models.Error;
 import fi.ylihallila.server.models.User;
-import fi.ylihallila.server.repositories.Repository;
-import fi.ylihallila.server.repositories.Repos;
 import io.javalin.http.Context;
-import io.javalin.http.NotFoundResponse;
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,26 +28,31 @@ public class UserController extends BasicController {
 	}
 
 	public void getAllUsers(Context ctx) {
-		Repository<User> repo = Repos.getUserRepo();
-		ctx.json(repo.list());
+		Session session = ctx.use(Session.class);
+
+		List<User> users = session.createQuery("from User", User.class).list();
+
+		ctx.status(200).json(users);
 	}
 
 	public void getUser(Context ctx) {
-		Repository<User> repo = Repos.getUserRepo();
-		Optional<User> query = repo.getById(ctx.pathParam("user-id"));
+		Session session = ctx.use(Session.class);
 
-		if (query.isPresent()) {
-			ctx.json(query.get());
+		User user = session.find(User.class, ctx.pathParam("user-id"));
+
+		if (user != null) {
+			ctx.status(200).json(user);
 		} else {
 			ctx.status(404).json(new Error("User not found"));
 		}
 	}
 
 	public void updateUser(Context ctx) {
-		Repository<User> repo = Repos.getUserRepo();
 		String id = ctx.pathParam("user-id");
-		User user = repo.getById(id).orElseThrow(NotFoundResponse::new);
 
+		Session session = ctx.use(Session.class);
+
+		User user = session.find(User.class, id);
 		Set<Roles> roles = user.getRoles();
 
 		var modified = false;
@@ -67,7 +72,7 @@ public class UserController extends BasicController {
 
 		if (modified) {
 			user.setRoles(roles);
-			repo.commit();
+			session.update(user);
 			ctx.status(200);
 
 			logger.info("Roles of {} were edited by {}. New values: {}", id, Authenticator.getUsername(ctx).orElse("Unknown"), ctx.formParamMap());
@@ -89,7 +94,7 @@ public class UserController extends BasicController {
 		Map<String, Object> data = new HashMap<>();
 
 		data.put("userId", user.getId());
-		data.put("organizationId", user.getOrganizationId());
+		data.put("organizationId", user.getOrganization().getId());
 		data.put("roles", user.getRoles());
 
 		ctx.status(200).json(data);
@@ -107,25 +112,24 @@ public class UserController extends BasicController {
 		DecodedJWT jwt = TokenAuth.validate(ctx);
 		String id = jwt.getClaim("oid").asString();
 
-		Repository<User> repo = Repos.getUserRepo();
-		Optional<User> query = repo.getById(id);
+		Session session = ctx.use(Session.class);
 
-		if (query.isEmpty()) {
-			User user = new User();
+		User user = session.find(User.class, id);
+
+		if (user == null) {
+			user = new User();
 			user.setId(id);
 			user.setName(jwt.getClaim("name").asString());
 			user.setEmail(jwt.getClaim("email").asString());
-			user.setOrganizationId(jwt.getClaim("tid").asString());
+			user.setOrganization(jwt.getClaim("tid").asString());
 
 			if (Config.getBoolean("roles.manage.personal.projects.default")) {
 				user.setRoles(Set.of(Roles.MANAGE_PERSONAL_PROJECTS));
 			}
 
-			repo.insert(user);
-
-			ctx.json(user.getRoles());
-		} else {
-			ctx.json(query.get().getRoles());
+			session.save(user);
 		}
+
+		ctx.status(200).json(user.getRoles());
 	}
 }

@@ -2,8 +2,10 @@ package fi.ylihallila.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.ylihallila.server.models.Backup;
-import fi.ylihallila.server.repositories.Repos;
+import fi.ylihallila.server.models.Organization;
+import fi.ylihallila.server.models.Project;
 import fi.ylihallila.server.util.Constants;
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Util {
+
     private final static Logger logger = LoggerFactory.getLogger(Util.class);
 
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -100,6 +103,18 @@ public class Util {
         return knownTenants;
     }
 
+    static {
+        Session session = Database.getSession();
+        session.beginTransaction();
+
+        getKnownTenants().forEach((id, name) -> {
+            session.saveOrUpdate(new Organization(id, name));
+        });
+
+        session.getTransaction().commit();
+        session.close();
+    }
+
     /**
      * Cache of human readable formats for IDs.
      *
@@ -109,39 +124,44 @@ public class Util {
     private static WeakHashMap<String, String> cache = new WeakHashMap<>();
 
     /**
+     * TODO: Only supports slides currently
+     *
      * Tries to get a human readable version of a ID. The ID can represent: Users, Slides,
      * Workspaces, Projects or Backups.
+     *
      * @param id UUID of organization, project, user or workspace.
      * @return Human readable name or Optional.empty(); if unable to find.
      */
     public static Optional<String> getHumanReadableName(String id) {
-        if (knownTenants.containsKey(id)) {
-            return Optional.of(knownTenants.get(id));
-        }
-
         if (cache.containsKey(id)) {
             return Optional.of(cache.get(id));
         }
 
-        if (Repos.getProjectRepo().contains(id)) {
-            return cacheAndReturn(id, Repos.getProjectRepo().getById(id).get().getName());
-        }
+        Session session = Database.getSession();
+        session.beginTransaction();
 
-        if (Repos.getUserRepo().contains(id)) {
-            return cacheAndReturn(id, Repos.getUserRepo().getById(id).get().getName());
-        }
+        Project project = session.find(Project.class, id);
 
-        if (Repos.getWorkspaceRepo().contains(id)) {
-            return cacheAndReturn(id, Repos.getWorkspaceRepo().getById(id).get().getName());
-        }
+        session.getTransaction().commit();
+        session.close();
 
-        return Optional.empty();
+        if (project == null) {
+            return Optional.empty();
+        } else {
+            cache.put(id, project.getOwner().getName());
+            return Optional.of(project.getOwner().getName());
+        }
     }
 
+    public static Organization getOrganization(String id) {
+        Session session = Database.getSession();
+        session.beginTransaction();
 
-    private static Optional<String> cacheAndReturn(String id, String name) {
-        cache.put(id, name);
+        Organization organization = session.find(Organization.class, id);
 
-        return Optional.of(name);
+        session.getTransaction().commit();
+        session.close();
+
+        return organization;
     }
 }

@@ -1,7 +1,6 @@
 package fi.ylihallila.server.authentication;
 
 import fi.ylihallila.remote.commons.Roles;
-import fi.ylihallila.server.authentication.impl.Auth;
 import fi.ylihallila.server.authentication.impl.BasicAuth;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
 import fi.ylihallila.server.models.Error;

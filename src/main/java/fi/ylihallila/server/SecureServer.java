@@ -1,5 +1,6 @@
 package fi.ylihallila.server;
 
+import com.google.inject.Injector;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.controllers.*;
 import fi.ylihallila.server.util.Constants;
@@ -9,6 +10,7 @@ import io.javalin.plugin.rendering.vue.JavalinVue;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,21 +57,38 @@ public class SecureServer {
         });
     }).start();
 
-    private final OrganizationController OrganizationController = new OrganizationController();
-    private final WorkspaceController WorkspaceController = new WorkspaceController();
-    private final ProjectController ProjectController = new ProjectController();
-    private final BackupController BackupController = new BackupController();
-    private final SlideController SlideController = new SlideController();
-    private final UserController UserController = new UserController();
+    private OrganizationController OrganizationController;
+    private WorkspaceController WorkspaceController;
+    private ProjectController ProjectController;
+    private BackupController BackupController;
+    private SlideController SlideController;
+    private UserController UserController;
 
     public SecureServer() {
+        createControllers();
+
         app.get("/", new VueComponent("index"),          roles(ADMIN));
         app.get("/upload", new VueComponent("uploader"), roles(ADMIN));
 
-        /* API */
-        app.get("/api/v1/slides", SlideController::GetAllSlidesV2, roles(ANYONE));
-
         app.routes(() -> path("/api/v0/", () -> {
+            before(ctx -> { // TODO: Annotate methods with @Database; only these have Session available to save resources?
+                logger.debug("Creating Database Session for Request");
+
+                Session session = Database.getSession();
+                session.beginTransaction();
+
+                ctx.register(Session.class, session);
+            });
+
+            after(ctx -> {
+                logger.debug("Destroying Database Session for Request");
+
+                Session session = ctx.use(Session.class);
+
+                session.getTransaction().commit();
+                session.close();
+            });
+
             /* Authentication */
             path("users", () -> {
                 get(UserController::getAllUsers,                roles(MANAGE_USERS));
@@ -139,34 +158,28 @@ public class SecureServer {
         }));
     }
 
+    private void createControllers() {
+        this.OrganizationController = new OrganizationController();
+        this.WorkspaceController = new WorkspaceController();
+        this.ProjectController = new ProjectController();
+        this.BackupController = new BackupController();
+        this.SlideController = new SlideController();
+        this.UserController = new UserController();
+    }
+
     private SslContextFactory getSslContextFactory() {
         try {
-            SslContextFactory sslContextFactory = new SslContextFactory();
+//            SslContextFactory sslContextFactory = new SslContextFactory();
+            SslContextFactory sslContextFactory = new SslContextFactory.Server();
 
             URL path = SecureServer.class.getProtectionDomain().getCodeSource().getLocation();
 
-            sslContextFactory.setKeyStorePath(path.toURI().resolve(Config.getString("ssl.keystore")).toASCIIString());
+            sslContextFactory.setKeyStorePath(path.toURI().resolve(Config.getString("ssl.keystore.path")).toASCIIString());
             sslContextFactory.setKeyStorePassword(Config.getString("ssl.keystore.password"));
             return sslContextFactory;
         } catch (URISyntaxException e) {
             logger.error("Couldn't start HTTPS server, no valid keystore.");
             return null;
         }
-    }
-
-    public WorkspaceController getWorkspaceController() {
-        return WorkspaceController;
-    }
-
-    public ProjectController getProjectController() {
-        return ProjectController;
-    }
-
-    public SlideController getSlideController() {
-        return SlideController;
-    }
-
-    public UserController getUserController() {
-        return UserController;
     }
 }

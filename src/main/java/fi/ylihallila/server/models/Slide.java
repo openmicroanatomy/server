@@ -3,14 +3,26 @@ package fi.ylihallila.server.models;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import fi.ylihallila.server.Util;
+import org.hibernate.annotations.GenericGenerator;
+
+import javax.persistence.*;
 import java.util.UUID;
 
-@JsonIdentityInfo(scope=Slide.class, generator=ObjectIdGenerators.PropertyGenerator.class, property="id")
+@Entity
+@Table( name = "slides" )
+//@JsonIdentityInfo(scope=Slide.class, generator=ObjectIdGenerators.PropertyGenerator.class, property="id")
 public class Slide {
 
     /**
      * UUID representing this slide.
      */
+    @Id
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(
+        name = "UUID",
+        strategy = "org.hibernate.id.UUIDGenerator"
+    )
+    @Column(name = "id", updatable = false, nullable = false)
     private String id;
 
     /**
@@ -21,7 +33,17 @@ public class Slide {
     /**
      * UUID of the slide owner. Can be either an organization or a specific user.
      */
-    private String owner;
+    @ManyToOne
+    private Owner owner;
+
+    public Slide() {
+    }
+
+    public Slide(String id, String name, Owner owner) {
+        this.id = id;
+        this.name = name;
+        this.owner = owner;
+    }
 
     public String getName() {
         return name;
@@ -43,8 +65,12 @@ public class Slide {
         this.id = id;
     }
 
-    public String getOwner() {
+    public Owner getOwner() {
         return owner;
+    }
+
+    public void setOwner(Owner owner) {
+        this.owner = owner;
     }
 
     /**
@@ -52,11 +78,7 @@ public class Slide {
      * @return Organizations name, users name and if couldn't find ID: "Unknown (id)"
      */
     public String getOwnerReadable() {
-        return Util.getHumanReadableName(owner).orElse("Unknown (" + owner + ")");
-    }
-
-    public void setOwner(String owner) {
-        this.owner = owner;
+        return owner.getName();
     }
 
     @Override

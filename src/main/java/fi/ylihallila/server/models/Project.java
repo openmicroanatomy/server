@@ -1,16 +1,30 @@
 package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.*;
+import fi.ylihallila.server.Database;
 import fi.ylihallila.server.models.resolvers.ProjectIdResolver;
+import org.hibernate.Session;
+import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.GenericGenerator;
 
+import javax.persistence.*;
 import java.util.UUID;
 
+@Entity
+@Table( name = "projects" )
 @JsonIdentityInfo(scope = Project.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", resolver = ProjectIdResolver.class)
 public class Project {
 
 	/**
 	 * UUID representing this project.
 	 */
+	@Id
+//	@GeneratedValue(generator = "UUID", strategy = GenerationType.SEQUENCE)
+//	@GenericGenerator(
+//		name = "UUID",
+//		strategy = "org.hibernate.id.UUIDGenerator"
+//	)
+	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 
 	/**
@@ -32,7 +46,9 @@ public class Project {
 	/**
 	 * Users or Tenants GUID
 	 */
-	private String owner;
+	@ManyToOne
+	@JsonIdentityReference
+	private Owner owner;
 
 	/**
 	 * Unix timestamp as milliseconds. When was this project first created.
@@ -85,11 +101,23 @@ public class Project {
 		this.thumbnail = thumbnail;
 	}
 
-	public String getOwner() {
+	public Owner getOwner() {
 		return owner;
 	}
 
-	public void setOwner(String owner) {
+	public void setOwner(String id) {
+		Session session = Database.getSession();
+		session.beginTransaction();
+
+		Organization organization = session.find(Organization.class, id);
+
+		session.getTransaction().commit();
+		session.close();
+
+		setOwner(organization);
+	}
+
+	public void setOwner(Owner owner) {
 		this.owner = owner;
 	}
 

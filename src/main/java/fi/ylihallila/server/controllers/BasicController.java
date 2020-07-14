@@ -1,16 +1,14 @@
 package fi.ylihallila.server.controllers;
 
 import com.google.gson.Gson;
+import fi.ylihallila.server.Database;
+import fi.ylihallila.server.models.*;
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.Util;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.remote.commons.Roles;
-import fi.ylihallila.server.models.Project;
-import fi.ylihallila.server.models.Slide;
-import fi.ylihallila.server.models.User;
-import fi.ylihallila.server.models.Workspace;
-import fi.ylihallila.server.repositories.Repos;
 import io.javalin.http.Context;
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,9 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Optional;
 
 public class BasicController {
 
@@ -96,40 +91,35 @@ public class BasicController {
 	 */
 	public boolean hasPermission(Context ctx, String id) {
 		User user = Authenticator.getUser(ctx);
-		Optional<Project> project = Repos.getProjectRepo().getById(id);
+		var hasPermission = false;
 
-		if (project.isPresent()) {
-			String owner = project.get().getOwner();
+		Session session = Database.getSession();
+		session.beginTransaction();
 
-			if (owner.equals(user.getId())
+		Project project = session.find(Project.class, id);
+
+		if (project != null) {
+			Owner owner = project.getOwner();
+
+			if (owner.getId().equals(user.getId())
 					&& Authenticator.hasPermissions(ctx, Roles.MANAGE_PERSONAL_PROJECTS)) {
-				 return true;
-			} else if (owner.equals(user.getOrganizationId())
+				 hasPermission = true;
+			} else if (owner.getId().equals(user.getOrganization().getId())
 					&& Authenticator.hasPermissions(ctx, Roles.MANAGE_PROJECTS)) {
-				return true;
+				hasPermission = true;
 			}
 		} else {
-			Optional<Workspace> workspace = Repos.getWorkspaceRepo().getById(id);
+			Workspace workspace = session.find(Workspace.class, id);
 
-			if (workspace.isPresent() && workspace.get().getOwner().equals(user.getOrganizationId())
+			if (workspace != null && workspace.getOwner().getId().equals(user.getOrganization().getId())
 					&& Authenticator.hasPermissions(ctx, Roles.MANAGE_PROJECTS)) {
-				return true;
+				hasPermission = true;
 			}
 		}
 
-		// TODO: Add support for slides
+		session.getTransaction().commit();
+		session.close();
 
-		return false;
-	}
-
-	/**
-	 * Creates a mutable ArrayList from array
-	 * @return ArrayList of slides
-	 * @throws IOException When unable to read slide file
-	 */
-	protected ArrayList<Slide> getSlides() throws IOException {
-		return new ArrayList<>(
-			Arrays.asList(new Gson().fromJson(Files.readString(Path.of(Constants.SLIDES_FILE)), Slide[].class)
-		));
+		return hasPermission;
 	}
 }

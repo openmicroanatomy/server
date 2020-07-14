@@ -1,12 +1,14 @@
 package fi.ylihallila.server.controllers;
 
-import com.google.gson.Gson;
+import fi.ylihallila.server.Database;
+import fi.ylihallila.server.Util;
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.OpenSlideCache;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.Slide;
 import fi.ylihallila.server.models.User;
 import io.javalin.http.Context;
+import org.hibernate.Session;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,52 +16,28 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class SlideController extends BasicController {
 
 	private Logger logger = LoggerFactory.getLogger(SlideController.class);
 
-	public void getAllSlides(Context ctx) throws IOException {
-		File directory = new File("slides");
+	public void getAllSlides(Context ctx) {
+		Session session = ctx.use(Session.class);
 
-		if (directory.isDirectory()) {
-			String[] files = directory.list();
-			ctx.status(200).json(files);
-		} else {
-			ctx.status(404);
-		}
-	}
-
-	public void GetAllSlidesV2(Context ctx) throws IOException {
-		File directory = new File("slides");
-
-		if (!directory.isDirectory()) {
-			ctx.status(404);
-			return;
-		}
-
-		List<Slide> slides = List.of(new Gson().fromJson(
-			Files.readString(Path.of(Constants.SLIDES_FILE)),
-			Slide[].class
-		));
+		List<Slide> slides = session.createQuery("from Slide", Slide.class).list();
 
 		List<HashMap<String, Object>> slidesWithProperties = slides.stream().map(slide -> {
 			HashMap<String, Object> data = new HashMap<>();
 			data.put("name", slide.getName());
 			data.put("id", slide.getId());
 			data.put("owner", slide.getOwner());
-			data.put("ownerReadable", slide.getOwnerReadable()); // todo: rename "owner" and "ownerId"
 
-			File slideProperties = new File(String.format(Constants.SLIDE_PROPERTIES_FILE, slide.getId()));
+			File propertiesFile = new File(String.format(Constants.SLIDE_PROPERTIES_FILE, slide.getId()));
 
-			if (slideProperties.exists()) {
+			if (propertiesFile.exists()) {
 				try {
-					data.put("parameters", new Gson().fromJson(
-						Files.readString(slideProperties.toPath()),
-						Map.class
-					));
+					data.put("parameters", Util.getMapper().readValue(propertiesFile, Map.class)); // TODO: Rename Properties
 				} catch (IOException e) {
 					logger.error("Error while trying to get slide properties", e);
 					logger.error(slide.toString());
@@ -69,7 +47,7 @@ public class SlideController extends BasicController {
 			return data;
 		}).collect(Collectors.toList());
 
-		ctx.json(slidesWithProperties).status(200);
+		ctx.status(200).json(slidesWithProperties);
 	}
 
 	public void upload(Context ctx) throws IOException {
@@ -115,44 +93,42 @@ public class SlideController extends BasicController {
 		}
 	}
 
-	public void updateSlide(Context ctx) throws IOException {
-		String slideId = ctx.pathParam("slide-id", String.class).get();
+	public void updateSlide(Context ctx) {
+		String id = ctx.pathParam("slide-id", String.class).get();
 
-		List<Slide> slides = getSlides();
-		var success = new AtomicBoolean(false);
+		Session session = ctx.use(Session.class);
 
-		slides.forEach(slide -> {
-			if (slide.getId().equalsIgnoreCase(slideId)) {
-				slide.setName(ctx.formParam("slide-name", slide.getName()));
-				success.set(true);
-			}
-		});
+		Slide slide = session.find(Slide.class, id);
 
-		if (success.get()) {
-			saveAndBackup(Path.of(Constants.SLIDES_FILE), slides);
+		if (slide != null) {
+			slide.setName(ctx.formParam("slide-name", slide.getName()));
+			session.update(slide);
+
 			ctx.status(200);
 
-			logger.info("Slide {} edited by {}", slideId, Authenticator.getUsername(ctx).orElse("Unknown"));
+			logger.info("Slide {} edited by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 		} else {
 			ctx.status(404);
 		}
 	}
 
 	public void deleteSlide(Context ctx) throws IOException {
-		String slideId = ctx.pathParam("slide-id", String.class).get();
+		String id = ctx.pathParam("slide-id", String.class).get();
 
-		List<Slide> slides = getSlides();
-		var deleted = slides.removeIf(slide -> slide.getId().equalsIgnoreCase(slideId));
+		Session session = ctx.use(Session.class);
 
-		if (deleted) {
-			Path propertiesPath = Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, slideId));
+		Slide slide = session.find(Slide.class, id);
+
+		if (slide != null) {
+			session.delete(slide);
+
+			Path propertiesPath = Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, id));
 			backup(propertiesPath);
 			Files.delete(propertiesPath);
 
-			saveAndBackup(Path.of(Constants.SLIDES_FILE), slides);
 			ctx.status(200);
 
-			logger.info("Slide {} deleted by {}", slideId, Authenticator.getUsername(ctx).orElse("Unknown"));
+			logger.info("Slide {} deleted by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 		} else {
 			ctx.status(404);
 		}
@@ -166,19 +142,13 @@ public class SlideController extends BasicController {
 		}
 	}
 
-	private void getSlidePropertiesFromFile(Context ctx) {
-		String slideId = ctx.pathParam("slide-id", String.class).get();
+	private void getSlidePropertiesFromFile(Context ctx) throws IOException {
+		String id = ctx.pathParam("slide-id", String.class).get();
 
-		Path slideProperties = Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, slideId));
+		File propertiesFile = new File(String.format(Constants.SLIDE_PROPERTIES_FILE, id));
 
-		if (slideProperties.toFile().exists()) {
-			try {
-				ctx.status(200)
-				   .contentType("application/json")
-				   .result(Files.readString(slideProperties));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		if (propertiesFile.exists()) {
+			ctx.status(200).json(Util.getMapper().readValue(propertiesFile, Map.class));
 		} else {
 			ctx.status(404);
 		}
@@ -187,8 +157,7 @@ public class SlideController extends BasicController {
 	private void getSlidePropertiesFromOpenslide(Context ctx) throws IOException {
 		Map<String, String> properties = OpenSlideCache.get(ctx.pathParam("slide-name")).get().getProperties();
 
-		String json = new Gson().toJson(properties);
-		ctx.result(json);
+		ctx.status(200).json(properties); // TODO: Test
 	}
 
 	public void renderTile(Context ctx) throws Exception {
@@ -207,8 +176,7 @@ public class SlideController extends BasicController {
 			FileInputStream fis = new FileInputStream(Path.of(fileName).toString());
 			InputStream is = new ByteArrayInputStream(fis.readAllBytes());
 
-			ctx.status(200).contentType("image/jpg");
-			ctx.result(is);
+			ctx.status(200).contentType("image/jpg").result(is);
 
 			is.close();
 			fis.close();
@@ -220,26 +188,25 @@ public class SlideController extends BasicController {
 
 	private void processUploadedSlide(Context ctx, String slideName) throws IOException {
 		Optional<OpenSlide> openSlide = OpenSlideCache.get(String.format(Constants.UPLOADED_FILE, slideName));
-		User user = Authenticator.getUser(ctx);
 
 		if (openSlide.isEmpty()) {
-			logger.error("Error when processing uploaded file. Couldn't create OpenSlide instance. Perhaps the file was corrupted during upload or the file isn't supported by OpenSlide");
+			logger.error("Error when processing uploaded file: Couldn't create OpenSlide instance."
+				+ "\n" + "Possible solutions: file was corrupted during upload or the file isn't supported by OpenSlide");
 			return;
 		}
 
+		String id = UUID.randomUUID().toString();
+		User user = Authenticator.getUser(ctx);
+
 		// Add slide to slides.json
 
-		String id = UUID.randomUUID().toString();
-		ArrayList<Slide> slides = getSlides();
+		Session session = ctx.use(Session.class);
 
 		Slide slide = new Slide();
 		slide.setName(slideName);
 		slide.setId(id);
-		slide.setOwner(user.getOrganizationId());
-
-		slides.add(slide);
-
-		saveAndBackup(Path.of(Constants.SLIDES_FILE), slides); // TODO: SlideRepository
+		slide.setOwner(user.getOrganization());
+		session.save(slide);
 
 		// Move slide to slides pending tiling. See Tiler for further processing.
 

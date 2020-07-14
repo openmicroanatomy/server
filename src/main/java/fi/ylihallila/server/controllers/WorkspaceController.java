@@ -1,17 +1,11 @@
 package fi.ylihallila.server.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import fi.ylihallila.server.Util;
+import fi.ylihallila.server.Database;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.remote.commons.Roles;
-import fi.ylihallila.server.models.User;
-import fi.ylihallila.server.models.Workspace;
-import fi.ylihallila.server.models.WorkspaceExpanded;
-import fi.ylihallila.server.repositories.Repos;
+import fi.ylihallila.server.models.*;
 import io.javalin.http.Context;
-import io.javalin.http.NotFoundResponse;
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,73 +15,72 @@ public class WorkspaceController extends BasicController {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public void getAllWorkspaces(Context ctx) throws JsonProcessingException {
-		List<Workspace> workspaces = new ArrayList<>(Repos.getWorkspaceRepo().list());
+	public void getAllWorkspaces(Context ctx) {
+		Session session = Database.getSession();
+		session.beginTransaction();
 
-		if (ctx.queryParamMap().containsKey("owner")) {
-			workspaces.removeIf(workspace -> !workspace.getOwner().equalsIgnoreCase(ctx.queryParam("owner")));
-		}
+		List<Workspace> workspaces = session.createQuery("from Workspace", Workspace.class).list();
 
 		if (Authenticator.isLoggedIn(ctx) && Authenticator.hasPermissions(ctx, Roles.MANAGE_PERSONAL_PROJECTS)) {
 			User user = Authenticator.getUser(ctx);
 
-			Workspace projects = new Workspace();
-			projects.setId((String) null);
-			projects.setName("My Projects");
-			projects.setOwner(user.getId());
-			projects.setProjects(Repos.getProjectRepo().getMany(
-				project -> project.getOwner().equalsIgnoreCase(user.getId()))
-			);
+			Workspace personal = new Workspace();
+			personal.setId((String) null);
+			personal.setName("My Projects");
+			personal.setOwner(user);
 
-			workspaces.add(projects);
+			List<Project> projects = session.createQuery("from Project where owner.id = :id", Project.class)
+					                        .setParameter("id", user.getId()).list();
+			personal.setProjects(projects);
+
+			workspaces.add(personal);
 		}
 
-		ObjectMapper temp = Util.getMapper().copy();
-		SimpleModule simpleModule = new SimpleModule();
-		simpleModule.setMixInAnnotation(Workspace.class, WorkspaceExpanded.class);
-		temp.registerModule(simpleModule);
-
-		ctx.status(200).contentType("application/json").result(temp.writeValueAsString(workspaces));
+		ctx.status(200).json(workspaces);
 	}
 
 	public void getWorkspace(Context ctx) {
 		String id = ctx.pathParam("workspace-id", String.class).get();
 
-		Workspace workspace = Repos.getWorkspaceRepo().getById(id).orElseThrow(NotFoundResponse::new);
+		Session session = ctx.use(Session.class);
+
+		Workspace workspace = session.find(Workspace.class, id);
+
 		ctx.status(200).json(workspace);
 	}
 
 	public void createWorkspace(Context ctx) {
 		String workspaceName = ctx.formParam("workspace-name", String.class).get();
 		String workspaceId   = UUID.randomUUID().toString();
+		Session session = ctx.use(Session.class);
 		User user = Authenticator.getUser(ctx);
 
 		Workspace workspace = new Workspace();
 		workspace.setName(workspaceName);
-		workspace.setOwner(user.getOrganizationId());
+		workspace.setOwner(user.getOrganization());
 		workspace.setId(workspaceId);
 		workspace.setProjects(Collections.emptyList());
-
-		Repos.getWorkspaceRepo().insert(workspace);
+		session.save(workspace);
 
 		logger.info("Workspace {} created by {}", workspaceId, user.getName());
 	}
 
 	public void updateWorkspace(Context ctx) {
 		String id = ctx.pathParam("workspace-id", String.class).get();
+		Session session = ctx.use(Session.class);
 
-		Workspace workspace = Repos.getWorkspaceRepo().getById(id).orElseThrow(NotFoundResponse::new);
+		Workspace workspace = session.find(Workspace.class, id);
 		workspace.setName(ctx.formParam("workspace-name", workspace.getName()));
-
-		Repos.getWorkspaceRepo().commit();
 
 		logger.info("Workspace {} edited by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 	}
 
 	public void deleteWorkspace(Context ctx) {
 		String id = ctx.pathParam("workspace-id", String.class).get();
+		Session session = ctx.use(Session.class);
 
-		Repos.getWorkspaceRepo().deleteById(id);
+		Workspace workspace = session.find(Workspace.class, id);
+		session.delete(workspace);
 
 		logger.info("Workspace {} deleted by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 	}

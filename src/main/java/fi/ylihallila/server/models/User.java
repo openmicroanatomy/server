@@ -3,18 +3,31 @@ package fi.ylihallila.server.models;
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.Database;
 import fi.ylihallila.server.Util;
 import fi.ylihallila.server.models.resolvers.UserIdResolver;
+import org.hibernate.Session;
+import org.hibernate.annotations.GenericGenerator;
 
+import javax.persistence.*;
 import java.util.Set;
 
-@JsonIdentityInfo(scope = User.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", resolver = UserIdResolver.class)
-public class User {
+@Entity
+@Table( name = "users" )
+//@JsonIdentityInfo(scope = User.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", resolver = UserIdResolver.class)
+public class User extends Owner {
 
     /**
      * ID is defined as the Azure Active Directory Tenant ID
      * @see <a href="https://docs.microsoft.com/fi-fi/onedrive/find-your-office-365-tenant-id">Microsoft documentation</a>
      */
+    @Id
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(
+            name = "UUID",
+            strategy = "org.hibernate.id.UUIDGenerator"
+    )
+    @Column(name = "id", updatable = false, nullable = false)
     private String id;
 
     /**
@@ -30,23 +43,22 @@ public class User {
     /**
      * Human readable presentation of @var organizationId;
      */
-    private String organization;
-
-    /**
-     * Azure AD tenant GUID. Provided by Microsoft Open ID
-     */
-    private String organizationId;
+    @ManyToOne
+    private Organization organization;
 
     /**
      * Roles for this user.
      */
+    @Column
+    @Enumerated
+    @ElementCollection(targetClass = Roles.class, fetch = FetchType.EAGER)
     private Set<Roles> roles;
 
-    public User(String id, String name, String organizationId, Set<Roles> roles) {
+    public User(String id, String name, Set<Roles> roles, Organization organization) {
         this.id = id;
         this.name = name;
-        this.organizationId = organizationId;
         this.roles = roles;
+        this.organization = organization;
     }
 
     public User() {}
@@ -75,20 +87,24 @@ public class User {
         this.email = email;
     }
 
-    /**
-     * Returns the users organization name.
-     */
-    @JsonSerialize
-    public String getOrganization() {
-        return Util.getHumanReadableName(organizationId).orElse("Unknown (" + organizationId + ")");
+    public Organization getOrganization() {
+        return organization;
     }
 
-    public String getOrganizationId() {
-        return organizationId;
+    public void setOrganization(String id) {
+        Session session = Database.getSession();
+        session.beginTransaction();
+
+        Organization organization = session.find(Organization.class, id);
+
+        session.getTransaction().commit();
+        session.close();
+
+        setOrganization(organization);
     }
 
-    public void setOrganizationId(String organization) {
-        this.organizationId = organization;
+    public void setOrganization(Organization organization) {
+        this.organization = organization;
     }
 
     public Set<Roles> getRoles() {
@@ -105,8 +121,10 @@ public class User {
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", email='" + email + '\'' +
-                ", organizationId='" + organizationId + '\'' +
+                ", organization='" + organization + '\'' +
                 ", roles=" + roles +
                 '}';
     }
 }
+
+

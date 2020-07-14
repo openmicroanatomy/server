@@ -3,7 +3,10 @@ package fi.ylihallila.server.models;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import fi.ylihallila.server.Util;
+import org.hibernate.annotations.GenericGenerator;
 
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -13,12 +16,21 @@ import java.util.UUID;
  *
  * @see WorkspaceExpanded
  */
+@Entity
+@Table( name = "workspaces" )
 @JsonIdentityInfo(scope = Workspace.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Workspace {
 
 	/**
 	 * UUID representing this workspace.
 	 */
+	@Id
+	@GeneratedValue(generator = "UUID")
+	@GenericGenerator(
+		name = "UUID",
+		strategy = "org.hibernate.id.UUIDGenerator"
+	)
+	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 
 	/**
@@ -30,9 +42,11 @@ public class Workspace {
 	 * UUID of the workspace owner, usually an organization. Only users which are part
 	 * of this organization can edit the projects withing this workspace.
 	 */
-	private String owner;
+	@ManyToOne
+	private Owner owner;
 
-	@JsonIdentityReference(alwaysAsId = true)
+	@JsonIdentityReference(alwaysAsId = false)
+	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
 	private List<Project> projects = new ArrayList<>();
 
 	public Workspace() {
@@ -59,11 +73,15 @@ public class Workspace {
 		this.id = id;
 	}
 
-	public String getOwner() {
+	public Owner getOwner() {
 		return owner;
 	}
 
-	public void setOwner(String owner) {
+	public void setOwner(String id) {
+		setOwner(Util.getOrganization(id));
+	}
+
+	public void setOwner(Owner owner) {
 		this.owner = owner;
 	}
 
@@ -86,8 +104,9 @@ public class Workspace {
 	@Override
 	public String toString() {
 		return "Workspace{" +
-				"name='" + name + '\'' +
-				", id='" + id + '\'' +
+				"id='" + id + '\'' +
+				", name='" + name + '\'' +
+				", owner=" + owner +
 				", projects=" + projects +
 				'}';
 	}
