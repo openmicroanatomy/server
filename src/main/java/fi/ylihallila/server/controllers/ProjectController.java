@@ -1,6 +1,5 @@
 package fi.ylihallila.server.controllers;
 
-import fi.ylihallila.server.Database;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.Project;
 import fi.ylihallila.server.models.User;
@@ -22,12 +21,6 @@ import java.util.zip.ZipOutputStream;
 public class ProjectController extends BasicController {
 
 	private Logger logger = LoggerFactory.getLogger(ProjectController.class);
-//	private Repository<Project> repo;
-
-//	@Inject
-//	public ProjectController(@ProjectRepository Repository<Project> repo) {
-//		this.repo = repo;
-//	}
 
 	public void getAllProjects(Context ctx) {
 		Session session = ctx.use(Session.class);
@@ -40,8 +33,8 @@ public class ProjectController extends BasicController {
 	public void createPersonalProject(Context ctx) throws IOException {
 		String projectName = ctx.formParam("project-name", String.class).get();
 		String projectId = UUID.randomUUID().toString();
-		Session session = ctx.use(Session.class);
 		User user = Authenticator.getUser(ctx);
+		Session session = ctx.use(Session.class);
 
 		Project project = new Project();
 		project.setName("Copy of " + projectName);
@@ -60,10 +53,8 @@ public class ProjectController extends BasicController {
 		String workspaceId = ctx.formParam("workspace-id", String.class).get();
 		String projectName = ctx.formParam("project-name", String.class).get();
 		String projectId    = UUID.randomUUID().toString();
-		Session session = ctx.use(Session.class);
 		User user = Authenticator.getUser(ctx);
-
-		session.beginTransaction();
+		Session session = ctx.use(Session.class);
 
 		Project project = new Project();
 		project.setId(projectId);
@@ -105,36 +96,57 @@ public class ProjectController extends BasicController {
 			return;
 		}
 
-		InputStream is = new ByteArrayInputStream(new FileInputStream(file).readAllBytes());
+		FileInputStream fis = new FileInputStream(file);
 
-		ctx.contentType("application/zip").result(is);
+		ctx.contentType("application/zip").status(200).result(fis.readAllBytes());
 
-		is.close();
+		fis.close();
 	}
 
 	public void updateProject(Context ctx) {
-		String projectId = ctx.pathParam("project-id", String.class).get();
+		String id = ctx.pathParam("project-id", String.class).get();
+
+		if (!hasPermission(ctx, id)) {
+			ctx.status(403);
+			return;
+		}
 
 		Session session = ctx.use(Session.class);
 
-		Project project = session.find(Project.class, projectId);
+		Project project = session.find(Project.class, id);
 		project.setName(ctx.formParam("name", project.getName()));
 		project.setDescription(ctx.formParam("description", project.getDescription()));
 		project.setModifiedAt(System.currentTimeMillis());
 		session.update(project);
 
-		logger.info("Project {} edited by {}", projectId, Authenticator.getUsername(ctx).orElse("Unknown"));
+		ctx.status(200);
+
+		logger.info("Project {} edited by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 	}
 
 	public void deleteProject(Context ctx) {
 		String id = ctx.pathParam("project-id", String.class).get();
 
+		User user = Authenticator.getUser(ctx);
 		Session session = ctx.use(Session.class);
-
 		Project project = session.find(Project.class, id);
-		session.delete(project);
 
-		delete(getProjectFile(id));
+		if (project == null) {
+			ctx.status(404); return;
+		}
+
+		if (!project.hasPermission(user)) {
+			ctx.status(403); return;
+		}
+
+		session.createSQLQuery("DELETE FROM WORKSPACES_PROJECTS WHERE PROJECTS_ID = :id")
+				.setParameter("id", project.getId())
+				.executeUpdate();
+
+		session.delete(project);
+		backupAndDelete(getProjectFile(id));
+
+		ctx.status(200);
 
 		logger.info("Project {} deleted by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 	}

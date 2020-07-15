@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -42,7 +43,7 @@ public class Util {
         logger.debug("Creating backup of {}", filePath);
 
         String fileName = filePath.getFileName().toString();
-        List<Backup> backups = getBackups(backup -> backup.getFilename().equalsIgnoreCase(fileName));
+//        List<Backup> backups = getBackups(backup -> backup.getFilename().equalsIgnoreCase(fileName));
 
 //        Backup previousBackup = backups.get(backups.size() - 1);
 //        String previousBackupHash = DigestUtils.sha1Hex(Files.readAllBytes(previousBackup.getFilepath()));

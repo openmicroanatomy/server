@@ -1,13 +1,13 @@
 package fi.ylihallila.server.controllers;
 
 import com.google.gson.Gson;
-import fi.ylihallila.server.Database;
 import fi.ylihallila.server.models.*;
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.Util;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.remote.commons.Roles;
 import io.javalin.http.Context;
+import org.apache.commons.io.FileUtils;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 
 public class BasicController {
 
@@ -45,16 +46,16 @@ public class BasicController {
 		}
 	}
 
-	protected void delete(String pathToFile) {
-		delete(Path.of(pathToFile));
+	protected void backupAndDelete(String pathToFile) {
+		backupAndDelete(Path.of(pathToFile));
 	}
 
-	protected void delete(Path pathToFile) {
+	protected void backupAndDelete(Path pathToFile) {
 		try {
-			backup(pathToFile);
+//			Util.backup(pathToFile);
 			Files.delete(pathToFile);
 		} catch (IOException e) {
-			logger.error("Error while deleting file {}", pathToFile, e);
+			logger.error("Error while deleting / backing up file {}", pathToFile, e);
 		}
 	}
 
@@ -91,34 +92,35 @@ public class BasicController {
 	 */
 	public boolean hasPermission(Context ctx, String id) {
 		User user = Authenticator.getUser(ctx);
+		Set<Roles> roles = user.getRoles();
+
+		if (roles.contains(Roles.ADMIN)) {
+			return true;
+		}
+
 		var hasPermission = false;
 
-		Session session = Database.getSession();
-		session.beginTransaction();
-
+		Session session = ctx.use(Session.class);
 		Project project = session.find(Project.class, id);
 
 		if (project != null) {
 			Owner owner = project.getOwner();
 
 			if (owner.getId().equals(user.getId())
-					&& Authenticator.hasPermissions(ctx, Roles.MANAGE_PERSONAL_PROJECTS)) {
+					&& roles.contains(Roles.MANAGE_PERSONAL_PROJECTS)) {
 				 hasPermission = true;
 			} else if (owner.getId().equals(user.getOrganization().getId())
-					&& Authenticator.hasPermissions(ctx, Roles.MANAGE_PROJECTS)) {
+					&& roles.contains(Roles.MANAGE_PROJECTS)) {
 				hasPermission = true;
 			}
 		} else {
 			Workspace workspace = session.find(Workspace.class, id);
 
 			if (workspace != null && workspace.getOwner().getId().equals(user.getOrganization().getId())
-					&& Authenticator.hasPermissions(ctx, Roles.MANAGE_PROJECTS)) {
+					&& roles.contains(Roles.MANAGE_PROJECTS)) {
 				hasPermission = true;
 			}
 		}
-
-		session.getTransaction().commit();
-		session.close();
 
 		return hasPermission;
 	}

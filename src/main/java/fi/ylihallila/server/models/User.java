@@ -54,9 +54,10 @@ public class User extends Owner {
     @ElementCollection(targetClass = Roles.class, fetch = FetchType.EAGER)
     private Set<Roles> roles;
 
-    public User(String id, String name, Set<Roles> roles, Organization organization) {
+    public User(String id, String name, String email, Set<Roles> roles, Organization organization) {
         this.id = id;
         this.name = name;
+        this.email = email;
         this.roles = roles;
         this.organization = organization;
     }

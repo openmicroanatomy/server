@@ -3,6 +3,7 @@ package fi.ylihallila.server.models;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.Util;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -49,9 +50,15 @@ public class Workspace {
 	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
 	private List<Project> projects = new ArrayList<>();
 
-	public Workspace() {
-		setId(UUID.randomUUID().toString());
+	public Workspace() {}
+
+	public Workspace(String id, String name, Owner owner, List<Project> projects) {
+		this.id = id;
+		this.name = name;
+		this.owner = owner;
+		this.projects = projects;
 	}
+
 
 	public String getName() {
 		return name;
@@ -99,6 +106,15 @@ public class Workspace {
 
 	public void removeProject(String id) {
 		projects.removeIf(project -> project.getId().equalsIgnoreCase(id));
+	}
+
+	public boolean hasPermission(User user) {
+		if (user.getRoles().contains(Roles.ADMIN)) {
+			return true;
+		}
+
+		return owner.getId().equals(user.getOrganization().getId())
+				&& user.getRoles().contains(Roles.MANAGE_PROJECTS);
 	}
 
 	@Override

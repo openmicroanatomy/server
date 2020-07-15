@@ -1,6 +1,5 @@
 package fi.ylihallila.server.controllers;
 
-import fi.ylihallila.server.Database;
 import fi.ylihallila.server.Util;
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.OpenSlideCache;
@@ -39,8 +38,7 @@ public class SlideController extends BasicController {
 				try {
 					data.put("parameters", Util.getMapper().readValue(propertiesFile, Map.class)); // TODO: Rename Properties
 				} catch (IOException e) {
-					logger.error("Error while trying to get slide properties", e);
-					logger.error(slide.toString());
+					logger.error("Error while trying to get properties for slide {}", slide.getId(), e);
 				}
 			}
 
@@ -95,43 +93,49 @@ public class SlideController extends BasicController {
 
 	public void updateSlide(Context ctx) {
 		String id = ctx.pathParam("slide-id", String.class).get();
-
+		User user = Authenticator.getUser(ctx);
 		Session session = ctx.use(Session.class);
 
 		Slide slide = session.find(Slide.class, id);
-
-		if (slide != null) {
-			slide.setName(ctx.formParam("slide-name", slide.getName()));
-			session.update(slide);
-
-			ctx.status(200);
-
-			logger.info("Slide {} edited by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
-		} else {
-			ctx.status(404);
+		if (slide == null) {
+			ctx.status(404); return;
 		}
+
+		if (!slide.hasPermission(user)) {
+			ctx.status(403); return;
+		}
+
+		slide.setName(ctx.formParam("slide-name", slide.getName()));
+		session.update(slide);
+
+		ctx.status(200);
+
+		logger.info("Slide {} edited by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 	}
 
 	public void deleteSlide(Context ctx) throws IOException {
 		String id = ctx.pathParam("slide-id", String.class).get();
-
+		User user = Authenticator.getUser(ctx);
 		Session session = ctx.use(Session.class);
 
 		Slide slide = session.find(Slide.class, id);
-
-		if (slide != null) {
-			session.delete(slide);
-
-			Path propertiesPath = Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, id));
-			backup(propertiesPath);
-			Files.delete(propertiesPath);
-
-			ctx.status(200);
-
-			logger.info("Slide {} deleted by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
-		} else {
-			ctx.status(404);
+		if (slide == null) {
+			ctx.status(404); return;
 		}
+
+		if (!slide.hasPermission(user)) {
+			ctx.status(403); return;
+		}
+
+		session.delete(slide);
+
+		Path propertiesPath = Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, id));
+		backup(propertiesPath);
+		Files.delete(propertiesPath);
+
+		ctx.status(200);
+
+		logger.info("Slide {} deleted by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 	}
 
 	public void getSlideProperties(Context ctx) throws IOException {

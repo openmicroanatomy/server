@@ -16,8 +16,7 @@ public class WorkspaceController extends BasicController {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public void getAllWorkspaces(Context ctx) {
-		Session session = Database.getSession();
-		session.beginTransaction();
+		Session session = ctx.use(Session.class);
 
 		List<Workspace> workspaces = session.createQuery("from Workspace", Workspace.class).list();
 
@@ -41,10 +40,13 @@ public class WorkspaceController extends BasicController {
 
 	public void getWorkspace(Context ctx) {
 		String id = ctx.pathParam("workspace-id", String.class).get();
-
 		Session session = ctx.use(Session.class);
 
 		Workspace workspace = session.find(Workspace.class, id);
+
+		if (workspace == null) {
+			ctx.status(404); return;
+		}
 
 		ctx.status(200).json(workspace);
 	}
@@ -56,9 +58,9 @@ public class WorkspaceController extends BasicController {
 		User user = Authenticator.getUser(ctx);
 
 		Workspace workspace = new Workspace();
+		workspace.setId(workspaceId);
 		workspace.setName(workspaceName);
 		workspace.setOwner(user.getOrganization());
-		workspace.setId(workspaceId);
 		workspace.setProjects(Collections.emptyList());
 		session.save(workspace);
 
@@ -68,18 +70,38 @@ public class WorkspaceController extends BasicController {
 	public void updateWorkspace(Context ctx) {
 		String id = ctx.pathParam("workspace-id", String.class).get();
 		Session session = ctx.use(Session.class);
+		User user = Authenticator.getUser(ctx);
 
 		Workspace workspace = session.find(Workspace.class, id);
+
+		if (workspace == null) {
+			ctx.status(404); return;
+		}
+
+		if (!workspace.hasPermission(user)) {
+			ctx.status(403); return;
+		}
+
 		workspace.setName(ctx.formParam("workspace-name", workspace.getName()));
 
-		logger.info("Workspace {} edited by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
+		logger.info("Workspace {} edited by {}", id, user.getName());
 	}
 
 	public void deleteWorkspace(Context ctx) {
 		String id = ctx.pathParam("workspace-id", String.class).get();
 		Session session = ctx.use(Session.class);
+		User user = Authenticator.getUser(ctx);
 
 		Workspace workspace = session.find(Workspace.class, id);
+
+		if (workspace == null) {
+			ctx.status(404); return;
+		}
+
+		if (!workspace.hasPermission(user)) {
+			ctx.status(403); return;
+		}
+
 		session.delete(workspace);
 
 		logger.info("Workspace {} deleted by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));

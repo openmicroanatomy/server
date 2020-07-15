@@ -1,0 +1,20 @@
+[
+  {
+    "username": "Admin",
+    "password": "admin",
+    "id" : "aeae48ac-961a-425e-a715-c01205d2e83d",
+    "name" : "Admin",
+    "email" : "admin@example.com",
+    "organization" : "0d9e61c5-3642-4f3a-bf26-58ce7852ae33",
+    "roles" : [ "ADMIN", "MANAGE_PROJECTS", "MANAGE_SLIDES", "MANAGE_USERS", "MANAGE_PERSONAL_PROJECTS" ]
+  },
+  {
+    "username": "Teacher",
+    "password": "teacher",
+    "id" : "70e99eac-b439-4a73-967e-2d83870b8326",
+    "name" : "Teacher",
+    "email" : "teacher@example.com",
+    "organization" : "0d9e61c5-3642-4f3a-bf26-58ce7852ae33",
+    "roles" : [ "MANAGE_PROJECTS", "MANAGE_SLIDES", "MANAGE_USERS", "MANAGE_PERSONAL_PROJECTS" ]
+  }
+]

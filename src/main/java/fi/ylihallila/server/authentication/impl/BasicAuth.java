@@ -1,50 +1,68 @@
 package fi.ylihallila.server.authentication.impl;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.Database;
-import fi.ylihallila.server.Util;
 import fi.ylihallila.server.authentication.Auth;
 import fi.ylihallila.server.models.User;
+import fi.ylihallila.server.util.Constants;
 import io.javalin.core.security.BasicAuthCredentials;
 import io.javalin.core.security.Role;
 import io.javalin.http.Context;
 import io.javalin.http.UnauthorizedResponse;
 import kotlin.Pair;
 import org.hibernate.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class BasicAuth implements Auth {
 
-    private final Map<Pair<String, String>, String> userMap = Map.of(
-        new Pair<>("Aaron", "salasana"), "dfa4d992-067e-40bc-b31e-58f8a8b77044",
-        new Pair<>("Demo", "demo"),      "2c8ca23a-17f1-48f7-804b-8defd8808fb6"
-    );
+    private static final Logger logger = LoggerFactory.getLogger(BasicAuth.class);
+    public static Map<Pair<String, String>, String> userMap = new HashMap<>();
 
     static {
-        Session session = Database.getSession();
-        session.beginTransaction();
+        try {
+            Session session = Database.getSession();
+            session.beginTransaction();
 
-        var user = new User(
-            "dfa4d992-067e-40bc-b31e-58f8a8b77044",
-            "Aaron",
-            Set.of(Roles.ADMIN, Roles.MANAGE_USERS, Roles.MANAGE_SLIDES, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS),
-            Util.getOrganization("9f9ce49a-5101-4aa3-8c75-0d5935ad6525")
-        );
+            JsonArray users = (JsonArray) JsonParser.parseString(Files.readString(Path.of(Constants.USERS_FILE)));
 
-        session.saveOrUpdate(user);
+            for (JsonElement element : users) {
+                JsonObject data = element.getAsJsonObject();
+                JsonArray array = data.getAsJsonArray("roles");
 
-        user = new User(
-            "2c8ca23a-17f1-48f7-804b-8defd8808fb6",
-            "Demo",
-            Set.of(Roles.MANAGE_SLIDES, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS),
-            Util.getOrganization("9f9ce49a-5101-4aa3-8c75-0d5935ad6525")
-        );
+                Set<Roles> roles = IntStream.range(0, array.size())
+                        .mapToObj(array::get)
+                        .map(o -> Roles.valueOf(o.getAsString()))
+                        .collect(Collectors.toSet());
 
-        session.saveOrUpdate(user);
+                User user = new User();
+                user.setId(data.get("id").getAsString());
+                user.setName(data.get("name").getAsString());
+                user.setEmail(data.get("email").getAsString());
+                user.setOrganization(data.get("organization").getAsString());
+                user.setRoles(roles);
 
-        session.getTransaction().commit();
-        session.close();
+                userMap.put(new Pair<>(data.get("username").getAsString(), data.get("password").getAsString()), data.get("id").getAsString());
+
+                session.saveOrUpdate(user);
+            }
+
+            session.getTransaction().commit();
+            session.close();
+        } catch (IOException e) {
+            logger.error("Error while reading BasicAuth user.json", e);
+        }
     }
 
     @Override
@@ -83,14 +101,6 @@ public class BasicAuth implements Auth {
     @Override
     public Set<Roles> getUserRoles(Context ctx) {
         return getUserObject(ctx).getRoles();
-//        try {
-//            BasicAuthCredentials auth = ctx.basicAuthCredentials();
-//            Pair<String, String> pair = new Pair<>(auth.getUsername(), auth.getPassword());
-//
-//            return userMap.get(pair).getRoles();
-//        } catch (IllegalArgumentException e) {
-//            return Collections.emptySet();
-//        }
     }
 
     public User getUserObject(Context ctx) {

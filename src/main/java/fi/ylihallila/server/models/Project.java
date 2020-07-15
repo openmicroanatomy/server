@@ -1,11 +1,10 @@
 package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.*;
+import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.Database;
 import fi.ylihallila.server.models.resolvers.ProjectIdResolver;
 import org.hibernate.Session;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.util.UUID;
@@ -19,11 +18,6 @@ public class Project {
 	 * UUID representing this project.
 	 */
 	@Id
-//	@GeneratedValue(generator = "UUID", strategy = GenerationType.SEQUENCE)
-//	@GenericGenerator(
-//		name = "UUID",
-//		strategy = "org.hibernate.id.UUIDGenerator"
-//	)
 	@Column(name = "id", updatable = false, nullable = false)
 	private String id;
 
@@ -61,6 +55,16 @@ public class Project {
 	private long modifiedAt;
 
 	public Project() {
+		this.createdAt = System.currentTimeMillis();
+		this.modifiedAt = System.currentTimeMillis();
+	}
+
+	public Project(String id, String name, String description, Owner owner) {
+		this.id = id;
+		this.name = name;
+		this.description = description;
+		this.thumbnail = null;
+		this.owner = owner;
 		this.createdAt = System.currentTimeMillis();
 		this.modifiedAt = System.currentTimeMillis();
 	}
@@ -131,6 +135,22 @@ public class Project {
 
 	public void setModifiedAt(long modifiedAt) {
 		this.modifiedAt = modifiedAt;
+	}
+
+	public boolean hasPermission(User user) {
+		if (user.getRoles().contains(Roles.ADMIN)) {
+			return true;
+		}
+
+		if (owner.getId().equals(user.getId())
+				&& user.getRoles().contains(Roles.MANAGE_PERSONAL_PROJECTS)) {
+			return true;
+		} else if (owner.getId().equals(user.getOrganization().getId())
+				&& user.getRoles().contains(Roles.MANAGE_PROJECTS)) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	@Override

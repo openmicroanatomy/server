@@ -1,16 +1,19 @@
 package fi.ylihallila.server.models;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import fi.ylihallila.server.Util;
+import fi.ylihallila.remote.commons.Roles;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.util.UUID;
 
+/**
+ * Slides are not tied to any workspaces or projects, instead they're just located
+ * in QuPath project files. These slide objects do represent these slides and contain information
+ * about each slide. Deleting a slide object won't delete it from any project mut makes
+ * that slide inaccessible, as all the tiles will be deleted.
+ */
 @Entity
 @Table( name = "slides" )
-//@JsonIdentityInfo(scope=Slide.class, generator=ObjectIdGenerators.PropertyGenerator.class, property="id")
 public class Slide {
 
     /**
@@ -79,6 +82,15 @@ public class Slide {
      */
     public String getOwnerReadable() {
         return owner.getName();
+    }
+
+    public boolean hasPermission(User user) {
+        if (user.getRoles().contains(Roles.ADMIN)) {
+            return true;
+        }
+
+        return user.getRoles().contains(Roles.MANAGE_SLIDES) &&
+                (owner.getId().equals(user.getOrganization().getId()) || owner.getId().equals(user.getId()));
     }
 
     @Override
