@@ -1,10 +1,7 @@
 package fi.ylihallila.server.models;
 
-import org.hibernate.annotations.GenericGenerator;
-
 import javax.persistence.*;
 
-//@Embeddable
 @Entity
 @Table( name = "organizations" )
 public class Organization extends Owner {

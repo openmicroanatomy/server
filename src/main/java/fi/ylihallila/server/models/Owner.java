@@ -18,4 +18,12 @@ public class Owner {
 	public String getName() {
 		return name;
 	}
+
+	@Override
+	public String toString() {
+		return "Owner{" +
+				"id='" + id + '\'' +
+				", name='" + name + '\'' +
+				'}';
+	}
 }

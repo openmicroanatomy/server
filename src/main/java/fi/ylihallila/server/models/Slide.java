@@ -1,7 +1,6 @@
 package fi.ylihallila.server.models;
 
 import fi.ylihallila.remote.commons.Roles;
-import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.util.UUID;

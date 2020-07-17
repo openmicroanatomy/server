@@ -1,7 +1,6 @@
 package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.util.Util;
@@ -41,7 +40,6 @@ public class Workspace {
 	@ManyToOne
 	private Owner owner;
 
-	@JsonIdentityReference(alwaysAsId = false)
 	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
 	private List<Project> projects = new ArrayList<>();
 
@@ -53,7 +51,6 @@ public class Workspace {
 		this.owner = owner;
 		this.projects = projects;
 	}
-
 
 	public String getName() {
 		return name;
@@ -97,10 +94,6 @@ public class Workspace {
 
 	public boolean addProject(Project project) {
 		return this.projects.add(project);
-	}
-
-	public void removeProject(String id) {
-		projects.removeIf(project -> project.getId().equalsIgnoreCase(id));
 	}
 
 	public boolean hasPermission(User user) {

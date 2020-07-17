@@ -3,7 +3,6 @@ package fi.ylihallila.server.models;
 import com.fasterxml.jackson.annotation.*;
 import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.util.Database;
-import fi.ylihallila.server.models.resolvers.ProjectIdResolver;
 import org.hibernate.Session;
 
 import javax.persistence.*;
@@ -11,7 +10,6 @@ import java.util.UUID;
 
 @Entity
 @Table( name = "projects" )
-@JsonIdentityInfo(scope = Project.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", resolver = ProjectIdResolver.class)
 public class Project {
 
 	/**
@@ -41,7 +39,6 @@ public class Project {
 	 * Users or Tenants GUID
 	 */
 	@ManyToOne
-	@JsonIdentityReference
 	private Owner owner;
 
 	/**

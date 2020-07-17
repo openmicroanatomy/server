@@ -10,7 +10,6 @@ import java.util.Set;
 
 @Entity
 @Table( name = "users" )
-//@JsonIdentityInfo(scope = User.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", resolver = UserIdResolver.class)
 public class User extends Owner {
 
     /**
