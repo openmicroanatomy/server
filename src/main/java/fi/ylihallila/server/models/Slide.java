@@ -20,11 +20,6 @@ public class Slide {
      * UUID representing this slide.
      */
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(
-        name = "UUID",
-        strategy = "org.hibernate.id.UUIDGenerator"
-    )
     @Column(name = "id", updatable = false, nullable = false)
     private String id;
 
@@ -74,14 +69,6 @@ public class Slide {
 
     public void setOwner(Owner owner) {
         this.owner = owner;
-    }
-
-    /**
-     * Converts the ID to a human readable format.
-     * @return Organizations name, users name and if couldn't find ID: "Unknown (id)"
-     */
-    public String getOwnerReadable() {
-        return owner.getName();
     }
 
     public boolean hasPermission(User user) {

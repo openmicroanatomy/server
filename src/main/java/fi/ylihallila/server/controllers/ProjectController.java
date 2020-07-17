@@ -18,7 +18,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-public class ProjectController extends BasicController {
+public class ProjectController extends Controller {
 
 	private Logger logger = LoggerFactory.getLogger(ProjectController.class);
 

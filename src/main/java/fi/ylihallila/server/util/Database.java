@@ -1,4 +1,4 @@
-package fi.ylihallila.server;
+package fi.ylihallila.server.util;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;

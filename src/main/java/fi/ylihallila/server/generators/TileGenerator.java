@@ -1,4 +1,4 @@
-package fi.ylihallila.server;
+package fi.ylihallila.server.generators;
 
 import com.google.gson.GsonBuilder;
 import fi.ylihallila.server.archivers.TarTileArchive;

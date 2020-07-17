@@ -1,7 +1,7 @@
 package fi.ylihallila.server.tests;
 
 import fi.ylihallila.remote.commons.Roles;
-import fi.ylihallila.server.Database;
+import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.models.*;
 import org.hibernate.Session;
 
@@ -108,5 +108,11 @@ public class DummyDb {
         "802d68e4-8afc-4cbf-99d8-c8ed129a8d20",
         "Slide B",
         ORGANIZATION_B
+    );
+
+    public static Slide SLIDE_DELETE = new Slide(
+        "3d9a3fd2-4dec-4745-bb3c-7662ff6d9c94",
+        "Slide B",
+        ORGANIZATION_A
     );
 }

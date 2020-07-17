@@ -1,8 +1,8 @@
 package fi.ylihallila.server.controllers;
 
-import fi.ylihallila.server.Util;
+import fi.ylihallila.server.util.Util;
 import fi.ylihallila.server.util.Constants;
-import fi.ylihallila.server.OpenSlideCache;
+import fi.ylihallila.server.util.OpenSlideCache;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.Slide;
 import fi.ylihallila.server.models.User;
@@ -17,7 +17,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class SlideController extends BasicController {
+public class SlideController extends Controller {
 
 	private Logger logger = LoggerFactory.getLogger(SlideController.class);
 
@@ -88,6 +88,10 @@ public class SlideController extends BasicController {
 			if (Files.size(Path.of(String.format(Constants.UPLOADED_FILE, fileName))) == totalSize) {
 				processUploadedSlide(ctx, fileName);
 			}
+
+			ctx.status(200);
+		} else {
+			ctx.status(400);
 		}
 	}
 

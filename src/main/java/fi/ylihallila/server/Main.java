@@ -1,8 +1,8 @@
 package fi.ylihallila.server;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import fi.ylihallila.server.injections.modules.ProductionModule;
+import fi.ylihallila.server.generators.PropertiesGenerator;
+import fi.ylihallila.server.generators.TileGenerator;
+import fi.ylihallila.server.generators.Tiler;
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.util.SimpleDebugger;
 import org.slf4j.Logger;
@@ -70,7 +70,7 @@ public class Main {
              */
 
             try {
-                new SecureServer();
+                new Application();
             } catch (Exception e) {
                 if (e.getCause() != null && e.getCause().getClass() == IllegalStateException.class) {
                     logger.info("Add a valid keystore or run in insecure mode with --insecure launch option.");

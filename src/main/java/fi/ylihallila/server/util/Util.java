@@ -1,10 +1,9 @@
-package fi.ylihallila.server;
+package fi.ylihallila.server.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.ylihallila.server.models.Backup;
 import fi.ylihallila.server.models.Organization;
 import fi.ylihallila.server.models.Project;
-import fi.ylihallila.server.util.Constants;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -108,9 +106,7 @@ public class Util {
         Session session = Database.getSession();
         session.beginTransaction();
 
-        getKnownTenants().forEach((id, name) -> {
-            session.saveOrUpdate(new Organization(id, name));
-        });
+        getKnownTenants().forEach((id, name) -> session.saveOrUpdate(new Organization(id, name)));
 
         session.getTransaction().commit();
         session.close();

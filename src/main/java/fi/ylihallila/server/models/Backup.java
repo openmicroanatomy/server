@@ -2,7 +2,7 @@ package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fi.ylihallila.server.util.Constants;
-import fi.ylihallila.server.Util;
+import fi.ylihallila.server.util.Util;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

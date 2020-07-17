@@ -1,6 +1,6 @@
 package fi.ylihallila.server.controllers;
 
-import fi.ylihallila.server.Util;
+import fi.ylihallila.server.util.Util;
 import io.javalin.http.Context;
 
 import java.util.ArrayList;
@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class OrganizationController extends BasicController {
+public class OrganizationController extends Controller {
 
     public void getAllOrganizations(Context ctx) {
         List<Map<String, String>> data = new ArrayList<>();

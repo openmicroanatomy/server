@@ -3,11 +3,10 @@ package fi.ylihallila.server.controllers;
 import com.google.gson.Gson;
 import fi.ylihallila.server.models.*;
 import fi.ylihallila.server.util.Constants;
-import fi.ylihallila.server.Util;
+import fi.ylihallila.server.util.Util;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.remote.commons.Roles;
 import io.javalin.http.Context;
-import org.apache.commons.io.FileUtils;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,9 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 
-public class BasicController {
+public class Controller {
 
-	private Logger logger = LoggerFactory.getLogger(BasicController.class);
+	private Logger logger = LoggerFactory.getLogger(Controller.class);
 
 	protected void saveAndBackup(Path path, Object object) throws IOException {
 		save(path, object);
@@ -52,7 +51,7 @@ public class BasicController {
 
 	protected void backupAndDelete(Path pathToFile) {
 		try {
-//			Util.backup(pathToFile);
+			Util.backup(pathToFile);
 			Files.delete(pathToFile);
 		} catch (IOException e) {
 			logger.error("Error while deleting / backing up file {}", pathToFile, e);

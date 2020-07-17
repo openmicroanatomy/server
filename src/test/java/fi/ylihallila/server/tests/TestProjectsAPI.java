@@ -1,6 +1,6 @@
 package fi.ylihallila.server.tests;
 
-import fi.ylihallila.server.SecureServer;
+import fi.ylihallila.server.Application;
 import io.javalin.plugin.json.JavalinJson;
 import kong.unirest.Unirest;
 import org.apache.commons.io.FileUtils;
@@ -18,11 +18,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestProjectsAPI {
 
     private static String API_URL = "http://localhost:1337/api/v0";
-    private static SecureServer app;
+    private static Application app;
 
     @BeforeAll
     static void init() throws IOException {
-        app = new SecureServer();
+        app = new Application();
 
         DummyDb.create();
 

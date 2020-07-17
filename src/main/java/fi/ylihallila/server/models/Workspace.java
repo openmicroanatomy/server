@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import fi.ylihallila.remote.commons.Roles;
-import fi.ylihallila.server.Util;
+import fi.ylihallila.server.util.Util;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
@@ -12,11 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Remember to update WorkspaceExpanded also when updating this class.
- *
- * @see WorkspaceExpanded
- */
 @Entity
 @Table( name = "workspaces" )
 @JsonIdentityInfo(scope = Workspace.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")

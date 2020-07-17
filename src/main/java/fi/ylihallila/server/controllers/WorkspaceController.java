@@ -1,6 +1,5 @@
 package fi.ylihallila.server.controllers;
 
-import fi.ylihallila.server.Database;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.models.*;
@@ -11,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class WorkspaceController extends BasicController {
+public class WorkspaceController extends Controller {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 

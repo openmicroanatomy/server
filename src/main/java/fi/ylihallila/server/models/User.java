@@ -1,11 +1,7 @@
 package fi.ylihallila.server.models;
 
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import fi.ylihallila.remote.commons.Roles;
-import fi.ylihallila.server.Database;
-import fi.ylihallila.server.Util;
-import fi.ylihallila.server.models.resolvers.UserIdResolver;
+import fi.ylihallila.server.util.Database;
 import org.hibernate.Session;
 import org.hibernate.annotations.GenericGenerator;
 

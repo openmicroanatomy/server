@@ -1,4 +1,4 @@
-package fi.ylihallila.server;
+package fi.ylihallila.server.generators;
 
 import fi.ylihallila.server.util.Constants;
 import org.slf4j.Logger;

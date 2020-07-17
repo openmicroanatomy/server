@@ -1,6 +1,6 @@
 package fi.ylihallila.server.controllers;
 
-import fi.ylihallila.server.Util;
+import fi.ylihallila.server.util.Util;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.Backup;
 import io.javalin.http.Context;
@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 
-public class BackupController extends BasicController {
+public class BackupController extends Controller {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

@@ -1,7 +1,7 @@
 package fi.ylihallila.server.tests;
 
 import fi.ylihallila.remote.commons.Roles;
-import fi.ylihallila.server.SecureServer;
+import fi.ylihallila.server.Application;
 import io.javalin.plugin.json.JavalinJson;
 import kong.unirest.Unirest;
 import org.junit.jupiter.api.*;
@@ -14,11 +14,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestUserAPI {
 
     private static String API_URL = "http://localhost:1337/api/v0";
-    private static SecureServer app;
+    private static Application app;
 
     @BeforeAll
     static void init() {
-        app = new SecureServer();
+        app = new Application();
 
         DummyDb.create();
     }

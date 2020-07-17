@@ -1,11 +1,9 @@
 package fi.ylihallila.server.controllers;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
-import fi.ylihallila.server.Database;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
-import fi.ylihallila.server.injections.types.ProjectRepository;
 import fi.ylihallila.server.models.Error;
 import fi.ylihallila.server.models.User;
 import io.javalin.http.Context;
@@ -17,7 +15,7 @@ import java.util.*;
 
 import static fi.ylihallila.server.util.Config.Config;
 
-public class UserController extends BasicController {
+public class UserController extends Controller {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 

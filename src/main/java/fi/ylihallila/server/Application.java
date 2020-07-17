@@ -1,9 +1,9 @@
 package fi.ylihallila.server;
 
-import com.google.inject.Injector;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.controllers.*;
 import fi.ylihallila.server.util.Constants;
+import fi.ylihallila.server.util.Database;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
 import io.javalin.plugin.rendering.vue.JavalinVue;
@@ -18,25 +18,19 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 
-import io.javalin.plugin.rendering.vue.VueComponent;
-
 import static io.javalin.apibuilder.ApiBuilder.*;
 import static io.javalin.core.security.SecurityUtil.roles;
 import static fi.ylihallila.remote.commons.Roles.*;
 import static fi.ylihallila.server.util.Config.Config;
 
-public class SecureServer {
+public class Application {
 
-    private Logger logger = LoggerFactory.getLogger(SecureServer.class);
+    private Logger logger = LoggerFactory.getLogger(Application.class);
     private Javalin app = Javalin.create(config -> {
         config.accessManager(Authenticator::accessManager);
         config.showJavalinBanner = false;
-        config.enableWebjars();
         config.requestCacheSize = Long.MAX_VALUE;
-        config.addStaticFiles("/static", Location.CLASSPATH);
         config.addStaticFiles("/logos", Path.of("organizations").toAbsolutePath().toString(), Location.EXTERNAL);
-
-        JavalinVue.rootDirectory("/vue", Location.CLASSPATH);
 
         config.server(() -> {
             Server server = new Server();
@@ -64,11 +58,8 @@ public class SecureServer {
     private SlideController SlideController;
     private UserController UserController;
 
-    public SecureServer() {
+    public Application() {
         createControllers();
-
-        app.get("/", new VueComponent("index"),          roles(ADMIN));
-        app.get("/upload", new VueComponent("uploader"), roles(ADMIN));
 
         app.routes(() -> path("/api/v0/", () -> {
             before(ctx -> { // TODO: Annotate methods with @Database; only these have Session available to save resources?
@@ -172,7 +163,7 @@ public class SecureServer {
 //            SslContextFactory sslContextFactory = new SslContextFactory();
             SslContextFactory sslContextFactory = new SslContextFactory.Server();
 
-            URL path = SecureServer.class.getProtectionDomain().getCodeSource().getLocation();
+            URL path = Application.class.getProtectionDomain().getCodeSource().getLocation();
 
             sslContextFactory.setKeyStorePath(path.toURI().resolve(Config.getString("ssl.keystore.path")).toASCIIString());
             sslContextFactory.setKeyStorePassword(Config.getString("ssl.keystore.password"));

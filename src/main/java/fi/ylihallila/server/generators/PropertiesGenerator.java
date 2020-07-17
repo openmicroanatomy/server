@@ -1,6 +1,7 @@
-package fi.ylihallila.server;
+package fi.ylihallila.server.generators;
 
 import com.google.gson.GsonBuilder;
+import fi.ylihallila.server.util.OpenSlideCache;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

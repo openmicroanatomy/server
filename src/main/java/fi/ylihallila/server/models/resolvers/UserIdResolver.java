@@ -3,7 +3,7 @@ package fi.ylihallila.server.models.resolvers;
 import com.fasterxml.jackson.annotation.ObjectIdGenerator;
 import com.fasterxml.jackson.annotation.ObjectIdResolver;
 import com.fasterxml.jackson.core.type.TypeReference;
-import fi.ylihallila.server.Util;
+import fi.ylihallila.server.util.Util;
 import fi.ylihallila.server.models.User;
 
 import java.io.IOException;
