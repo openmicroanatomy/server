@@ -5,6 +5,7 @@ import fi.ylihallila.server.models.Project;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.models.Workspace;
 import io.javalin.http.Context;
+import io.javalin.http.NotFoundResponse;
 import io.javalin.http.UnauthorizedResponse;
 import io.javalin.http.UploadedFile;
 import org.hibernate.Session;
@@ -92,8 +93,7 @@ public class ProjectController extends Controller {
 		}
 
 		if (!file.exists()) {
-			ctx.status(404);
-			return;
+			throw new NotFoundResponse();
 		}
 
 		FileInputStream fis = new FileInputStream(file);
@@ -107,8 +107,7 @@ public class ProjectController extends Controller {
 		String id = ctx.pathParam("project-id", String.class).get();
 
 		if (!hasPermission(ctx, id)) {
-			ctx.status(403);
-			return;
+			throw new UnauthorizedResponse();
 		}
 
 		Session session = ctx.use(Session.class);
@@ -132,11 +131,11 @@ public class ProjectController extends Controller {
 		Project project = session.find(Project.class, id);
 
 		if (project == null) {
-			ctx.status(404); return;
+			throw new NotFoundResponse();
 		}
 
 		if (!project.hasPermission(user)) {
-			ctx.status(403); return;
+			throw new UnauthorizedResponse();
 		}
 
 		session.createSQLQuery("DELETE FROM WORKSPACES_PROJECTS WHERE PROJECTS_ID = :id")

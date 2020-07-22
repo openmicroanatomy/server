@@ -85,6 +85,7 @@ public class Controller {
 	/**
 	 * Checks if the given Context (User) has write permissions to given object by an ID. An ID can represent either a
 	 * workspace or a (personal) project.
+	 *
 	 * @param ctx User context
 	 * @param id Workspace / project ID
 	 * @return True if access to write (=modify), otherwise false.

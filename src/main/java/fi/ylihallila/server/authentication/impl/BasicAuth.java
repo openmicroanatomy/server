@@ -92,7 +92,7 @@ public class BasicAuth implements Auth {
     }
 
     @Override
-    public boolean hasPermissions(Context ctx, Set<Role> permittedRoles) {
+    public boolean hasRoles(Context ctx, Set<Role> permittedRoles) {
         Set<Roles> userRoles = getUserRoles(ctx);
 
         return permittedRoles.stream().anyMatch(userRoles::contains);

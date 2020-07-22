@@ -16,7 +16,7 @@ public interface Auth {
 
     Optional<String> getUsername(Context ctx);
 
-    boolean hasPermissions(Context ctx, Set<Role> permittedRoles);
+    boolean hasRoles(Context ctx, Set<Role> permittedRoles);
 
     Set<Roles> getUserRoles(Context ctx);
 

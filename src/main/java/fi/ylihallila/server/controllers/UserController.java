@@ -1,6 +1,7 @@
 package fi.ylihallila.server.controllers;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
+import fi.ylihallila.server.authentication.Auth;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
@@ -12,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static fi.ylihallila.server.util.Config.Config;
 
@@ -26,9 +29,17 @@ public class UserController extends Controller {
 	}
 
 	public void getAllUsers(Context ctx) {
+		User user = Authenticator.getUser(ctx);
 		Session session = ctx.use(Session.class);
 
-		List<User> users = session.createQuery("from User", User.class).list();
+		List<User> users;
+
+		if (user.hasRole(Roles.ADMIN)) {
+			users = session.createQuery("from User", User.class).list();
+		} else {
+			users = session.createQuery("from User where organization.id = :id")
+					.setParameter("id", user.getOrganization().getId()).list();
+		}
 
 		ctx.status(200).json(users);
 	}

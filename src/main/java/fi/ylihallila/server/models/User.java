@@ -2,6 +2,7 @@ package fi.ylihallila.server.models;
 
 import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.util.Database;
+import fi.ylihallila.server.util.Util;
 import org.hibernate.Session;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -88,15 +89,7 @@ public class User extends Owner {
     }
 
     public void setOrganization(String id) {
-        Session session = Database.getSession();
-        session.beginTransaction();
-
-        Organization organization = session.find(Organization.class, id);
-
-        session.getTransaction().commit();
-        session.close();
-
-        setOrganization(organization);
+        setOrganization(Util.getOrganization(id));
     }
 
     public void setOrganization(Organization organization) {
@@ -109,6 +102,10 @@ public class User extends Owner {
 
     public void setRoles(Set<Roles> roles) {
         this.roles = roles;
+    }
+
+    public boolean hasRole(Roles role) {
+        return getRoles().contains(role);
     }
 
     @Override

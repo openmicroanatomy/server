@@ -21,7 +21,7 @@ public class Authenticator {
 
 	public static void accessManager(Handler handler, Context ctx, Set<Role> permittedRoles) {
 		try {
-			if (permittedRoles.contains(Roles.ANYONE) || hasPermissions(ctx, permittedRoles)) {
+			if (permittedRoles.contains(Roles.ANYONE) || hasRoles(ctx, permittedRoles)) {
 				handler.handle(ctx);
 			} else {
 				if (isLoggedIn(ctx)) {
@@ -31,11 +31,13 @@ public class Authenticator {
 				}
 			}
 		} catch (NotFoundResponse e) {
-			ctx.status(404).json(new Error(e.getMessage()));
-		} catch (BadRequestResponse e) {
-			ctx.status(400).json(new Error("Bad Request. " + e.getLocalizedMessage()));
+			ctx.status(404).json(new Error(e.getLocalizedMessage()));
+		} catch (ForbiddenResponse e) {
+			ctx.status(403).json(new Error(e.getLocalizedMessage()));
 		} catch (UnauthorizedResponse e) {
 			ctx.status(401).json(new Error(e.getLocalizedMessage()));
+		} catch (BadRequestResponse e) {
+			ctx.status(400).json(new Error("Bad Request. " + e.getLocalizedMessage()));
 		} catch (Exception e) {
 			ctx.status(500).json(new Error("Internal server error"));
 			logger.error("Error while authenticating", e);
@@ -46,12 +48,12 @@ public class Authenticator {
 		return getAuthImpl(ctx).isLoggedIn(ctx);
 	}
 
-	public static boolean hasPermissions(Context ctx, Role permittedRole) {
-		return hasPermissions(ctx, Set.of(permittedRole));
+	public static boolean hasRoles(Context ctx, Role permittedRole) {
+		return hasRoles(ctx, Set.of(permittedRole));
 	}
 
-	public static boolean hasPermissions(Context ctx, Set<Role> permittedRoles) {
-		return getAuthImpl(ctx).hasPermissions(ctx, permittedRoles);
+	public static boolean hasRoles(Context ctx, Set<Role> permittedRoles) {
+		return getAuthImpl(ctx).hasRoles(ctx, permittedRoles);
 	}
 
 	public static User getUser(Context ctx) {

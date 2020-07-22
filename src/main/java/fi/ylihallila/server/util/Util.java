@@ -1,9 +1,8 @@
 package fi.ylihallila.server.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fi.ylihallila.server.models.Backup;
-import fi.ylihallila.server.models.Organization;
-import fi.ylihallila.server.models.Project;
+import fi.ylihallila.server.models.*;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,16 +40,20 @@ public class Util {
         logger.debug("Creating backup of {}", filePath);
 
         String fileName = filePath.getFileName().toString();
-//        List<Backup> backups = getBackups(backup -> backup.getFilename().equalsIgnoreCase(fileName));
+        List<Backup> backups = getBackups(backup -> backup.getFilename().equalsIgnoreCase(fileName));
 
-//        Backup previousBackup = backups.get(backups.size() - 1);
-//        String previousBackupHash = DigestUtils.sha1Hex(Files.readAllBytes(previousBackup.getFilepath()));
-//        String newBackupHash = DigestUtils.sha1Hex(Files.readAllBytes(filePath));
-//
-//        if (previousBackupHash.equals(newBackupHash)) { // TODO: Doesn't work: 1) ZipUtil broken. 2) Gives IndexOutOfBounds when no previous backups
-//            logger.debug("Abort creating backup. New version identical to previous.");
-//            return;
-//        }
+        if (backups.size() > 1) {
+            Backup previousBackup = backups.get(backups.size() - 1);
+            String previousBackupHash = DigestUtils.sha1Hex(Files.readAllBytes(previousBackup.getFilepath()));
+            String newBackupHash = DigestUtils.sha1Hex(Files.readAllBytes(filePath));
+
+            if (previousBackupHash.equals(newBackupHash)) {
+                logger.debug("Abort creating backup. New version identical to previous.");
+                return;
+            } else {
+                logger.debug("Different");
+            }
+        }
 
         Files.copy(
             filePath,
@@ -94,8 +97,8 @@ public class Util {
      */
     private static final Map<String, String> knownTenants = Map.of(
     "9f9ce49a-5101-4aa3-8c75-0d5935ad6525", "University of Oulu",
-    "3f66cfe2-34d7-4783-b684-b6ff0a66b9b9", "University of Jogador",
-    "a1d90ab7-88d9-49cd-bb61-7661d3371ccb", "University of Putsnik"
+    "98ae7559-10dc-4288-8e2e-4593e62fe3ee", "University of Helsinki",
+    "fa6944af-cc7c-4cd8-9154-c01132798910", "University of Tampere"
     );
 
     public static Map<String, String> getKnownTenants() {
@@ -121,7 +124,7 @@ public class Util {
     private static WeakHashMap<String, String> cache = new WeakHashMap<>();
 
     /**
-     * TODO: Only supports slides currently
+     * TODO: Only supports projects currently
      *
      * Tries to get a human readable version of a ID. The ID can represent: Users, Slides,
      * Workspaces, Projects or Backups.
@@ -150,11 +153,24 @@ public class Util {
         }
     }
 
+    /**
+     * Gets an organization object for given ID. If can't find one, it will create one.
+     *
+     * @param id ID of the organization
+     * @return Organization
+     */
     public static Organization getOrganization(String id) {
         Session session = Database.getSession();
         session.beginTransaction();
 
         Organization organization = session.find(Organization.class, id);
+
+        if (organization == null) {
+            organization = new Organization();
+            organization.setId(id);
+            organization.setName("Unknown Organization");
+            session.save(organization);
+        }
 
         session.getTransaction().commit();
         session.close();

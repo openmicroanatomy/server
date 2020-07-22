@@ -7,6 +7,8 @@ import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.Slide;
 import fi.ylihallila.server.models.User;
 import io.javalin.http.Context;
+import io.javalin.http.NotFoundResponse;
+import io.javalin.http.UnauthorizedResponse;
 import org.hibernate.Session;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
@@ -102,11 +104,11 @@ public class SlideController extends Controller {
 
 		Slide slide = session.find(Slide.class, id);
 		if (slide == null) {
-			ctx.status(404); return;
+			throw new NotFoundResponse();
 		}
 
 		if (!slide.hasPermission(user)) {
-			ctx.status(403); return;
+			throw new UnauthorizedResponse();
 		}
 
 		slide.setName(ctx.formParam("slide-name", slide.getName()));
@@ -124,11 +126,11 @@ public class SlideController extends Controller {
 
 		Slide slide = session.find(Slide.class, id);
 		if (slide == null) {
-			ctx.status(404); return;
+			throw new NotFoundResponse();
 		}
 
 		if (!slide.hasPermission(user)) {
-			ctx.status(403); return;
+			throw new UnauthorizedResponse();
 		}
 
 		session.delete(slide);
@@ -158,7 +160,7 @@ public class SlideController extends Controller {
 		if (propertiesFile.exists()) {
 			ctx.status(200).json(Util.getMapper().readValue(propertiesFile, Map.class));
 		} else {
-			ctx.status(404);
+			throw new NotFoundResponse();
 		}
 	}
 
@@ -190,7 +192,7 @@ public class SlideController extends Controller {
 			fis.close();
 		} else {
 			logger.info("Couldn't find tile [{}, {},{} / {} / {},{}]", fileName, tileX, tileY, level, tileWidth, tileHeight);
-			ctx.status(404);
+			throw new NotFoundResponse();
 		}
 	}
 

@@ -1,6 +1,5 @@
 package fi.ylihallila.server.models;
 
-import com.fasterxml.jackson.annotation.*;
 import fi.ylihallila.remote.commons.Roles;
 import fi.ylihallila.server.util.Database;
 import org.hibernate.Session;

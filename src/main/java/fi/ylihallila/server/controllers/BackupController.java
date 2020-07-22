@@ -4,6 +4,7 @@ import fi.ylihallila.server.util.Util;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.Backup;
 import io.javalin.http.Context;
+import io.javalin.http.NotFoundResponse;
 import io.javalin.http.UnauthorizedResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +31,7 @@ public class BackupController extends Controller {
         );
 
         if (backups.size() != 1) {
-            ctx.status(404);
-            return;
+            throw new NotFoundResponse();
         }
 
         Backup backup = backups.get(0);

@@ -18,9 +18,7 @@ import java.nio.file.Path;
  *  /
  *
  *      server.jar
- *      workspace.json
  *      users.json
- *      slides.json
  *
  *      keystore.jks
  *      Dummy.zip
@@ -67,6 +65,7 @@ public class Main {
              * TODO:
              *  * Copy Dummy.zip from resources to disk
              *  * Add possibility to specify domain & port
+             *  * Confirm that database isn't locked.
              */
 
             try {

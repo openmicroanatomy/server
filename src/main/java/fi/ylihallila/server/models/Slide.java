@@ -33,8 +33,7 @@ public class Slide {
     @ManyToOne
     private Owner owner;
 
-    public Slide() {
-    }
+    public Slide() {}
 
     public Slide(String id, String name, Owner owner) {
         this.id = id;
