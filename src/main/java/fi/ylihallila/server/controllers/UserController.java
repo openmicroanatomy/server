@@ -5,8 +5,11 @@ import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
 import fi.ylihallila.server.models.Error;
+import fi.ylihallila.server.models.Organization;
 import fi.ylihallila.server.models.User;
+import fi.ylihallila.server.util.PasswordHelper;
 import io.javalin.http.Context;
+import io.javalin.http.NotFoundResponse;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,39 +56,73 @@ public class UserController extends Controller {
 		}
 	}
 
+	public void createUser(Context ctx) {
+		String organizationId = ctx.formParam("organization-id", String.class).get();
+		String password		  = ctx.formParam("password", String.class).get();
+		String email		  = ctx.formParam("email", String.class).get();
+		String name		      = ctx.formParam("name", String.class).get();
+
+		Session session = ctx.use(Session.class);
+
+		Organization organization = session.find(Organization.class, organizationId);
+		if (organization == null) {
+			throw new NotFoundResponse("Organization not found.");
+		}
+
+		User user = new User();
+		user.setOrganization(organization);
+		user.setName(name);
+		user.hashPassword(password);
+		user.setEmail(email);
+
+		session.save(user);
+
+		ctx.status(201).json(user);
+	}
+
 	public void updateUser(Context ctx) {
 		String id = ctx.pathParam("user-id");
 
 		Session session = ctx.use(Session.class);
+		User user = Authenticator.getUser(ctx);
 
-		User user = session.find(User.class, id);
-		Set<Roles> roles = user.getRoles();
+		User editedUser = session.find(User.class, id);
 
-		var modified = false;
+		if (editedUser == null) {
+			throw new NotFoundResponse("User not found");
+		}
+
+		Set<Roles> roles = editedUser.getRoles();
+
 		for (Roles role : Roles.getModifiableRoles()) {
 			if (ctx.formParamMap().containsKey(role.name())) {
-				var addRole = ctx.formParam(role.name(), Boolean.class).get();
+				boolean addRole = ctx.formParam(role.name(), Boolean.class).get();
 
 				if (addRole) {
 					roles.add(role);
 				} else {
 					roles.remove(role);
 				}
-
-				modified = true;
 			}
 		}
 
-		if (modified) {
-			user.setRoles(roles);
-			session.update(user);
-			ctx.status(200);
-
-			logger.info("Roles of {} were edited by {}. New values: {}", id, Authenticator.getUsername(ctx).orElse("Unknown"), ctx.formParamMap());
-		} else {
-			ctx.status(400);
-			logger.debug("{} tried to edit user {} but formParams were incorrect: {}", Authenticator.getUsername(ctx).orElse("Unknown"), id, ctx.formParamMap());
+		if (user.hasRole(Roles.ADMIN)) {
+			if (ctx.formParamMap().containsKey("password")) {
+				// TODO: Password security requirements
+				editedUser.hashPassword(ctx.formParam("password"));
+			}
 		}
+
+		// TODO: Add validators
+		editedUser.setName(ctx.formParam("name", editedUser.getName()));
+		editedUser.setEmail(ctx.formParam("email", editedUser.getEmail()));
+		editedUser.setRoles(roles);
+		session.update(editedUser);
+
+		ctx.status(200);
+
+		// TODO: Remove `password` field from formParamMap
+		logger.info("User {} was edited by {} [{}]", editedUser.getName(), user.getName(), ctx.formParamMap());
 	}
 
 	/**

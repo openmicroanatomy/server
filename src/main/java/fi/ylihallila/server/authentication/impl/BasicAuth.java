@@ -4,31 +4,33 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fi.ylihallila.server.commons.Roles;
-import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.authentication.Auth;
+import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.util.Constants;
+import fi.ylihallila.server.util.Database;
+import fi.ylihallila.server.util.PasswordHelper;
 import io.javalin.core.security.BasicAuthCredentials;
 import io.javalin.core.security.Role;
 import io.javalin.http.Context;
 import io.javalin.http.UnauthorizedResponse;
-import kotlin.Pair;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.persistence.NoResultException;
+import javax.persistence.NonUniqueResultException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class BasicAuth implements Auth {
 
     private static final Logger logger = LoggerFactory.getLogger(BasicAuth.class);
-    public static Map<Pair<String, String>, String> userMap = new HashMap<>();
 
     static {
         try {
@@ -51,9 +53,9 @@ public class BasicAuth implements Auth {
                 user.setName(data.get("name").getAsString());
                 user.setEmail(data.get("email").getAsString());
                 user.setOrganization(data.get("organization").getAsString());
+                user.setPassword(data.get("password").getAsString());
+                user.setOAuth(false);
                 user.setRoles(roles);
-
-                userMap.put(new Pair<>(data.get("username").getAsString(), data.get("password").getAsString()), data.get("id").getAsString());
 
                 session.saveOrUpdate(user);
             }
@@ -67,6 +69,10 @@ public class BasicAuth implements Auth {
 
     @Override
     public boolean isLoggedIn(Context ctx) {
+        if (!ctx.basicAuthCredentialsExist()) {
+            return false;
+        }
+
         try {
             getUserObject(ctx);
             return true;
@@ -105,24 +111,26 @@ public class BasicAuth implements Auth {
 
     public User getUserObject(Context ctx) {
         try {
+            Session session = ctx.use(Session.class);
             BasicAuthCredentials auth = ctx.basicAuthCredentials();
-            Pair<String, String> pair = new Pair<>(auth.getUsername(), auth.getPassword());
 
-            if (userMap.containsKey(pair)) {
-                Session session = Database.getSession();
-                session.beginTransaction();
+            User user = session.createQuery("from User where email = :email", User.class)
+                    .setParameter("email", auth.getUsername()).getSingleResult();
 
-                User user = session.find(User.class, userMap.get(pair));
+            if (user == null) {
+                throw new UnauthorizedResponse("Invalid email or password");
+            }
 
-                session.getTransaction();
-                session.close();
-
+            if (PasswordHelper.validatePassword(auth.getPassword(), user.getPassword())) {
                 return user;
             } else {
-                throw new UnauthorizedResponse();
+                throw new UnauthorizedResponse("Invalid email or password");
             }
-        } catch (IllegalArgumentException e) {
-            throw new UnauthorizedResponse();
+        } catch (NoResultException | NonUniqueResultException e) {
+            throw new UnauthorizedResponse("Invalid email or password");
+        } catch (Exception e) {
+            logger.error("Error while authenticating", e);
+            throw new UnauthorizedResponse("Error when logging in. This incident has been logged.");
         }
     }
 }

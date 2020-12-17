@@ -16,8 +16,8 @@ public class Authenticator {
 
 	private static final Logger logger = LoggerFactory.getLogger(Authenticator.class);
 
-	private static BasicAuth basicAuth = new BasicAuth();
-	private static TokenAuth tokenAuth = new TokenAuth();
+	private final static BasicAuth basicAuth = new BasicAuth();
+	private final static TokenAuth tokenAuth = new TokenAuth();
 
 	public static void accessManager(Handler handler, Context ctx, Set<Role> permittedRoles) {
 		try {
@@ -56,6 +56,11 @@ public class Authenticator {
 		return getAuthImpl(ctx).hasRoles(ctx, permittedRoles);
 	}
 
+	/**
+	 * Checks that the user is logged in and then returns the user object.
+	 * @param ctx Context
+	 * @return User object, null if not found or not logged in or invalid credentials
+	 */
 	public static User getUser(Context ctx) {
 		return getAuthImpl(ctx).getUser(ctx);
 	}

@@ -1,10 +1,14 @@
 package fi.ylihallila.server.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fi.ylihallila.server.commons.Roles;
+import fi.ylihallila.server.util.PasswordHelper;
 import fi.ylihallila.server.util.Util;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Set;
 
 @Entity
@@ -18,8 +22,8 @@ public class User extends Owner {
     @Id
     @GeneratedValue(generator = "UUID")
     @GenericGenerator(
-            name = "UUID",
-            strategy = "org.hibernate.id.UUIDGenerator"
+        name = "UUID",
+        strategy = "org.hibernate.id.UUIDGenerator"
     )
     @Column(name = "id", updatable = false, nullable = false)
     private String id;
@@ -39,6 +43,19 @@ public class User extends Owner {
      */
     @ManyToOne
     private Organization organization;
+
+    /**
+     * If true, this user authenticates via OAuth and has no password.
+     */
+    @Column(nullable = true)
+    private boolean oauth;
+
+    /**
+     * Password, encrypted with PBKDF2WithHmacSHA1.
+     * @see fi.ylihallila.server.util.PasswordHelper
+     */
+    @JsonIgnore
+    private String password;
 
     /**
      * Roles for this user.
@@ -92,6 +109,30 @@ public class User extends Owner {
 
     public void setOrganization(Organization organization) {
         this.organization = organization;
+    }
+
+    public boolean usesOAuth() {
+        return oauth;
+    }
+
+    public void setOAuth(boolean oauth) {
+        this.oauth = oauth;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void hashPassword(String password) {
+        try {
+            this.password = PasswordHelper.generateStrongPassword(password).toString();
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
     }
 
     public Set<Roles> getRoles() {

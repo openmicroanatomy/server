@@ -10,6 +10,16 @@ import java.util.Set;
 
 public interface Auth {
 
+    /*
+
+     TODO: Rework authentication.
+          - move functionality to User class
+          - rename isLoggedIn to something more accurate like "isValidCredentials"
+          - getUsername() could just use the User object?
+          - really only needs validate(Request request) and getUser(); ?
+     */
+
+
     boolean isLoggedIn(Context ctx);
 
     User getUser(Context ctx);
