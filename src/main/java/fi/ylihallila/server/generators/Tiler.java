@@ -46,7 +46,8 @@ public class Tiler implements Runnable {
                     String fileName = changed.getFileName().toString();
 
                     if (fileName.endsWith(".pending")) {
-                        logger.info("Submitting {} to tile generation", fileName);
+                        System.out.println();
+                        logger.info("Found new slide {}. Added to generation queue.", fileName);
 
                         executor.submit(() -> {
                             try {

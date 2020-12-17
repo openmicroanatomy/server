@@ -1,21 +1,23 @@
 package fi.ylihallila.server.controllers;
 
-import fi.ylihallila.server.util.Util;
-import fi.ylihallila.server.util.Constants;
-import fi.ylihallila.server.util.OpenSlideCache;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.Slide;
 import fi.ylihallila.server.models.User;
+import fi.ylihallila.server.util.Constants;
+import fi.ylihallila.server.util.OpenSlideCache;
+import fi.ylihallila.server.util.Util;
 import io.javalin.http.Context;
+import io.javalin.http.ForbiddenResponse;
 import io.javalin.http.NotFoundResponse;
-import io.javalin.http.UnauthorizedResponse;
 import org.hibernate.Session;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -56,28 +58,9 @@ public class SlideController extends Controller {
 		int buffer      = ctx.queryParam("chunkSize", Integer.class).get();
 		int index       = ctx.queryParam("chunk", Integer.class).get();
 
-		if (ctx.method().equals("GET")) { // todo: cleanup GET
-			if (buffer > totalSize) {
-				buffer = totalSize;
-			}
+		if (ctx.uploadedFile("file") != null) {
+			logger.trace("Uploading slide chunk: {} [Size: {}, Buffer: {}, Index: {}]", fileName, totalSize, buffer, index);
 
-			if (!Files.exists(Path.of(fileName))) {
-				ctx.status(400);
-				return;
-			}
-
-			RandomAccessFile reader = new RandomAccessFile(fileName, "r");
-			reader.seek(index * buffer);
-			int read = reader.skipBytes(buffer);
-
-			if (read == buffer) {
-				ctx.status(200);
-			} else {
-				ctx.status(400);
-			}
-
-			reader.close();
-		} else if (ctx.method().equals("POST") && ctx.uploadedFile("file") != null) {
 			byte[] data = ctx.uploadedFile("file").getContent().readAllBytes();
 
 			RandomAccessFile writer = new RandomAccessFile(String.format(Constants.UPLOADED_FILE, fileName), "rw");
@@ -108,7 +91,7 @@ public class SlideController extends Controller {
 		}
 
 		if (!slide.hasPermission(user)) {
-			throw new UnauthorizedResponse();
+			throw new ForbiddenResponse();
 		}
 
 		slide.setName(ctx.formParam("slide-name", slide.getName()));
@@ -130,7 +113,7 @@ public class SlideController extends Controller {
 		}
 
 		if (!slide.hasPermission(user)) {
-			throw new UnauthorizedResponse();
+			throw new ForbiddenResponse();
 		}
 
 		session.delete(slide);
@@ -181,7 +164,7 @@ public class SlideController extends Controller {
 		String fileName = String.format(Constants.TILE_FILE_FORMAT, slide, tileX, tileY, level, tileWidth, tileHeight);
 
 		if (Files.exists(Path.of(fileName), LinkOption.NOFOLLOW_LINKS)) {
-			logger.info("Retrieving from disk [{}, {},{} / {} / {},{}]", fileName, tileX, tileY, level, tileWidth, tileHeight);
+			logger.trace("Retrieving from disk [{}, {},{} / {} / {},{}]", fileName, tileX, tileY, level, tileWidth, tileHeight);
 
 			FileInputStream fis = new FileInputStream(Path.of(fileName).toString());
 			InputStream is = new ByteArrayInputStream(fis.readAllBytes());
@@ -203,6 +186,8 @@ public class SlideController extends Controller {
 			logger.error("Error when processing uploaded file: Couldn't create OpenSlide instance."
 				+ "\n" + "Possible solutions: file was corrupted during upload or the file isn't supported by OpenSlide");
 			return;
+		} else {
+			logger.info("Processing slide {}, uploaded by {}", slideName, Authenticator.getUsername(ctx).orElse("Unknown"));
 		}
 
 		String id = UUID.randomUUID().toString();

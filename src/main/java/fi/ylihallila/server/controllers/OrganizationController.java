@@ -3,10 +3,7 @@ package fi.ylihallila.server.controllers;
 import fi.ylihallila.server.util.Util;
 import io.javalin.http.Context;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class OrganizationController extends Controller {
 
@@ -23,6 +20,10 @@ public class OrganizationController extends Controller {
            data.add(datum);
         }
 
+        data.sort(mapComparator);
+
         ctx.status(200).json(data);
     }
+
+    public Comparator<Map<String, String>> mapComparator = Comparator.comparing(m -> m.get("name"));
 }

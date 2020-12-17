@@ -1,6 +1,6 @@
 package fi.ylihallila.server.models;
 
-import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.commons.Roles;
 
 import javax.persistence.*;
 import java.util.UUID;

@@ -6,21 +6,20 @@ import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.util.Database;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
-import io.javalin.plugin.rendering.vue.JavalinVue;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
+import org.apache.http.HttpVersion;
+import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.net.*;
+
 import java.nio.file.Path;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
 import static io.javalin.core.security.SecurityUtil.roles;
-import static fi.ylihallila.remote.commons.Roles.*;
+import static fi.ylihallila.server.commons.Roles.*;
 import static fi.ylihallila.server.util.Config.Config;
 
 public class Application {
@@ -29,17 +28,32 @@ public class Application {
     private Javalin app = Javalin.create(config -> {
         config.accessManager(Authenticator::accessManager);
         config.showJavalinBanner = false;
-        config.requestCacheSize = Long.MAX_VALUE;
+        config.maxRequestSize = Long.MAX_VALUE;
         config.addStaticFiles("/logos", Path.of("organizations").toAbsolutePath().toString(), Location.EXTERNAL);
+        config.addStaticFiles("/tiles", Path.of("tiles").toAbsolutePath().toString(), Location.EXTERNAL);
 
         config.server(() -> {
             Server server = new Server();
 
             if (Constants.SECURE_SERVER) {
-                config.enforceSsl = true;
+//                config.enforceSsl = true;
 
-                ServerConnector sslConnector = new ServerConnector(server, getSslContextFactory());
+                HttpConfiguration httpConfig = new HttpConfiguration();
+                httpConfig.setSecureScheme("https");
+                httpConfig.setSecurePort(Config.getInt("server.port.secure"));
+
+                SecureRequestCustomizer src = new SecureRequestCustomizer();
+                httpConfig.addCustomizer(src);
+
+                HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(httpConfig);
+                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(getSslContextFactory(), HttpVersion.HTTP_1_1.toString());
+
+                ServerConnector sslConnector = new ServerConnector(server,
+                    new OptionalSslConnectionFactory(sslConnectionFactory, HttpVersion.HTTP_1_1.toString()),
+                    sslConnectionFactory,
+                    httpConnectionFactory);
                 sslConnector.setPort(Config.getInt("server.port.secure"));
+
                 server.addConnector(sslConnector);
             } else {
                 ServerConnector connector = new ServerConnector(server);
@@ -54,6 +68,7 @@ public class Application {
     private OrganizationController OrganizationController;
     private WorkspaceController WorkspaceController;
     private ProjectController ProjectController;
+    private SubjectController SubjectController;
     private BackupController BackupController;
     private SlideController SlideController;
     private UserController UserController;
@@ -76,8 +91,10 @@ public class Application {
 
                 Session session = ctx.use(Session.class);
 
-                session.getTransaction().commit();
-                session.close();
+                if (session != null && session.getTransaction() != null) {
+                    session.getTransaction().commit();
+                    session.close();
+                }
             });
 
             /* Authentication */
@@ -94,7 +111,6 @@ public class Application {
             });
 
             /* Upload */
-            get("upload",  SlideController::upload, roles(MANAGE_SLIDES));
             post("upload", SlideController::upload, roles(MANAGE_SLIDES));
 
             /* Slides */
@@ -135,6 +151,16 @@ public class Application {
                 });
             });
 
+            /* Subjects */
+            path("subjects", () -> {
+                post(SubjectController::createSubject, roles(MANAGE_PROJECTS, MANAGE_PERSONAL_PROJECTS));
+
+                path(":subject-id", () -> {
+                   put(SubjectController::updateSubject, roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
+                   delete(SubjectController::deleteSubject, roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
+                });
+            });
+
             /* Backups */
             path("backups", () -> {
                 get(BackupController::getAllBackups, roles(MANAGE_PROJECTS));
@@ -145,6 +171,8 @@ public class Application {
             /* Organizations */
             path("organizations", () -> {
                 get(OrganizationController::getAllOrganizations, roles(ANYONE));
+
+                // TODO: Write APIs to manage Organizations
             });
         }));
     }
@@ -153,6 +181,7 @@ public class Application {
         this.OrganizationController = new OrganizationController();
         this.WorkspaceController = new WorkspaceController();
         this.ProjectController = new ProjectController();
+        this.SubjectController = new SubjectController();
         this.BackupController = new BackupController();
         this.SlideController = new SlideController();
         this.UserController = new UserController();
@@ -160,8 +189,7 @@ public class Application {
 
     private SslContextFactory getSslContextFactory() {
         try {
-//            SslContextFactory sslContextFactory = new SslContextFactory();
-            SslContextFactory sslContextFactory = new SslContextFactory.Server();
+            SslContextFactory sslContextFactory = new SslContextFactory();
 
             URL path = Application.class.getProtectionDomain().getCodeSource().getLocation();
 

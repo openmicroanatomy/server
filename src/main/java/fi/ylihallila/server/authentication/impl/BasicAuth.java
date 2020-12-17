@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.authentication.Auth;
 import fi.ylihallila.server.models.User;

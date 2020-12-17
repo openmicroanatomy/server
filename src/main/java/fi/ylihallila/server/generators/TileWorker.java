@@ -57,7 +57,7 @@ public class TileWorker implements Runnable {
 	@Override
 	public void run() {
 		try {
-			if (tileWidth == 0 || tileHeight == 0) {
+			if (tileWidth == 0 || tileHeight == 0 || (tileX == 0 && tileY == 0)) {
 				return;
 			}
 

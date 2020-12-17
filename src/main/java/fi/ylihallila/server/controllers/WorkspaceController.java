@@ -1,12 +1,11 @@
 package fi.ylihallila.server.controllers;
 
 import fi.ylihallila.server.authentication.Authenticator;
-import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.models.*;
 import io.javalin.http.Context;
 import io.javalin.http.ForbiddenResponse;
 import io.javalin.http.NotFoundResponse;
-import io.javalin.http.UnauthorizedResponse;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,18 +22,18 @@ public class WorkspaceController extends Controller {
 		List<Workspace> workspaces = session.createQuery("from Workspace", Workspace.class).list();
 
 		if (Authenticator.isLoggedIn(ctx) && Authenticator.hasRoles(ctx, Roles.MANAGE_PERSONAL_PROJECTS)) {
-			User user = Authenticator.getUser(ctx);
-
-			Workspace personal = new Workspace();
-			personal.setId((String) null);
-			personal.setName("My Projects");
-			personal.setOwner(user);
-
-			List<Project> projects = session.createQuery("from Project where owner.id = :id", Project.class)
-					                        .setParameter("id", user.getId()).list();
-			personal.setProjects(projects);
-
-			workspaces.add(personal);
+//			User user = Authenticator.getUser(ctx);
+//
+//			Workspace personal = new Workspace();
+//			personal.setId((String) null);
+//			personal.setName("My Projects");
+//			personal.setOwner(user);
+//
+//			List<Project> projects = session.createQuery("from Project where owner.id = :id", Project.class)
+//					                        .setParameter("id", user.getId()).list();
+//			personal.setSubjects(projects);
+//
+//			workspaces.add(personal);
 		}
 
 		ctx.status(200).json(workspaces);
@@ -63,7 +62,7 @@ public class WorkspaceController extends Controller {
 		workspace.setId(workspaceId);
 		workspace.setName(workspaceName);
 		workspace.setOwner(user.getOrganization());
-		workspace.setProjects(Collections.emptyList());
+		workspace.setSubjects(Collections.emptyList());
 		session.save(workspace);
 
 		logger.info("Workspace {} created by {}", workspaceId, user.getName());

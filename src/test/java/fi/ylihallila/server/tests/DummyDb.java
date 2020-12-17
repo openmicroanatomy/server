@@ -1,6 +1,6 @@
 package fi.ylihallila.server.tests;
 
-import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.models.*;
 import org.hibernate.Session;

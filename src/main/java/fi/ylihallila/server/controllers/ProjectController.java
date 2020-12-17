@@ -2,12 +2,9 @@ package fi.ylihallila.server.controllers;
 
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.Project;
+import fi.ylihallila.server.models.Subject;
 import fi.ylihallila.server.models.User;
-import fi.ylihallila.server.models.Workspace;
-import io.javalin.http.Context;
-import io.javalin.http.NotFoundResponse;
-import io.javalin.http.UnauthorizedResponse;
-import io.javalin.http.UploadedFile;
+import io.javalin.http.*;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +29,8 @@ public class ProjectController extends Controller {
 	}
 
 	public void createPersonalProject(Context ctx) throws IOException {
+//		TODO: Rework. Personal projects now belong to "[Name]'s workspace" with default subject "Personal projects"
+
 		String projectName = ctx.formParam("project-name", String.class).get();
 		String projectId = UUID.randomUUID().toString();
 		User user = Authenticator.getUser(ctx);
@@ -40,7 +39,7 @@ public class ProjectController extends Controller {
 		Project project = new Project();
 		project.setName("Copy of " + projectName);
 		project.setId(projectId);
-		project.setOwner(user);
+		project.getSubject().getWorkspace().setOwner(user);
 		session.save(project);
 
 		createProjectZipFile(projectId);
@@ -51,30 +50,29 @@ public class ProjectController extends Controller {
 	}
 
 	public void createProject(Context ctx) throws IOException {
-		String workspaceId = ctx.formParam("workspace-id", String.class).get();
 		String projectName = ctx.formParam("project-name", String.class).get();
-		String projectId    = UUID.randomUUID().toString();
+		String subjectId   = ctx.formParam("subject-id",  String.class).get();
+		String projectId   = UUID.randomUUID().toString();
 		User user = Authenticator.getUser(ctx);
 		Session session = ctx.use(Session.class);
+
+		Subject subject = session.find(Subject.class, subjectId);
+
+		if (subject == null) {
+			throw new NotFoundResponse();
+		}
+
+		if (!subject.getWorkspace().hasPermission(user)) {
+			throw new UnauthorizedResponse();
+		}
 
 		Project project = new Project();
 		project.setId(projectId);
 		project.setName(projectName);
 		project.setDescription(ctx.formParam("description", ""));
-
-		if (workspaceId.equals("personal")) {
-			project.setOwner(user);
-		} else {
-			project.setOwner(user.getOrganization().getId());
-		}
+		project.setSubject(subject);
 
 		session.save(project);
-
-		if (!workspaceId.equals("personal")) {
-			Workspace workspace = session.find(Workspace.class, workspaceId);
-			workspace.addProject(project);
-			session.update(workspace);
-		}
 
 		createProjectZipFile(projectId);
 
@@ -103,11 +101,12 @@ public class ProjectController extends Controller {
 		fis.close();
 	}
 
+	// TODO: Doesn't check if project exist?
 	public void updateProject(Context ctx) {
 		String id = ctx.pathParam("project-id", String.class).get();
 
 		if (!hasPermission(ctx, id)) {
-			throw new UnauthorizedResponse();
+			throw new ForbiddenResponse();
 		}
 
 		Session session = ctx.use(Session.class);
@@ -135,7 +134,7 @@ public class ProjectController extends Controller {
 		}
 
 		if (!project.hasPermission(user)) {
-			throw new UnauthorizedResponse();
+			throw new ForbiddenResponse();
 		}
 
 		session.createSQLQuery("DELETE FROM WORKSPACES_PROJECTS WHERE PROJECTS_ID = :id")

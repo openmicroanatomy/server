@@ -5,7 +5,7 @@ import fi.ylihallila.server.models.*;
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.util.Util;
 import fi.ylihallila.server.authentication.Authenticator;
-import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.commons.Roles;
 import io.javalin.http.Context;
 import org.hibernate.Session;
 import org.slf4j.Logger;
@@ -104,7 +104,7 @@ public class Controller {
 		Project project = session.find(Project.class, id);
 
 		if (project != null) {
-			Owner owner = project.getOwner();
+			Owner owner = project.getSubject().getWorkspace().getOwner();
 
 			if (owner.getId().equals(user.getId())
 					&& roles.contains(Roles.MANAGE_PERSONAL_PROJECTS)) {

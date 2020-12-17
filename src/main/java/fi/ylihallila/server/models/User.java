@@ -1,9 +1,7 @@
 package fi.ylihallila.server.models;
 
-import fi.ylihallila.remote.commons.Roles;
-import fi.ylihallila.server.util.Database;
+import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.util.Util;
-import org.hibernate.Session;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;

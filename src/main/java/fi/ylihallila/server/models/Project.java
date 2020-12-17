@@ -1,14 +1,12 @@
 package fi.ylihallila.server.models;
 
-import fi.ylihallila.remote.commons.Roles;
-import fi.ylihallila.server.util.Database;
-import org.hibernate.Session;
+import fi.ylihallila.server.commons.Roles;
 
 import javax.persistence.*;
 import java.util.UUID;
 
 @Entity
-@Table( name = "projects" )
+@Table(name = "projects")
 public class Project {
 
 	/**
@@ -28,17 +26,9 @@ public class Project {
 	 */
 	private String description;
 
-	/**
-	 * URL to project thumbnail. Visible in QuPath.
-	 * @beta
-	 */
-	private String thumbnail;
-
-	/**
-	 * Users or Tenants GUID
-	 */
 	@ManyToOne
-	private Owner owner;
+	@JoinColumn(name = "project_subject")
+	private Subject subject;
 
 	/**
 	 * Unix timestamp as milliseconds. When was this project first created.
@@ -50,19 +40,24 @@ public class Project {
 	 */
 	private long modifiedAt;
 
+	/**
+	 * Hidden projects are only visible to users with write permissions.
+	 */
+	private boolean hidden;
+
 	public Project() {
 		this.createdAt = System.currentTimeMillis();
 		this.modifiedAt = System.currentTimeMillis();
 	}
 
-	public Project(String id, String name, String description, Owner owner) {
+	public Project(String id, String name, String description, Subject subject) {
 		this.id = id;
 		this.name = name;
 		this.description = description;
-		this.thumbnail = null;
-		this.owner = owner;
+		this.subject = subject;
 		this.createdAt = System.currentTimeMillis();
 		this.modifiedAt = System.currentTimeMillis();
+		this.hidden = false;
 	}
 
 	public String getId() {
@@ -93,32 +88,17 @@ public class Project {
 		this.description = description;
 	}
 
-	public String getThumbnail() {
-		return thumbnail;
+	public Subject getSubject() {
+		return subject;
 	}
 
-	public void setThumbnail(String thumbnail) {
-		this.thumbnail = thumbnail;
+	public void setSubject(Subject subject) {
+		this.subject = subject;
 	}
 
-	public Owner getOwner() {
-		return owner;
-	}
-
-	public void setOwner(String id) {
-		Session session = Database.getSession();
-		session.beginTransaction();
-
-		Organization organization = session.find(Organization.class, id);
-
-		session.getTransaction().commit();
-		session.close();
-
-		setOwner(organization);
-	}
-
-	public void setOwner(Owner owner) {
-		this.owner = owner;
+	@Transient
+	public String getOwner() {
+		return getSubject().getWorkspace().getOwner().getId();
 	}
 
 	public long getCreatedAt() {
@@ -133,15 +113,23 @@ public class Project {
 		this.modifiedAt = modifiedAt;
 	}
 
+	public boolean isHidden() {
+		return hidden;
+	}
+
+	public void setHidden(boolean hidden) {
+		this.hidden = hidden;
+	}
+
 	public boolean hasPermission(User user) {
 		if (user.getRoles().contains(Roles.ADMIN)) {
 			return true;
 		}
 
-		if (owner.getId().equals(user.getId())
+		if (getSubject().getWorkspace().getOwner().getId().equals(user.getId())
 				&& user.getRoles().contains(Roles.MANAGE_PERSONAL_PROJECTS)) {
 			return true;
-		} else if (owner.getId().equals(user.getOrganization().getId())
+		} else if (getSubject().getWorkspace().getOwner().getId().equals(user.getOrganization().getId())
 				&& user.getRoles().contains(Roles.MANAGE_PROJECTS)) {
 			return true;
 		} else {
@@ -155,8 +143,7 @@ public class Project {
 				"id='" + id + '\'' +
 				", name='" + name + '\'' +
 				", description='" + description + '\'' +
-				", thumbnail='" + thumbnail + '\'' +
-				", owner='" + owner + '\'' +
+				", subject='" + subject + '\'' +
 				", createdAt=" + createdAt +
 				", modifiedAt=" + modifiedAt +
 				'}';

@@ -1,6 +1,6 @@
 package fi.ylihallila.server.authentication;
 
-import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.models.User;
 import io.javalin.core.security.Role;
 import io.javalin.http.Context;

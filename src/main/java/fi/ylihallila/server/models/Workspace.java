@@ -2,8 +2,9 @@ package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.util.Util;
+import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
@@ -40,16 +41,22 @@ public class Workspace {
 	@ManyToOne
 	private Owner owner;
 
-	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-	private List<Project> projects = new ArrayList<>();
+	/**
+	 * Hidden workspaces are only visible to its owners and those with read access.
+	 */
+	private boolean hidden;
+
+	@OneToMany(mappedBy = "workspace")
+	@Cascade({ org.hibernate.annotations.CascadeType.ALL, org.hibernate.annotations.CascadeType.REMOVE })
+	private List<Subject> subjects = new ArrayList<>();
 
 	public Workspace() {}
 
-	public Workspace(String id, String name, Owner owner, List<Project> projects) {
+	public Workspace(String id, String name, Owner owner, List<Subject> subjects) {
 		this.id = id;
 		this.name = name;
 		this.owner = owner;
-		this.projects = projects;
+		this.subjects = subjects;
 	}
 
 	public String getName() {
@@ -84,16 +91,16 @@ public class Workspace {
 		this.owner = owner;
 	}
 
-	public List<Project> getProjects() {
-		return projects;
+	public List<Subject> getSubjects() {
+		return subjects;
 	}
 
-	public void setProjects(List<Project> projects) {
-		this.projects = projects;
+	public void setSubjects(List<Subject> projects) {
+		this.subjects = projects;
 	}
 
-	public boolean addProject(Project project) {
-		return this.projects.add(project);
+	public boolean addProject(Subject subject, Project project) {
+		return false; // TODO: implement
 	}
 
 	public boolean hasPermission(User user) {
@@ -111,7 +118,7 @@ public class Workspace {
 				"id='" + id + '\'' +
 				", name='" + name + '\'' +
 				", owner=" + owner +
-				", projects=" + projects +
+				", projects=" + subjects +
 				'}';
 	}
 }

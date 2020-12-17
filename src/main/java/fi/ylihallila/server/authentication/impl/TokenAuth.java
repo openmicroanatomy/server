@@ -7,7 +7,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
-import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.authentication.Auth;
 import fi.ylihallila.server.models.User;
@@ -119,6 +119,7 @@ public class TokenAuth implements Auth {
             Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(),null);
 
             JWTVerifier verifier = JWT.require(algorithm)
+                .acceptExpiresAt(5 * 3600)
                 .withAudience(APP_ID)
                 .build();
 

@@ -148,8 +148,8 @@ public class Util {
         if (project == null) {
             return Optional.empty();
         } else {
-            cache.put(id, project.getOwner().getName());
-            return Optional.of(project.getOwner().getName());
+            cache.put(id, project.getSubject().getWorkspace().getOwner().getName());
+            return Optional.of(project.getSubject().getWorkspace().getOwner().getName());
         }
     }
 

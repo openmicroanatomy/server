@@ -1,6 +1,6 @@
 package fi.ylihallila.server.tests;
 
-import fi.ylihallila.remote.commons.Roles;
+import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.Application;
 import io.javalin.plugin.json.JavalinJson;
 import kong.unirest.Unirest;
