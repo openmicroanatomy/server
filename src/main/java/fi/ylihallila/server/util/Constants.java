@@ -10,6 +10,9 @@ public class Constants {
     public final static String TILE_FILE_FORMAT      = "tiles/%s/%s/%s_%s_%s_%s.png";
     public final static String WORKSPACE_FILE        = "workspace.json";
 
+    public final static String EDITOR_UPLOADS_FOLDER = "editor-uploads";
+    public final static String EDITOR_UPLOADS_URL    = "%s:%s/" + EDITOR_UPLOADS_FOLDER + "/%s";
+
     /**
      * Slides that are pending tiling & upload to <a href="https://docs.csc.fi/data/Allas/">Allas</a>.
      * These files are scanned regularly by the tiler. (@see Tiler)

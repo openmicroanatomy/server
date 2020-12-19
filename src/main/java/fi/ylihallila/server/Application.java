@@ -31,6 +31,7 @@ public class Application {
         config.maxRequestSize = Long.MAX_VALUE;
         config.addStaticFiles("/logos", Path.of("organizations").toAbsolutePath().toString(), Location.EXTERNAL);
         config.addStaticFiles("/tiles", Path.of("tiles").toAbsolutePath().toString(), Location.EXTERNAL);
+        config.addStaticFiles("/editor-uploads", Path.of("editor-uploads").toAbsolutePath().toString(), Location.EXTERNAL);
 
         config.server(() -> {
             Server server = new Server();
@@ -72,6 +73,7 @@ public class Application {
     private BackupController BackupController;
     private SlideController SlideController;
     private UserController UserController;
+    private FileController FileController;
 
     public Application() {
         createControllers();
@@ -112,6 +114,8 @@ public class Application {
 
             /* Upload */
             post("upload", SlideController::upload, roles(MANAGE_SLIDES));
+            post("upload/ckeditor", FileController::upload, roles(MANAGE_PROJECTS));
+            app.options("/api/v0/upload/ckeditor", FileController::options, roles(MANAGE_PROJECTS));
 
             /* Slides */
             path("slides", () -> {
@@ -185,6 +189,7 @@ public class Application {
         this.BackupController = new BackupController();
         this.SlideController = new SlideController();
         this.UserController = new UserController();
+        this.FileController = new FileController();
     }
 
     private SslContextFactory getSslContextFactory() {
