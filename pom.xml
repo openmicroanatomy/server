@@ -37,6 +37,7 @@
             <artifactId>joss</artifactId>
             <version>0.10.4.1</version>
             <type>jar</type>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -44,6 +45,7 @@
             <artifactId>openslide</artifactId>
             <version>3.4.1_2</version>
             <type>jar</type>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -52,6 +54,7 @@
             <version>3.4.1_2</version>
             <classifier>natives-windows</classifier>
             <type>jar</type>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
