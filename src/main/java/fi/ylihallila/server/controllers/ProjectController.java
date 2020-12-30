@@ -139,10 +139,6 @@ public class ProjectController extends Controller {
 			throw new ForbiddenResponse();
 		}
 
-		session.createSQLQuery("DELETE FROM WORKSPACES_PROJECTS WHERE PROJECTS_ID = :id")
-				.setParameter("id", project.getId())
-				.executeUpdate();
-
 		session.delete(project);
 		backupAndDelete(getProjectFile(id));
 
