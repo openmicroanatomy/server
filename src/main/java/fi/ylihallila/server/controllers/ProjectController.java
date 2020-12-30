@@ -4,17 +4,23 @@ import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.Project;
 import fi.ylihallila.server.models.Subject;
 import fi.ylihallila.server.models.User;
-import io.javalin.http.*;
+import io.javalin.http.Context;
+import io.javalin.http.ForbiddenResponse;
+import io.javalin.http.NotFoundResponse;
+import io.javalin.http.UnauthorizedResponse;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
 
 public class ProjectController extends Controller {
 
@@ -42,7 +48,7 @@ public class ProjectController extends Controller {
 		project.getSubject().getWorkspace().setOwner(user);
 		session.save(project);
 
-		createProjectZipFile(projectId);
+		createProjectJsonFile(projectId);
 
 		ctx.status(200).html(projectId);
 
@@ -74,7 +80,7 @@ public class ProjectController extends Controller {
 
 		session.save(project);
 
-		createProjectZipFile(projectId);
+		createProjectJsonFile(projectId);
 
 		logger.info("Project {} created by {}", projectId, user.getName());
 	}
@@ -84,7 +90,7 @@ public class ProjectController extends Controller {
 
 		File file;
 
-		if (ctx.queryParamMap().containsKey("timestamp")) {
+		if (ctx.queryParamMap().containsKey("timestamp")) { // TODO: Backup JSON files
 			file = new File(getBackupFile(id + ".zip", ctx.queryParam("timestamp")));
 		} else {
 			file = new File(getProjectFile(id));
@@ -94,11 +100,7 @@ public class ProjectController extends Controller {
 			throw new NotFoundResponse();
 		}
 
-		FileInputStream fis = new FileInputStream(file);
-
-		ctx.contentType("application/zip").status(200).result(fis.readAllBytes());
-
-		fis.close();
+		ctx.status(200).contentType("application/json").result(Files.readString(file.toPath()));
 	}
 
 	// TODO: Doesn't check if project exist?
@@ -151,13 +153,7 @@ public class ProjectController extends Controller {
 
 	public void uploadProject(Context ctx) throws IOException {
 		String id = ctx.pathParam("project-id", String.class).get();
-		UploadedFile file = ctx.uploadedFile("project");
-
-		if (file == null) {
-			logger.info("Tried to upload file but file was missing from form data. [Project: {}, User: {}]", id, Authenticator.getUsername(ctx).orElse("Unknown"));
-			ctx.status(400);
-			return;
-		}
+		String projectData = ctx.formParam("project-data", String.class).get();
 
 		if (hasPermission(ctx, id)) {
 			Session session = ctx.use(Session.class);
@@ -166,8 +162,11 @@ public class ProjectController extends Controller {
 			project.setModifiedAt(System.currentTimeMillis());
 			session.update(project);
 
-			copyInputStreamToFile(file.getContent(), new File(getProjectFile(id)));
-			backup(getProjectFile(id));
+			try (InputStream is = new ByteArrayInputStream(projectData.getBytes(StandardCharsets.UTF_8))) {
+				copyInputStreamToFile(is, new File(getProjectFile(id)));
+				backup(getProjectFile(id));
+			}
+
 			logger.info("Project {} updated by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 		} else {
 			throw new UnauthorizedResponse();
@@ -176,30 +175,13 @@ public class ProjectController extends Controller {
 
 	/* Private API */
 
-	private void createProjectZipFile(String projectId) throws IOException {
-		ZipFile zipFile = new ZipFile(new File("Dummy.zip"));
-		ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(getProjectFile(projectId)));
+	private void createProjectJsonFile(String projectId) throws IOException {
+		// TODO: Use GSON?
+		String dummy = Files.readString(Path.of("Dummy.json"));
+		dummy = dummy.replace("<ID>", projectId);
+		dummy = dummy.replace("<TIMESTAMP>", String.valueOf(System.currentTimeMillis()));
 
-		zipFile.stream().forEach(entryIn -> {
-			try {
-				String name = entryIn.getName().replace("Dummy", projectId);
-				ZipEntry newEntry = new ZipEntry(name);
-				zipOut.putNextEntry(newEntry);
-
-				InputStream is = zipFile.getInputStream(entryIn);
-				int read;
-				byte[] bytes = new byte[1024];
-
-				while ((read = is.read(bytes)) != -1) {
-					zipOut.write(bytes, 0, read);
-				}
-
-				zipOut.closeEntry();
-			} catch (IOException e) {
-				logger.error("Error while creating a new project zip file", e);
-			}
-		});
-
-		zipOut.close();
+		InputStream is = new ByteArrayInputStream(dummy.getBytes(StandardCharsets.UTF_8));
+		Files.copy(is, Path.of(getProjectFile(projectId)));
 	}
 }
