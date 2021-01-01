@@ -116,6 +116,7 @@ public class ProjectController extends Controller {
 		Project project = session.find(Project.class, id);
 		project.setName(ctx.formParam("name", project.getName()));
 		project.setDescription(ctx.formParam("description", project.getDescription()));
+		project.setHidden(validate(ctx, "hidden", Boolean.class, project.isHidden()));
 		project.setModifiedAt(System.currentTimeMillis());
 		session.update(project);
 

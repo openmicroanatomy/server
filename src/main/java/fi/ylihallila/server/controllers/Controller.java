@@ -6,6 +6,7 @@ import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.util.Util;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.commons.Roles;
+import io.javalin.core.validation.Validator;
 import io.javalin.http.Context;
 import org.hibernate.Session;
 import org.slf4j.Logger;
@@ -80,6 +81,18 @@ public class Controller {
 
 	protected String getBackupFile(String filename, String timestamp) {
 		return String.format(Constants.BACKUP_FILE_FORMAT, filename, timestamp);
+	}
+
+	protected <T> T validate(Context ctx, String key, Class<T> clazz, T defaultValue) {
+		if (ctx.formParamMap().containsKey(key)) {
+			Validator<T> validator = ctx.formParam(key, clazz);
+
+			if (validator.isValid()) {
+				return validator.get();
+			}
+		}
+
+		return defaultValue;
 	}
 
 	/**

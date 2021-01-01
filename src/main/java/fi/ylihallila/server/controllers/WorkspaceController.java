@@ -19,21 +19,11 @@ public class WorkspaceController extends Controller {
 	public void getAllWorkspaces(Context ctx) {
 		Session session = ctx.use(Session.class);
 
+		// TODO: Remove hidden projects from API for users without write access
 		List<Workspace> workspaces = session.createQuery("from Workspace", Workspace.class).list();
 
 		if (Authenticator.isLoggedIn(ctx) && Authenticator.hasRoles(ctx, Roles.MANAGE_PERSONAL_PROJECTS)) {
-//			User user = Authenticator.getUser(ctx);
-//
-//			Workspace personal = new Workspace();
-//			personal.setId((String) null);
-//			personal.setName("My Projects");
-//			personal.setOwner(user);
-//
-//			List<Project> projects = session.createQuery("from Project where owner.id = :id", Project.class)
-//					                        .setParameter("id", user.getId()).list();
-//			personal.setSubjects(projects);
-//
-//			workspaces.add(personal);
+			// TODO: Reimplement personal projects
 		}
 
 		ctx.status(200).json(workspaces);
