@@ -2,6 +2,8 @@ package fi.ylihallila.server.models;
 
 import javax.persistence.*;
 
+import java.util.Objects;
+
 import static fi.ylihallila.server.util.Config.Config;
 
 @Entity
@@ -39,6 +41,20 @@ public class Organization extends Owner {
 
 	public String getLogoUrl() {
 		return Config.getString("server.host") + ":" + Config.getString("server.port.insecure") + "/logos/" + id + ".png";
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		if (!super.equals(o)) return false;
+		Organization that = (Organization) o;
+		return Objects.equals(id, that.id);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), id);
 	}
 
 	@Override

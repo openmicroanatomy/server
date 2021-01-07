@@ -122,9 +122,6 @@ public class OrganizationController extends Controller implements CrudHandler {
         ),
         formParams = {
             @OpenApiFormParam(name = "name", required = true)
-        },
-        security = {
-            @OpenApiSecurity(name = "basicAuth")
         }
     )
     @Override public void update(@NotNull Context ctx, @NotNull String id) {

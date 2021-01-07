@@ -2,15 +2,19 @@ package fi.ylihallila.server.controllers;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import fi.ylihallila.server.authentication.Authenticator;
-import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
-import fi.ylihallila.server.models.Error;
-import fi.ylihallila.server.models.Organization;
+import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.models.User;
-import fi.ylihallila.server.util.PasswordHelper;
+import io.javalin.apibuilder.CrudHandler;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
+import io.javalin.http.UnauthorizedResponse;
+import io.javalin.plugin.openapi.annotations.OpenApi;
+import io.javalin.plugin.openapi.annotations.OpenApiContent;
+import io.javalin.plugin.openapi.annotations.OpenApiParam;
+import io.javalin.plugin.openapi.annotations.OpenApiResponse;
 import org.hibernate.Session;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,17 +22,24 @@ import java.util.*;
 
 import static fi.ylihallila.server.util.Config.Config;
 
-public class UserController extends Controller {
+/**
+ * TODO: Only admins can edit users with admin role.
+ */
+public class UserController extends Controller implements CrudHandler {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public void hasPermission(Context ctx) {
-		String id = ctx.pathParam("id", String.class).get();
+	@OpenApi(
+		summary = "Get all users",
+		tags = { "user" },
+		responses = {
+			@OpenApiResponse(status = "200", content = @OpenApiContent(from = User.class, isArray = true)),
+			@OpenApiResponse(status = "403")
+		}
+	)
+	@Override public void getAll(@NotNull Context ctx) {
+		Allow(ctx, Roles.MANAGE_USERS);
 
-		ctx.status(200).json(hasPermission(ctx, id));
-	}
-
-	public void getAllUsers(Context ctx) {
 		User user = Authenticator.getUser(ctx);
 		Session session = ctx.use(Session.class);
 
@@ -44,52 +55,90 @@ public class UserController extends Controller {
 		ctx.status(200).json(users);
 	}
 
-	public void getUser(Context ctx) {
-		Session session = ctx.use(Session.class);
+	@OpenApi(
+		summary = "Get given user",
+		tags = { "user" },
+		responses = {
+			@OpenApiResponse(status = "200", content = @OpenApiContent(from = User.class)),
+			@OpenApiResponse(status = "403"),
+			@OpenApiResponse(status = "404")
+		}
+	)
+	@Override public void getOne(Context ctx, @NotNull String id) {
+		Allow(ctx, Roles.MANAGE_USERS);
 
-		User user = session.find(User.class, ctx.pathParam("user-id"));
+		User user = Authenticator.getUser(ctx);
+		User queriedUser = getUser(ctx, id);
 
-		if (user != null) {
-			ctx.status(200).json(user);
+		if (user.hasRole(Roles.ADMIN) || hasSameOrganization(user, queriedUser)) {
+			ctx.status(200).json(queriedUser);
 		} else {
-			ctx.status(404).json(new Error("User not found"));
+			throw new UnauthorizedResponse("Not authorized to view this user.");
 		}
 	}
 
-	public void createUser(Context ctx) {
-		String organizationId = ctx.formParam("organization-id", String.class).get();
-		String password		  = ctx.formParam("password", String.class).get();
-		String email		  = ctx.formParam("email", String.class).get();
-		String name		      = ctx.formParam("name", String.class).get();
-
-		Session session = ctx.use(Session.class);
-
-		Organization organization = session.find(Organization.class, organizationId);
-		if (organization == null) {
-			throw new NotFoundResponse("Organization not found.");
+	@OpenApi(
+		summary = "Create a new user",
+		tags = { "user" },
+		responses = {
+			@OpenApiResponse(status = "201", content = @OpenApiContent(from = User.class)),
+			@OpenApiResponse(status = "403")
 		}
+	)
+	@Override public void create(@NotNull Context ctx) {
+		Allow(ctx, Roles.MANAGE_USERS);
 
-		User user = new User();
-		user.setOrganization(organization);
-		user.setName(name);
-		user.hashPassword(password);
-		user.setEmail(email);
-
-		session.save(user);
-
-		ctx.status(201).json(user);
-	}
-
-	public void updateUser(Context ctx) {
-		String id = ctx.pathParam("user-id");
+		String password	= ctx.formParam("password", String.class).get();
+		String email	= ctx.formParam("email", String.class).get();
+		String name		= ctx.formParam("name", String.class).get();
 
 		Session session = ctx.use(Session.class);
 		User user = Authenticator.getUser(ctx);
 
-		User editedUser = session.find(User.class, id);
+		User newUser = new User();
+		newUser.setId(UUID.randomUUID().toString());
+		newUser.setOrganization(user.getOrganization());
+		newUser.setName(name);
+		newUser.hashPassword(password);
+		newUser.setEmail(email);
 
-		if (editedUser == null) {
-			throw new NotFoundResponse("User not found");
+		if (Config.getBoolean("roles.manage.personal.projects.default")) {
+			newUser.setRoles(EnumSet.of(Roles.MANAGE_PERSONAL_PROJECTS));
+		} else {
+			newUser.setRoles(EnumSet.noneOf(Roles.class));
+		}
+
+		session.save(newUser);
+
+		ctx.status(201).json(newUser);
+
+		logger.info("User {} created by {} [Organization: {}]", newUser.getName(), user.getName(), user.getOrganization().getName());
+	}
+
+	@OpenApi(
+		summary = "Update given user",
+		tags = { "user" },
+		pathParams = @OpenApiParam(
+			name = "id",
+			description = "UUID of user to be updated",
+			required = true
+		),
+		responses = {
+			@OpenApiResponse(status = "200", content = @OpenApiContent(from = User.class)),
+			@OpenApiResponse(status = "403"),
+			@OpenApiResponse(status = "404")
+		}
+	)
+	@Override public void update(@NotNull Context ctx, @NotNull String id) {
+		Allow(ctx, Roles.MANAGE_USERS);
+
+		Session session = ctx.use(Session.class);
+		User user = Authenticator.getUser(ctx);
+
+		User editedUser = getUser(ctx, id);
+
+		if (!(user.hasRole(Roles.ADMIN) || hasSameOrganization(user, editedUser))) {
+			throw new UnauthorizedResponse("Not authorized to edit that user.");
 		}
 
 		EnumSet<Roles> roles = editedUser.getRoles();
@@ -108,8 +157,11 @@ public class UserController extends Controller {
 
 		if (user.hasRole(Roles.ADMIN)) {
 			if (ctx.formParamMap().containsKey("password")) {
-				// TODO: Password security requirements
-				editedUser.hashPassword(ctx.formParam("password"));
+				String password = ctx.formParam("password", String.class)
+						.check(p -> p.length() > 3)
+						.get();
+
+				editedUser.hashPassword(password);
 			}
 		}
 
@@ -117,30 +169,62 @@ public class UserController extends Controller {
 		editedUser.setName(ctx.formParam("name", editedUser.getName()));
 		editedUser.setEmail(ctx.formParam("email", editedUser.getEmail()));
 		editedUser.setRoles(roles);
+
 		session.update(editedUser);
 
-		ctx.status(200);
+		ctx.status(200).json(user);
 
-		// TODO: Remove `password` field from formParamMap
-		logger.info("User {} was edited by {} [{}]", editedUser.getName(), user.getName(), ctx.formParamMap());
+		var cleanedFormParamMap = ctx.formParamMap();
+		cleanedFormParamMap.remove("password");
+
+		logger.info("User {} was edited by {} [{}]", editedUser.getName(), user.getName(), cleanedFormParamMap);
+	}
+
+	@OpenApi(
+		summary = "Delete given user",
+		tags = { "user" },
+		pathParams = @OpenApiParam(
+			name = "id",
+			description = "UUID of user to be deleted",
+			required = true
+		)
+	)
+	@Override public void delete(@NotNull Context ctx, @NotNull String id) {
+		Allow(ctx, Roles.MANAGE_USERS);
+
+		Session session = ctx.use(Session.class);
+		User user = Authenticator.getUser(ctx);
+
+		User deletedUser = getUser(ctx, id);
+
+		if (user.hasRole(Roles.ADMIN) || hasSameOrganization(user, deletedUser)) {
+			session.delete(deletedUser);
+			ctx.status(200);
+
+			logger.info("User {} deleted by {}", deletedUser.getName(), user.getName());
+		} else {
+			logger.warn("User {} tried to delete user {} but lacked permissions.", user.getName(), deletedUser.getName());
+
+			throw new UnauthorizedResponse("No permission to delete this user");
+		}
+	}
+
+	public void hasPermission(Context ctx) {
+		String id = ctx.pathParam("id", String.class).get();
+
+		ctx.status(200).json(hasPermission(ctx, id));
 	}
 
 	/**
-	 * This method is used when authenticating with Basic Authentication. The endpoint returns usedId,
-	 * organizationId and roles. If the credentials are invalid, an NotAuthorizedException is thrown.
+	 * This method is used when authenticating with Basic Authentication. The endpoint returns an User object.
+	 * If the credentials are invalid, an NotAuthorizedException is thrown.
 
 	 * @param ctx Context
 	 */
 	public void login(Context ctx) {
 		User user = Authenticator.getUser(ctx);
 
-		Map<String, Object> data = new HashMap<>();
-
-		data.put("userId", user.getId());
-		data.put("organizationId", user.getOrganization().getId());
-		data.put("roles", user.getRoles());
-
-		ctx.status(200).json(data);
+		ctx.status(200).json(user);
 	}
 
 	/**
@@ -156,7 +240,6 @@ public class UserController extends Controller {
 		String id = jwt.getClaim("oid").asString();
 
 		Session session = ctx.use(Session.class);
-
 		User user = session.find(User.class, id);
 
 		if (user == null) {
@@ -173,6 +256,23 @@ public class UserController extends Controller {
 			session.save(user);
 		}
 
-		ctx.status(200).json(user.getRoles());
+		ctx.status(200).json(user);
+	}
+
+	/* PRIVATE API */
+
+	private User getUser(Context ctx, String id) {
+		Session session = ctx.use(Session.class);
+		User user = session.find(User.class, id);
+
+		if (user == null) {
+			throw new NotFoundResponse("User not found");
+		}
+
+		return user;
+	}
+
+	private boolean hasSameOrganization(User user, User otherUser) {
+		return user.getOrganization().equals(otherUser.getOrganization());
 	}
 }

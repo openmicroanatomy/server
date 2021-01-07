@@ -123,19 +123,14 @@ public class Project {
 	}
 
 	public boolean hasPermission(User user) {
-		if (user.getRoles().contains(Roles.ADMIN)) {
+		if (user.hasRole(Roles.ADMIN)) {
 			return true;
 		}
 
-		if (getSubject().getWorkspace().getOwner().getId().equals(user.getId())
-				&& user.getRoles().contains(Roles.MANAGE_PERSONAL_PROJECTS)) {
-			return true;
-		} else if (getSubject().getWorkspace().getOwner().getId().equals(user.getOrganization().getId())
-				&& user.getRoles().contains(Roles.MANAGE_PROJECTS)) {
-			return true;
-		} else {
-			return false;
-		}
+		Owner owner = getSubject().getWorkspace().getOwner();
+
+		return (owner.equals(user)                   && user.hasRole(Roles.MANAGE_PERSONAL_PROJECTS))
+			|| (owner.equals(user.getOrganization()) && user.hasRole(Roles.MANAGE_PROJECTS));
 	}
 
 	@Override

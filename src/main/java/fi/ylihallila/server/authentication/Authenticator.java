@@ -21,7 +21,7 @@ public class Authenticator {
 
 	public static void accessManager(Handler handler, Context ctx, Set<Role> permittedRoles) {
 		try {
-			if (permittedRoles.contains(Roles.ANYONE) || hasRoles(ctx, permittedRoles)) {
+			if (permittedRoles.isEmpty() || permittedRoles.contains(Roles.ANYONE) || hasRoles(ctx, permittedRoles)) {
 				handler.handle(ctx);
 			} else {
 				if (isLoggedIn(ctx)) {

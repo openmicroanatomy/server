@@ -22,9 +22,7 @@ public class WorkspaceController extends Controller {
 		// TODO: Remove hidden projects from API for users without write access
 		List<Workspace> workspaces = session.createQuery("from Workspace", Workspace.class).list();
 
-		if (Authenticator.isLoggedIn(ctx) && Authenticator.hasRoles(ctx, Roles.MANAGE_PERSONAL_PROJECTS)) {
-			// TODO: Reimplement personal projects
-		}
+		// TODO: Reimplement personal projects
 
 		ctx.status(200).json(workspaces);
 	}

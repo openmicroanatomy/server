@@ -106,17 +106,16 @@ public class Application {
             });
 
             /* Authentication */
-            path("users", () -> {
-                get(UserController::getAllUsers,                roles(MANAGE_USERS));
+
+            path("/auth/", () -> {
                 get("login", UserController::login,             roles(ANYONE));
                 get("verify", UserController::verify,           roles(ANYONE));
                 get("write/:id", UserController::hasPermission, roles(ANYONE));
-
-                path(":user-id", () -> {
-                    get(UserController::getUser,    roles(MANAGE_USERS));
-                    put(UserController::updateUser, roles(MANAGE_USERS));
-                });
             });
+
+            /* Users */
+
+            crud("/users/:id", UserController, roles(ANYONE));
 
             /* Upload */
             post("upload", SlideController::upload, roles(MANAGE_SLIDES));
