@@ -1,5 +1,6 @@
 package fi.ylihallila.server.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import fi.ylihallila.server.commons.Roles;
 
 import javax.persistence.*;
@@ -27,7 +28,7 @@ public class Project {
 	private String description;
 
 	@ManyToOne
-	@JoinColumn(name = "project_subject")
+	@JsonBackReference
 	private Subject subject;
 
 	/**

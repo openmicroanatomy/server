@@ -76,9 +76,8 @@ public class ProjectController extends Controller {
 		project.setId(projectId);
 		project.setName(projectName);
 		project.setDescription(ctx.formParam("description", ""));
-		project.setSubject(subject);
 
-		session.save(project);
+		subject.addProject(project);
 
 		createProjectJsonFile(projectId);
 

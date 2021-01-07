@@ -3,7 +3,8 @@ package fi.ylihallila.server.models;
 import javax.persistence.*;
 
 @Entity
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorValue("null")
 public class Owner {
 
 	@Id

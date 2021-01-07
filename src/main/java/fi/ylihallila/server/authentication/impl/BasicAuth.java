@@ -23,6 +23,7 @@ import javax.persistence.NonUniqueResultException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,7 +56,7 @@ public class BasicAuth implements Auth {
                 user.setOrganization(data.get("organization").getAsString());
                 user.setPassword(data.get("password").getAsString());
                 user.setOAuth(false);
-                user.setRoles(roles);
+                user.setRoles(EnumSet.copyOf(roles));
 
                 session.saveOrUpdate(user);
             }
@@ -99,6 +100,10 @@ public class BasicAuth implements Auth {
 
     @Override
     public boolean hasRoles(Context ctx, Set<Role> permittedRoles) {
+        if (!ctx.basicAuthCredentialsExist()) {
+            return false;
+        }
+
         Set<Roles> userRoles = getUserRoles(ctx);
 
         return permittedRoles.stream().anyMatch(userRoles::contains);
@@ -112,6 +117,11 @@ public class BasicAuth implements Auth {
     public User getUserObject(Context ctx) {
         try {
             Session session = ctx.use(Session.class);
+
+            if (!ctx.basicAuthCredentialsExist()) {
+                throw new UnauthorizedResponse("No username or password provided.");
+            }
+
             BasicAuthCredentials auth = ctx.basicAuthCredentials();
 
             User user = session.createQuery("from User where email = :email", User.class)
@@ -128,6 +138,8 @@ public class BasicAuth implements Auth {
             }
         } catch (NoResultException | NonUniqueResultException e) {
             throw new UnauthorizedResponse("Invalid email or password");
+        } catch (UnauthorizedResponse e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error while authenticating", e);
             throw new UnauthorizedResponse("Error when logging in. This incident has been logged.");

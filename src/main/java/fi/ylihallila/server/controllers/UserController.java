@@ -92,7 +92,7 @@ public class UserController extends Controller {
 			throw new NotFoundResponse("User not found");
 		}
 
-		Set<Roles> roles = editedUser.getRoles();
+		EnumSet<Roles> roles = editedUser.getRoles();
 
 		for (Roles role : Roles.getModifiableRoles()) {
 			if (ctx.formParamMap().containsKey(role.name())) {
@@ -167,7 +167,7 @@ public class UserController extends Controller {
 			user.setOrganization(jwt.getClaim("tid").asString());
 
 			if (Config.getBoolean("roles.manage.personal.projects.default")) {
-				user.setRoles(Set.of(Roles.MANAGE_PERSONAL_PROJECTS));
+				user.setRoles(EnumSet.of(Roles.MANAGE_PERSONAL_PROJECTS));
 			}
 
 			session.save(user);

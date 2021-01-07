@@ -8,6 +8,7 @@ import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.commons.Roles;
 import io.javalin.core.validation.Validator;
 import io.javalin.http.Context;
+import io.javalin.http.UnauthorizedResponse;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +94,12 @@ public class Controller {
 		}
 
 		return defaultValue;
+	}
+
+	protected void Allow(Context ctx, Roles... roles) {
+		if (!Authenticator.hasRoles(ctx, Set.of(roles))) {
+			throw new UnauthorizedResponse();
+		}
 	}
 
 	/**

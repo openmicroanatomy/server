@@ -2,8 +2,10 @@ package fi.ylihallila.server.models;
 
 import javax.persistence.*;
 
+import static fi.ylihallila.server.util.Config.Config;
+
 @Entity
-@Table( name = "organizations" )
+@DiscriminatorValue("Organization")
 public class Organization extends Owner {
 
 	@Id
@@ -33,6 +35,10 @@ public class Organization extends Owner {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getLogoUrl() {
+		return Config.getString("server.host") + ":" + Config.getString("server.port.insecure") + "/logos/" + id + ".png";
 	}
 
 	@Override

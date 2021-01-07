@@ -32,8 +32,7 @@ public class SubjectController {
         }
 
         Subject subject = new Subject(subjectName, workspace);
-
-        session.save(subject);
+        workspace.addSubject(subject);
 
         ctx.status(200).json(subject);
 

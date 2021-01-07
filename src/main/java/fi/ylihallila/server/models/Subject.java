@@ -1,16 +1,15 @@
 package fi.ylihallila.server.models;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import org.hibernate.annotations.Cascade;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 import java.util.List;
 
-@Entity
+@Entity(name = "Subject")
 @Table(name = "subjects")
-@JsonIdentityInfo(scope = Subject.class, generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Subject {
 
     /**
@@ -28,16 +27,15 @@ public class Subject {
     private String name;
 
     @ManyToOne
-    @JoinColumn(name = "subject_workspace")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Workspace workspace;
 
-    @OneToMany(mappedBy = "subject")
-    @Cascade({ org.hibernate.annotations.CascadeType.ALL, org.hibernate.annotations.CascadeType.REMOVE })
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JsonManagedReference
     private List<Project> projects;
 
-    public Subject() {
-
-    }
+    public Subject() {}
 
     public Subject(String name, Workspace workspace) {
         this.name = name;
@@ -74,5 +72,15 @@ public class Subject {
 
     public void setProjects(List<Project> projects) {
         this.projects = projects;
+    }
+
+    public void addProject(Project project) {
+        project.setSubject(this);
+        projects.add(project);
+    }
+
+    public void removeProject(Project project) {
+        projects.remove(project);
+        project.setSubject(null);
     }
 }

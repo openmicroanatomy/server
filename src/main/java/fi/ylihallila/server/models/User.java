@@ -2,17 +2,21 @@ package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fi.ylihallila.server.commons.Roles;
+import fi.ylihallila.server.hibernate.EnumSetType;
 import fi.ylihallila.server.util.PasswordHelper;
 import fi.ylihallila.server.util.Util;
-import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.*;
+import org.hibernate.annotations.Parameter;
 
+import javax.persistence.Entity;
 import javax.persistence.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Set;
+import java.util.EnumSet;
 
 @Entity
-@Table( name = "users" )
+@TypeDef(name = "enum-set", defaultForType = EnumSet.class, typeClass = EnumSetType.class)
+@DiscriminatorValue("User")
 public class User extends Owner {
 
     /**
@@ -42,6 +46,7 @@ public class User extends Owner {
      * Human readable presentation of @var organizationId;
      */
     @ManyToOne
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Organization organization;
 
     /**
@@ -60,20 +65,24 @@ public class User extends Owner {
     /**
      * Roles for this user.
      */
-    @Column
-    @Enumerated
-    @ElementCollection(targetClass = Roles.class, fetch = FetchType.EAGER)
-    private Set<Roles> roles;
+    @Column(length = 20)
+    @Type(type = "enum-set", parameters = {
+        @Parameter(
+            name = "enumClass",
+            value = "fi.ylihallila.server.commons.Roles"
+        )
+    })
+    private EnumSet<Roles> roles;
 
-    public User(String id, String name, String email, Set<Roles> roles, Organization organization) {
+    public User() {}
+
+    public User(String id, String name, String email, EnumSet<Roles> roles, Organization organization) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.roles = roles;
         this.organization = organization;
     }
-
-    public User() {}
 
     public void setId(String id) {
         this.id = id;
@@ -135,11 +144,11 @@ public class User extends Owner {
         }
     }
 
-    public Set<Roles> getRoles() {
+    public EnumSet<Roles> getRoles() {
         return roles;
     }
 
-    public void setRoles(Set<Roles> roles) {
+    public void setRoles(EnumSet<Roles> roles) {
         this.roles = roles;
     }
 

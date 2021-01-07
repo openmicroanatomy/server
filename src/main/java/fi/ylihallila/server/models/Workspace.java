@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.util.Util;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.*;
 
 import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -39,6 +41,7 @@ public class Workspace {
 	 * of this organization can edit the projects withing this workspace.
 	 */
 	@ManyToOne
+	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Owner owner;
 
 	/**
@@ -46,8 +49,8 @@ public class Workspace {
 	 */
 	private boolean hidden;
 
-	@OneToMany(mappedBy = "workspace")
-	@Cascade({ org.hibernate.annotations.CascadeType.ALL, org.hibernate.annotations.CascadeType.REMOVE })
+	@OneToMany(mappedBy = "workspace", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OnDelete(action = OnDeleteAction.CASCADE)
 	private List<Subject> subjects = new ArrayList<>();
 
 	public Workspace() {}
@@ -99,8 +102,14 @@ public class Workspace {
 		this.subjects = projects;
 	}
 
-	public boolean addProject(Subject subject, Project project) {
-		return false; // TODO: implement
+	public void addSubject(Subject subject) {
+		subject.setWorkspace(this);
+		this.subjects.add(subject);
+	}
+
+	public void removeSubject(Subject subject) {
+		subjects.remove(subject);
+		subject.setWorkspace(null);
 	}
 
 	public boolean hasPermission(User user) {
@@ -112,6 +121,14 @@ public class Workspace {
 				&& user.getRoles().contains(Roles.MANAGE_PROJECTS);
 	}
 
+	public boolean isHidden() {
+		return hidden;
+	}
+
+	public void setHidden(boolean hidden) {
+		this.hidden = hidden;
+	}
+
 	@Override
 	public String toString() {
 		return "Workspace{" +
@@ -119,6 +136,7 @@ public class Workspace {
 				", name='" + name + '\'' +
 				", owner=" + owner +
 				", projects=" + subjects +
+				", hidden=" + hidden +
 				'}';
 	}
 }

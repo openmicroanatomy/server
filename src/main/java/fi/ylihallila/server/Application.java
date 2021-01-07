@@ -6,6 +6,10 @@ import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.util.Database;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
+import io.javalin.plugin.openapi.OpenApiOptions;
+import io.javalin.plugin.openapi.OpenApiPlugin;
+import io.javalin.plugin.openapi.ui.SwaggerOptions;
+import io.swagger.v3.oas.models.info.Info;
 import org.apache.http.HttpVersion;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -13,19 +17,21 @@ import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.*;
-
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
+import java.util.Set;
 
-import static io.javalin.apibuilder.ApiBuilder.*;
-import static io.javalin.core.security.SecurityUtil.roles;
 import static fi.ylihallila.server.commons.Roles.*;
 import static fi.ylihallila.server.util.Config.Config;
+import static io.javalin.apibuilder.ApiBuilder.*;
+import static io.javalin.core.security.SecurityUtil.roles;
 
 public class Application {
 
     private Logger logger = LoggerFactory.getLogger(Application.class);
     private Javalin app = Javalin.create(config -> {
+        config.registerPlugin(new OpenApiPlugin(getOpenApiOptions()));
         config.accessManager(Authenticator::accessManager);
         config.showJavalinBanner = false;
         config.maxRequestSize = Long.MAX_VALUE;
@@ -36,9 +42,9 @@ public class Application {
         config.server(() -> {
             Server server = new Server();
 
-            if (Constants.SECURE_SERVER) {
-//                config.enforceSsl = true;
+            // TODO: Allow only secure (production) server in the future.
 
+            if (Constants.SECURE_SERVER) {
                 HttpConfiguration httpConfig = new HttpConfiguration();
                 httpConfig.setSecureScheme("https");
                 httpConfig.setSecurePort(Config.getInt("server.port.secure"));
@@ -173,11 +179,7 @@ public class Application {
             });
 
             /* Organizations */
-            path("organizations", () -> {
-                get(OrganizationController::getAllOrganizations, roles(ANYONE));
-
-                // TODO: Write APIs to manage Organizations
-            });
+            crud("/organizations/:id", OrganizationController, roles(ANYONE));
         }));
     }
 
@@ -190,6 +192,19 @@ public class Application {
         this.SlideController = new SlideController();
         this.UserController = new UserController();
         this.FileController = new FileController();
+    }
+
+    private OpenApiOptions getOpenApiOptions() {
+        Info applicationInfo = new Info()
+                .version("1.0")
+                .description("RemoteOpenslide");
+
+        OpenApiOptions apiOptions = new OpenApiOptions(applicationInfo)
+                .path("/docs")
+                .swagger(new SwaggerOptions("/swagger").title("RemoteOpenslide Documentation"))
+                .roles(Set.of(ANYONE));
+
+        return apiOptions;
     }
 
     private SslContextFactory getSslContextFactory() {

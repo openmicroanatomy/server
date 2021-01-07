@@ -93,29 +93,6 @@ public class Util {
     }
 
     /**
-     * List of known Microsoft Azure AD GUIDs mapped to their respective names.
-     */
-    private static final Map<String, String> knownTenants = Map.of(
-    "9f9ce49a-5101-4aa3-8c75-0d5935ad6525", "University of Oulu",
-    "98ae7559-10dc-4288-8e2e-4593e62fe3ee", "University of Helsinki",
-    "fa6944af-cc7c-4cd8-9154-c01132798910", "University of Tampere"
-    );
-
-    public static Map<String, String> getKnownTenants() {
-        return knownTenants;
-    }
-
-    static {
-        Session session = Database.getSession();
-        session.beginTransaction();
-
-        getKnownTenants().forEach((id, name) -> session.saveOrUpdate(new Organization(id, name)));
-
-        session.getTransaction().commit();
-        session.close();
-    }
-
-    /**
      * Cache of human readable formats for IDs.
      *
      * @beta WeakHashMaps idea is to periodically refresh the cache (organization or users
