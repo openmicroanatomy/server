@@ -1,8 +1,8 @@
 package fi.ylihallila.server.generators;
 
 import com.google.gson.GsonBuilder;
-import fi.ylihallila.server.archivers.TarTileArchive;
 import fi.ylihallila.server.archivers.TileArchive;
+import fi.ylihallila.server.archivers.ZipTileArchive;
 import fi.ylihallila.server.storage.S3;
 import fi.ylihallila.server.storage.StorageProvider;
 import fi.ylihallila.server.util.Constants;
@@ -87,7 +87,8 @@ public class TileGenerator {
 
 			int downsample = (int) readDoubleProperty("openslide.level[" + level + "].downsample");
 
-			TileArchive tileArchive = new TarTileArchive(id, level);
+			// TODO: Let StorageProvider choose which TileArchive to use
+			TileArchive tileArchive = new ZipTileArchive(id, level);
 
 			for (int row = 0; row <= rows; row++) {
 				for (int col = 0; col <= cols; col++) {

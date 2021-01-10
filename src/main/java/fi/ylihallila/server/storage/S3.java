@@ -54,6 +54,7 @@ public class S3 implements StorageProvider {
     @Override public void commitFile(File file) {
         var request = PutObjectRequest.builder()
                 .bucket(bucket)
+                .key(file.getName())
                 .build();
 
         client.putObject(request, RequestBody.fromFile(file));
@@ -84,8 +85,8 @@ public class S3 implements StorageProvider {
         }
 
         public S3.Builder setConfigDefaults() {
-//            builder.region(Region.of(Config.getString("aws.region")));
-            builder.region(Region.EU_CENTRAL_1);
+            // TODO: Check for errors
+            builder.region(Region.of(Config.getString("aws.region")));
 
             AwsCredentials awsCredentials = AwsBasicCredentials.create(
                 Config.getString("s3.aws.access.key.id"),
