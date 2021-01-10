@@ -3,7 +3,7 @@ package fi.ylihallila.server.generators;
 import com.google.gson.GsonBuilder;
 import fi.ylihallila.server.archivers.TarTileArchive;
 import fi.ylihallila.server.archivers.TileArchive;
-import fi.ylihallila.server.storage.Allas;
+import fi.ylihallila.server.storage.S3;
 import fi.ylihallila.server.storage.StorageProvider;
 import fi.ylihallila.server.util.Constants;
 import org.openslide.OpenSlide;
@@ -73,10 +73,10 @@ public class TileGenerator {
 			boundsXMultiplier = 1.0 * boundsWidth  / slideWidth;
 		}
 
-		StorageProvider tileStorage = new Allas.Builder()
-		   .setConfigDefaults()
-		   .setContainer(id)
-		   .build();
+		S3 tileStorage = new S3.Builder()
+				.setConfigDefaults()
+				.setBucket(id)
+				.build();
 
 		for (int level = levels - 1; level >= 0; level--) {
 			int levelHeight = (int) (readIntegerProperty("openslide.level[" + level + "].height") * boundsYMultiplier);
@@ -123,6 +123,7 @@ public class TileGenerator {
 
 		generateProperties(id, tileStorage);
 
+		tileStorage.finish();
 		long endTime = System.currentTimeMillis();
 		System.out.print("\rTook " + (endTime - startTime) / 1000.0 + " seconds to generate & upload tiles.");
 	}
