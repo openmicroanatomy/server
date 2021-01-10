@@ -60,6 +60,7 @@ public class Main {
             Files.createDirectories(Path.of("uploads"));
             Files.createDirectories(Path.of("logos"));
             Files.createDirectories(Path.of("organizations"));
+            Files.createDirectories(Path.of("editor-uploads"));
 
             /*
              * TODO:
