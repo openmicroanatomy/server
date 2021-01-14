@@ -77,6 +77,7 @@ public class Application {
     private ProjectController ProjectController;
     private SubjectController SubjectController;
     private BackupController BackupController;
+    private ServerController ServerController;
     private SlideController SlideController;
     private UserController UserController;
     private FileController FileController;
@@ -104,6 +105,10 @@ public class Application {
                     session.close();
                 }
             });
+
+            /* Server */
+
+            get("server", ServerController::get, roles(ANYONE));
 
             /* Authentication */
 
@@ -188,6 +193,7 @@ public class Application {
         this.ProjectController = new ProjectController();
         this.SubjectController = new SubjectController();
         this.BackupController = new BackupController();
+        this.ServerController = new ServerController();
         this.SlideController = new SlideController();
         this.UserController = new UserController();
         this.FileController = new FileController();
