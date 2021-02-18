@@ -70,9 +70,9 @@ public class BasicAuth implements Auth {
 
     @Override
     public boolean isLoggedIn(Context ctx) {
-        if (!ctx.basicAuthCredentialsExist()) {
-            return false;
-        }
+//        if (!ctx.basicAuthCredentialsExist()) {
+//            return false;
+//        }
 
         try {
             getUserObject(ctx);
@@ -118,9 +118,9 @@ public class BasicAuth implements Auth {
         try {
             Session session = ctx.use(Session.class);
 
-            if (!ctx.basicAuthCredentialsExist()) {
-                throw new UnauthorizedResponse("No username or password provided.");
-            }
+//            if (!ctx.basicAuthCredentialsExist()) {
+//                throw new UnauthorizedResponse("No username or password provided.");
+//            }
 
             BasicAuthCredentials auth = ctx.basicAuthCredentials();
 

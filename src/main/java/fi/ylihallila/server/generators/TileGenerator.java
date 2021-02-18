@@ -3,9 +3,13 @@ package fi.ylihallila.server.generators;
 import com.google.gson.GsonBuilder;
 import fi.ylihallila.server.archivers.TileArchive;
 import fi.ylihallila.server.archivers.ZipTileArchive;
+import fi.ylihallila.server.storage.Allas;
+import fi.ylihallila.server.storage.FlatFile;
 import fi.ylihallila.server.storage.S3;
 import fi.ylihallila.server.storage.StorageProvider;
+import fi.ylihallila.server.util.Config;
 import fi.ylihallila.server.util.Constants;
+import org.apache.commons.compress.utils.FileNameUtils;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +50,7 @@ public class TileGenerator {
 
 		openSlide = new OpenSlide(slide);
 
-		String id = getOrGenerateUUID(slide.getName());
+		String id = getOrGenerateUUID(FileNameUtils.getBaseName(slide.getName()));
 
 		Color backgroundColor = getBackgroundColor();
 
@@ -73,10 +77,19 @@ public class TileGenerator {
 			boundsXMultiplier = 1.0 * boundsWidth  / slideWidth;
 		}
 
-		S3 tileStorage = new S3.Builder()
-				.setConfigDefaults()
-				.setBucket(id)
-				.build();
+		StorageProvider storage = switch (Config.Config.getString("storage.provider").toLowerCase()) {
+			case "aws" -> new S3.Builder()
+					.setConfigDefaults()
+					.setBucket(id)
+					.build();
+			case "allas" -> new Allas.Builder()
+					.setConfigDefaults()
+					.setContainer(id)
+					.build();
+			default -> new FlatFile();
+		};
+
+		logger.info("Using {} as storage provider", storage);
 
 		for (int level = levels - 1; level >= 0; level--) {
 			int levelHeight = (int) (readIntegerProperty("openslide.level[" + level + "].height") * boundsYMultiplier);
@@ -117,14 +130,18 @@ public class TileGenerator {
 
 			File archive = tileArchive.save();
 
-			logger.debug("Starting archive upload to Allas");
-			tileStorage.commitArchive(archive); // TODO: Commit async
-			logger.debug("Archive upload finished");
+			logger.debug("Committing archive to storage");
+			storage.commitArchive(archive); // TODO: Commit async
+
+			logger.debug("Deleting archive file");
+			Files.delete(archive.toPath());
 		}
 
-		generateProperties(id, tileStorage);
+		generateProperties(id, storage);
 
-		tileStorage.finish();
+		logger.debug("Deleting original slide");
+		Files.delete(slide.toPath());
+
 		long endTime = System.currentTimeMillis();
 		System.out.print("\rTook " + (endTime - startTime) / 1000.0 + " seconds to generate & upload tiles.");
 	}
@@ -177,6 +194,8 @@ public class TileGenerator {
 	private void generateProperties(String id, StorageProvider storageProvider) {
 		Map<String, String> properties = new HashMap<>(openSlide.getProperties());
 		properties.put("openslide.remoteserver.uri", storageProvider.getTilesURI().replace("{id}", id));
+		properties.put("openslide.level[0].tile-width", "1024");
+		properties.put("openslide.level[0].tile-height", "1024");
 
 		String json = new GsonBuilder().setPrettyPrinting().create().toJson(properties);
 

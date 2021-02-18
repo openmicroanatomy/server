@@ -125,7 +125,7 @@ public class Application {
             /* Upload */
             post("upload", SlideController::upload, roles(MANAGE_SLIDES));
             post("upload/ckeditor", FileController::upload, roles(MANAGE_PROJECTS));
-            app.options("/api/v0/upload/ckeditor", FileController::options, roles(MANAGE_PROJECTS));
+            app.options("/api/v0/upload/ckeditor", FileController::options, roles(ANYONE));
 
             /* Slides */
             path("slides", () -> {
