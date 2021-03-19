@@ -38,6 +38,7 @@ public class Application {
         config.addStaticFiles("/logos", Path.of("organizations").toAbsolutePath().toString(), Location.EXTERNAL);
         config.addStaticFiles("/tiles", Path.of("tiles").toAbsolutePath().toString(), Location.EXTERNAL);
         config.addStaticFiles("/editor-uploads", Path.of("editor-uploads").toAbsolutePath().toString(), Location.EXTERNAL);
+        config.enableCorsForAllOrigins();
 
         config.server(() -> {
             Server server = new Server();
