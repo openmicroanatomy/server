@@ -90,7 +90,7 @@ public class ProjectController extends Controller {
 		File file;
 
 		if (ctx.queryParamMap().containsKey("timestamp")) { // TODO: Backup JSON files
-			file = new File(getBackupFile(id + ".zip", ctx.queryParam("timestamp")));
+			file = new File(getBackupFile(id + ".json", ctx.queryParam("timestamp")));
 		} else {
 			file = new File(getProjectFile(id));
 		}
