@@ -9,6 +9,7 @@ import fi.ylihallila.server.util.Util;
 import io.javalin.http.Context;
 import io.javalin.http.ForbiddenResponse;
 import io.javalin.http.NotFoundResponse;
+import io.javalin.http.UploadedFile;
 import org.hibernate.Session;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
@@ -54,17 +55,18 @@ public class SlideController extends Controller {
 
 	public void upload(Context ctx) throws IOException {
 		String fileName = ctx.queryParam("filename");
-		int totalSize   = ctx.queryParam("fileSize", Integer.class).get();
-		int buffer      = ctx.queryParam("chunkSize", Integer.class).get();
-		int index       = ctx.queryParam("chunk", Integer.class).get();
+		long totalSize  = ctx.queryParam("fileSize", Long.class).get();
+		long buffer     = ctx.queryParam("chunkSize", Integer.class).get();
+		long index      = ctx.queryParam("chunk", Integer.class).get();
 
-		if (ctx.uploadedFile("file") != null) {
+		UploadedFile file = ctx.uploadedFile("file");
+
+		if (file != null) {
 			logger.trace("Uploading slide chunk: {} [Size: {}, Buffer: {}, Index: {}]", fileName, totalSize, buffer, index);
 
-			byte[] data = ctx.uploadedFile("file").getContent().readAllBytes();
+			byte[] data = file.getContent().readAllBytes();
 
 			RandomAccessFile writer = new RandomAccessFile(String.format(Constants.UPLOADED_FILE, fileName), "rw");
-
 			writer.seek(index * buffer);
 			writer.write(data, 0, data.length);
 			writer.close();
