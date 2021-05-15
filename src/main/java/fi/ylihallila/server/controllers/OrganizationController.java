@@ -4,15 +4,19 @@ import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.models.Organization;
 import fi.ylihallila.server.models.User;
+import fi.ylihallila.server.util.Constants;
 import io.javalin.apibuilder.CrudHandler;
+import io.javalin.core.util.FileUtil;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
+import io.javalin.http.UploadedFile;
 import io.javalin.plugin.openapi.annotations.*;
 import org.hibernate.Session;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -71,7 +75,7 @@ public class OrganizationController extends Controller implements CrudHandler {
         Session session = ctx.use(Session.class);
         User user = Authenticator.getUser(ctx);
 
-        Organization organization = getOrganizationAndCheckPermissions(ctx, id);
+        Organization organization = getOrganization(ctx, id);
         session.delete(organization);
 
         logger.info("Organization {} ({}) deleted by {}", organization.getName(), organization.getId(), user.getName());
@@ -107,7 +111,7 @@ public class OrganizationController extends Controller implements CrudHandler {
         }
     )
     @Override public void getOne(@NotNull Context ctx, @NotNull String id) {
-        Organization organization = getOrganizationAndCheckPermissions(ctx, id);
+        Organization organization = getOrganization(ctx, id);
 
         ctx.status(200).json(organization);
     }
@@ -121,22 +125,29 @@ public class OrganizationController extends Controller implements CrudHandler {
             required = true
         ),
         formParams = {
-            @OpenApiFormParam(name = "name", required = true)
+            @OpenApiFormParam(name = "name"),
+            @OpenApiFormParam(name = "logo", type = File.class)
         }
     )
     @Override public void update(@NotNull Context ctx, @NotNull String id) {
         Allow(ctx, Roles.ADMIN);
         User user = Authenticator.getUser(ctx);
 
-        Organization organization = getOrganizationAndCheckPermissions(ctx, id);
+        Organization organization = getOrganization(ctx, id);
         organization.setName(ctx.formParam("name", organization.getName()));
+
+        UploadedFile logo = ctx.uploadedFile("logo");
+        if (logo != null) {
+            // TODO: Validate that proper file is proper PNG image
+            FileUtil.streamToFile(logo.getContent(), String.format(Constants.ORGANIZATION_LOGOS, id));
+        }
 
         logger.info("Organization {} ({}) edited by {}", organization.getName(), id, user.getName());
     }
 
     /*  PRIVATE API   */
 
-    private Organization getOrganizationAndCheckPermissions(Context ctx, String id) {
+    private Organization getOrganization(Context ctx, String id) {
         Session session = ctx.use(Session.class);
         Organization organization = session.find(Organization.class, id);
 

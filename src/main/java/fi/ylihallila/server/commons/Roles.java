@@ -22,7 +22,7 @@ public enum Roles implements Role {
         this.description = description;
     }
 
-    private final static Set<Roles> MODIFIABLE_ROLES = Set.of(MANAGE_USERS, MANAGE_SLIDES, MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS);
+    private final static Set<Roles> MODIFIABLE_ROLES = Set.of(ADMIN, MANAGE_USERS, MANAGE_SLIDES, MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS);
 
     /**
      * List of which roles can be added / removed by users with MANAGE_USERS role

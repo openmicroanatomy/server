@@ -203,11 +203,11 @@ public class Application {
     private OpenApiOptions getOpenApiOptions() {
         Info applicationInfo = new Info()
                 .version("1.0")
-                .description("RemoteOpenslide");
+                .description("QuPath Edu Server");
 
         OpenApiOptions apiOptions = new OpenApiOptions(applicationInfo)
                 .path("/docs")
-                .swagger(new SwaggerOptions("/swagger").title("RemoteOpenslide Documentation"))
+                .swagger(new SwaggerOptions("/swagger").title("QuPath Edu Server Documentation"))
                 .roles(Set.of(ANYONE));
 
         return apiOptions;

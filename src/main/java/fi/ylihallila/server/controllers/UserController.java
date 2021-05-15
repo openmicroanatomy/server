@@ -4,6 +4,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
 import fi.ylihallila.server.commons.Roles;
+import fi.ylihallila.server.models.Organization;
 import fi.ylihallila.server.models.User;
 import io.javalin.apibuilder.CrudHandler;
 import io.javalin.http.Context;
@@ -22,9 +23,6 @@ import java.util.*;
 
 import static fi.ylihallila.server.util.Config.Config;
 
-/**
- * TODO: Only admins can edit users with admin role.
- */
 public class UserController extends Controller implements CrudHandler {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -40,8 +38,8 @@ public class UserController extends Controller implements CrudHandler {
 	@Override public void getAll(@NotNull Context ctx) {
 		Allow(ctx, Roles.MANAGE_USERS);
 
-		User user = Authenticator.getUser(ctx);
 		Session session = ctx.use(Session.class);
+		User user       = Authenticator.getUser(ctx);
 
 		List<User> users;
 
@@ -64,11 +62,11 @@ public class UserController extends Controller implements CrudHandler {
 			@OpenApiResponse(status = "404")
 		}
 	)
-	@Override public void getOne(Context ctx, @NotNull String id) {
+	@Override public void getOne(@NotNull Context ctx, @NotNull String id) {
 		Allow(ctx, Roles.MANAGE_USERS);
 
-		User user = Authenticator.getUser(ctx);
 		User queriedUser = getUser(ctx, id);
+		User user        = Authenticator.getUser(ctx);
 
 		if (user.hasRole(Roles.ADMIN) || hasSameOrganization(user, queriedUser)) {
 			ctx.status(200).json(queriedUser);
@@ -82,7 +80,9 @@ public class UserController extends Controller implements CrudHandler {
 		tags = { "user" },
 		responses = {
 			@OpenApiResponse(status = "201", content = @OpenApiContent(from = User.class)),
-			@OpenApiResponse(status = "403")
+			@OpenApiResponse(status = "400"),
+			@OpenApiResponse(status = "403"),
+			@OpenApiResponse(status = "404")
 		}
 	)
 	@Override public void create(@NotNull Context ctx) {
@@ -96,11 +96,22 @@ public class UserController extends Controller implements CrudHandler {
 		User user = Authenticator.getUser(ctx);
 
 		User newUser = new User();
-		newUser.setId(UUID.randomUUID().toString());
-		newUser.setOrganization(user.getOrganization());
+		newUser.setId(UUID.randomUUID());
 		newUser.setName(name);
-		newUser.hashPassword(password);
 		newUser.setEmail(email);
+		newUser.hashPassword(password);
+
+		if (user.hasRole(Roles.ADMIN) && ctx.formParamMap().containsKey("organization")) {
+			Organization organization = session.find(Organization.class, ctx.formParam("organization", String.class).get());
+
+			if (organization != null) {
+				newUser.setOrganization(organization);
+			} else {
+				throw new NotFoundResponse("Could not find provided organization.");
+			}
+		} else {
+			newUser.setOrganization(user.getOrganization());
+		}
 
 		if (Config.getBoolean("roles.manage.personal.projects.default")) {
 			newUser.setRoles(EnumSet.of(Roles.MANAGE_PERSONAL_PROJECTS));
@@ -130,45 +141,32 @@ public class UserController extends Controller implements CrudHandler {
 		}
 	)
 	@Override public void update(@NotNull Context ctx, @NotNull String id) {
-		Allow(ctx, Roles.MANAGE_USERS);
+		Allow(ctx, Roles.ANYONE);
 
 		Session session = ctx.use(Session.class);
-		User user = Authenticator.getUser(ctx);
-
 		User editedUser = getUser(ctx, id);
+		User user       = Authenticator.getUser(ctx);
 
-		if (!(user.hasRole(Roles.ADMIN) || hasSameOrganization(user, editedUser))) {
+		if (editedUser.equals(user)) {
+			// If the user has MANAGE_USERS role, they can edit their own roles. Otherwise editing is restricted to personal details
+
+			editPersonalDetails(user, editedUser, ctx);
+
+			if (user.hasRole(Roles.MANAGE_USERS)) {
+				editRoles(user, editedUser, ctx);
+			}
+		} else if (user.hasRole(Roles.MANAGE_USERS)) {
+			// User can be edited if the user belongs to the same organization or the editing user has the role ADMIN
+
+			if (hasSameOrganization(user, editedUser) || user.hasRole(Roles.ADMIN)) {
+				editPersonalDetails(user, editedUser, ctx);
+				editRoles(user, editedUser, ctx);
+			} else {
+				throw new UnauthorizedResponse("Not authorized to edit that user.");
+			}
+		} else {
 			throw new UnauthorizedResponse("Not authorized to edit that user.");
 		}
-
-		EnumSet<Roles> roles = editedUser.getRoles();
-
-		for (Roles role : Roles.getModifiableRoles()) {
-			if (ctx.formParamMap().containsKey(role.name())) {
-				boolean addRole = ctx.formParam(role.name(), Boolean.class).get();
-
-				if (addRole) {
-					roles.add(role);
-				} else {
-					roles.remove(role);
-				}
-			}
-		}
-
-		if (user.hasRole(Roles.ADMIN)) {
-			if (ctx.formParamMap().containsKey("password")) {
-				String password = ctx.formParam("password", String.class)
-						.check(p -> p.length() > 3)
-						.get();
-
-				editedUser.hashPassword(password);
-			}
-		}
-
-		// TODO: Add validators
-		editedUser.setName(ctx.formParam("name", editedUser.getName()));
-		editedUser.setEmail(ctx.formParam("email", editedUser.getEmail()));
-		editedUser.setRoles(roles);
 
 		session.update(editedUser);
 
@@ -192,18 +190,17 @@ public class UserController extends Controller implements CrudHandler {
 	@Override public void delete(@NotNull Context ctx, @NotNull String id) {
 		Allow(ctx, Roles.MANAGE_USERS);
 
-		Session session = ctx.use(Session.class);
-		User user = Authenticator.getUser(ctx);
-
+		Session session  = ctx.use(Session.class);
 		User deletedUser = getUser(ctx, id);
+		User user        = Authenticator.getUser(ctx);
 
 		if (user.hasRole(Roles.ADMIN) || hasSameOrganization(user, deletedUser)) {
 			session.delete(deletedUser);
 			ctx.status(200);
 
-			logger.info("User {} deleted by {}", deletedUser.getName(), user.getName());
+			logger.info("User {} [{}] deleted by {} [{}]", deletedUser.getName(), deletedUser.getId(), user.getName(), user.getId());
 		} else {
-			logger.warn("User {} tried to delete user {} but lacked permissions.", user.getName(), deletedUser.getName());
+			logger.warn("User {} [{}] tried to delete user {} [{}] but lacked permissions.", user.getName(), user.getId(), deletedUser.getName(), deletedUser.getId());
 
 			throw new UnauthorizedResponse("No permission to delete this user");
 		}
@@ -274,5 +271,45 @@ public class UserController extends Controller implements CrudHandler {
 
 	private boolean hasSameOrganization(User user, User otherUser) {
 		return user.getOrganization().equals(otherUser.getOrganization());
+	}
+
+	/**
+	 * Personal details include username, email and password.
+	 * Passwords can be changed by only the user themselves or by an user with the ADMIN role.
+	 */
+	private void editPersonalDetails(User user, User editedUser, Context ctx) {
+		if (user.equals(editedUser) || user.hasRole(Roles.ADMIN)) {
+			if (ctx.formParamMap().containsKey("password")) {
+				String password = ctx.formParam("password", String.class).get();
+
+				editedUser.hashPassword(password);
+			}
+		}
+
+		editedUser.setName(ctx.formParam("name", editedUser.getName()));
+		editedUser.setEmail(ctx.formParam("email", editedUser.getEmail()));
+	}
+
+	private void editRoles(User user, User editedUser, Context ctx) {
+		EnumSet<Roles> roles = editedUser.getRoles();
+
+		for (Roles role : Roles.getModifiableRoles()) {
+			if (ctx.formParamMap().containsKey(role.name())) {
+				if (role == Roles.ADMIN && !(user.hasRole(Roles.ADMIN))) {
+					logger.info("User {} [{}] tried to edit administrative roles for {} [{}] but lacked permissions", user.getName(), user.getId(), editedUser.getName(), editedUser.getId());
+					continue;
+				}
+
+				boolean addRole = ctx.formParam(role.name(), Boolean.class).get();
+
+				if (addRole) {
+					roles.add(role);
+				} else {
+					roles.remove(role);
+				}
+			}
+		}
+
+		editedUser.setRoles(roles);
 	}
 }

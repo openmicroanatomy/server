@@ -37,10 +37,12 @@ public class Authenticator {
 		} catch (UnauthorizedResponse e) {
 			ctx.status(401).json(new Error(e.getLocalizedMessage()));
 		} catch (BadRequestResponse e) {
-			ctx.status(400).json(new Error("Bad Request. " + e.getLocalizedMessage()));
+			ctx.status(400).json(new Error(e.getLocalizedMessage()));
+		} catch (InternalServerErrorResponse e) {
+			ctx.status(500).json(new Error(e.getLocalizedMessage()));
 		} catch (Exception e) {
 			ctx.status(500).json(new Error("Internal server error"));
-			logger.error("Error while authenticating", e);
+			logger.error("Unknown exception", e);
 		}
 	}
 

@@ -22,6 +22,7 @@ dependencies {
     implementation 'net.dongliu:gson-java8-datatype:1.1.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.10.0.pr1'
     implementation 'org.apache.commons:commons-compress:1.20'
+    implementation 'commons-validator:commons-validator:1.7'
     implementation 'com.auth0:java-jwt:3.10.3'
     implementation 'com.auth0:jwks-rsa:0.11.0'
     implementation 'com.microsoft.azure:msal4j:1.6.1'
@@ -37,7 +38,7 @@ dependencies {
 mainClassName = 'fi.ylihallila.server.Main'
 group = 'fi.yli-hallila'
 version = '1.1-SNAPSHOT'
-description = 'openslidewebimageserver'
+description = 'QuPath Edu Server'
 java.sourceCompatibility = JavaVersion.VERSION_15
 
 jar {
