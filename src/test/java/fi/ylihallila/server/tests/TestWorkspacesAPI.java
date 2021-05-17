@@ -1,6 +1,6 @@
 package fi.ylihallila.server.tests;
 
-import fi.ylihallila.server.Application;
+import fi.ylihallila.server.Main;
 import io.javalin.plugin.json.JavalinJson;
 import kong.unirest.Unirest;
 import org.junit.jupiter.api.*;
@@ -14,11 +14,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestWorkspacesAPI {
 
     private static String API_URL = "http://localhost:1337/api/v0";
-    private static Application app;
 
     @BeforeAll
-    static void init() {
-        app = new Application();
+    static void init() throws IOException, InterruptedException {
+        Main.main(new String[]{ "--insecure" });
 
         DummyDb.create();
     }
@@ -39,7 +38,7 @@ public class TestWorkspacesAPI {
     @Order(1)
     public void GetAllWorkspacesReturnsMyProjectsWhenLoggedIn() {
         var response = Unirest.get(API_URL + "/workspaces")
-                .basicAuth("Teacher", "teacher").asString();
+                .basicAuth("teacher@example.com", "teacher").asString();
 
         assertThat(response.getBody().length())
                 .isGreaterThan(JavalinJson.toJson(List.of(DummyDb.WORKSPACE_A, DummyDb.WORKSPACE_B)).length());
@@ -69,7 +68,7 @@ public class TestWorkspacesAPI {
     @Order(2)
     public void CreateWorkspaceSuccess() {
         var response = Unirest.post(API_URL + "/workspaces")
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .field("workspace-name", "New Workspace")
                 .asString();
 
@@ -92,7 +91,7 @@ public class TestWorkspacesAPI {
     @Order(3)
     public void EditWorkspaceSuccess() {
         var response = Unirest.put(API_URL + "/workspaces/" + DummyDb.WORKSPACE_A.getId())
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .field("workspace-name", "New Workspace A")
                 .asString();
 
@@ -103,7 +102,7 @@ public class TestWorkspacesAPI {
     @Order(3)
     public void EditWorkspaceFailureNotFound() {
         var response = Unirest.put(API_URL + "/workspaces/404")
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .field("workspace-name", "New Workspace A")
                 .asString();
 
@@ -124,7 +123,7 @@ public class TestWorkspacesAPI {
     @Order(3)
     public void EditWorkspaceFailureUnauthorizedWrongOrganization() {
         var response = Unirest.put(API_URL + "/workspaces/" + DummyDb.WORKSPACE_B.getId())
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .field("workspace-name", "New Workspace B")
                 .asString();
 
@@ -137,7 +136,7 @@ public class TestWorkspacesAPI {
     @Order(4)
     public void DeleteWorkspaceSuccess() {
         var response = Unirest.delete(API_URL + "/workspaces/" + DummyDb.WORKSPACE_A.getId())
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .asString();
 
         assertThat(response.getStatus()).isEqualTo(200);
@@ -156,7 +155,7 @@ public class TestWorkspacesAPI {
     @Order(4)
     public void DeleteWorkspaceFailureUnauthorizedWrongOrganization() {
         var response = Unirest.delete(API_URL + "/workspaces/" + DummyDb.WORKSPACE_B.getId())
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .asString();
 
         assertThat(response.getStatus()).isEqualTo(403);
@@ -166,7 +165,7 @@ public class TestWorkspacesAPI {
     @Order(4)
     public void DeleteWorkspaceFailureNotFound() {
         var response = Unirest.delete(API_URL + "/workspaces/404")
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .asString();
 
         assertThat(response.getStatus()).isEqualTo(404);

@@ -1,11 +1,12 @@
 package fi.ylihallila.server.tests;
 
+import fi.ylihallila.server.Main;
 import fi.ylihallila.server.commons.Roles;
-import fi.ylihallila.server.Application;
 import io.javalin.plugin.json.JavalinJson;
 import kong.unirest.Unirest;
 import org.junit.jupiter.api.*;
 
+import java.io.IOException;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,11 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestUserAPI {
 
     private static String API_URL = "http://localhost:1337/api/v0";
-    private static Application app;
 
     @BeforeAll
-    static void init() {
-        app = new Application();
+    static void init() throws IOException, InterruptedException {
+        Main.main(new String[]{ "--insecure" });
 
         DummyDb.create();
     }
@@ -27,7 +27,7 @@ public class TestUserAPI {
     @Test
     @Order(1)
     public void GetAllUsers() {
-        var response = Unirest.get(API_URL + "/users").basicAuth("Admin", "admin").asString();
+        var response = Unirest.get(API_URL + "/users").basicAuth("admin@example.com", "admin").asString();
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(response.getBody().length()).isEqualTo(JavalinJson.toJson(List.of(DummyDb.ADMIN, DummyDb.TEACHER)).length());
@@ -36,7 +36,7 @@ public class TestUserAPI {
     @Test
     @Order(1)
     public void GetUserTeacher() {
-        var response = Unirest.get(API_URL + "/users/70e99eac-b439-4a73-967e-2d83870b8326").basicAuth("Admin", "admin").asString();
+        var response = Unirest.get(API_URL + "/users/70e99eac-b439-4a73-967e-2d83870b8326").basicAuth("admin@example.com", "admin").asString();
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(response.getBody().length()).isEqualTo(JavalinJson.toJson(DummyDb.TEACHER).length());
@@ -45,7 +45,7 @@ public class TestUserAPI {
     @Test
     @Order(1)
     public void GetNonexistentUser() {
-        var response = Unirest.get(API_URL + "/users/error").basicAuth("Admin", "admin").asString();
+        var response = Unirest.get(API_URL + "/users/error").basicAuth("admin@example.com", "admin").asString();
 
         assertThat(response.getStatus()).isEqualTo(404);
     }
@@ -61,7 +61,7 @@ public class TestUserAPI {
     @Test
     @Order(1)
     public void LoginSuccess() {
-        var response = Unirest.get(API_URL + "/users/login").basicAuth("Teacher", "teacher").asString();
+        var response = Unirest.get(API_URL + "/users/login").basicAuth("teacher@example.com", "teacher").asString();
 
         Map<String, Object> data = new HashMap<>();
 
@@ -100,7 +100,7 @@ public class TestUserAPI {
     @Order(2)
     public void EditUserRolesSuccess() {
         var response = Unirest.put(API_URL + "/users/70e99eac-b439-4a73-967e-2d83870b8326")
-                .basicAuth("Admin", "admin")
+                .basicAuth("admin@example.com", "admin")
                 .field(Roles.MANAGE_PERSONAL_PROJECTS.name(), false)
                 .asString();
 
@@ -111,7 +111,7 @@ public class TestUserAPI {
     @Order(2)
     public void UserRolesReallyEdited() {
         var response = Unirest.get(API_URL + "/users/70e99eac-b439-4a73-967e-2d83870b8326")
-                .basicAuth("Admin", "admin")
+                .basicAuth("admin@example.com", "admin")
                 .asString();
 
         DummyDb.TEACHER.getRoles().remove(Roles.MANAGE_PERSONAL_PROJECTS);
@@ -125,7 +125,7 @@ public class TestUserAPI {
     @Order(2)
     public void EditUserRolesFailure() {
         var response = Unirest.put(API_URL + "/users/70e99eac-b439-4a73-967e-2d83870b8326")
-                .basicAuth("Admin", "admin")
+                .basicAuth("admin@example.com", "admin")
                 .field(Roles.ADMIN.name(), true)
                 .asString();
 

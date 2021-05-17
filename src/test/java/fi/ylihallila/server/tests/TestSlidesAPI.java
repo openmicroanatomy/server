@@ -1,6 +1,6 @@
 package fi.ylihallila.server.tests;
 
-import fi.ylihallila.server.Application;
+import fi.ylihallila.server.Main;
 import io.javalin.plugin.json.JavalinJson;
 import kong.unirest.Unirest;
 import org.junit.jupiter.api.*;
@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,11 +16,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestSlidesAPI {
 
     private static String API_URL = "http://localhost:1337/api/v0";
-    private static Application app;
 
     @BeforeAll
-    static void init() {
-        app = new Application();
+    static void init() throws IOException, InterruptedException {
+        Main.main(new String[]{ "--insecure" });
 
         DummyDb.create();
     }
@@ -54,7 +52,7 @@ public class TestSlidesAPI {
     @Order(2)
     public void EditSlideSuccess() {
         var response = Unirest.put(API_URL + "/slides/" + DummyDb.SLIDE_A.getId())
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .field("slide-name", "Slide A New Name")
                 .asString();
 
@@ -77,7 +75,7 @@ public class TestSlidesAPI {
     @Order(2)
     public void EditSlideFailureNotFound() {
         var response = Unirest.put(API_URL + "/slides/404")
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .field("slide-name", "Not Found")
                 .asString();
 
@@ -88,7 +86,7 @@ public class TestSlidesAPI {
     @Order(2)
     public void EditSlideFailureForbiddenWrongOrganization() {
         var response = Unirest.put(API_URL + "/slides/" + DummyDb.SLIDE_B.getId())
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .field("slide-name", "Wrong Organization")
                 .asString();
 
@@ -101,7 +99,7 @@ public class TestSlidesAPI {
     @Order(3)
     public void DeleteSlideSuccess() {
 //        var response = Unirest.delete(API_URL + "/slides/" + DummyDb.SLIDE_DELETE.getId())
-//                .basicAuth("Teacher", "teacher")
+//                .basicAuth(tTeacher@example.com", "teacher")
 //                .asString();
 //
 //        assertThat(response.getStatus()).isEqualTo(200);
@@ -120,7 +118,7 @@ public class TestSlidesAPI {
     @Order(3)
     public void DeleteSlideFailureNotFound() {
         var response = Unirest.delete(API_URL + "/slides/404")
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .asString();
 
         assertThat(response.getStatus()).isEqualTo(404);
@@ -130,7 +128,7 @@ public class TestSlidesAPI {
     @Order(3)
     public void DeleteSlideFailureForbiddenWrongOrganization() {
         var response = Unirest.delete(API_URL + "/slides/" + DummyDb.SLIDE_B.getId())
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .asString();
 
         assertThat(response.getStatus()).isEqualTo(403);

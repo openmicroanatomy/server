@@ -6,6 +6,7 @@ import fi.ylihallila.server.models.*;
 import org.hibernate.Session;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -28,14 +29,20 @@ public class DummyDb {
         session.save(ORGANIZATION_A);
         session.save(ORGANIZATION_B);
 
+        session.save(WORKSPACE_A);
+        session.save(WORKSPACE_B);
+
+        session.save(SUBJECT_A);
+        session.save(SUBJECT_B);
+
+        WORKSPACE_A.setSubjects(List.of(SUBJECT_A));
+        WORKSPACE_B.setSubjects(List.of(SUBJECT_B));
+
         session.save(SLIDE_A);
         session.save(SLIDE_B);
 
         session.save(PROJECT_A);
         session.save(PROJECT_B);
-
-        session.save(WORKSPACE_A);
-        session.save(WORKSPACE_B);
 
         session.getTransaction().commit();
         session.close();
@@ -58,7 +65,7 @@ public class DummyDb {
         "70e99eac-b439-4a73-967e-2d83870b8326",
         "Teacher",
         "teacher@example.com",
-        new LinkedHashSet<>(Arrays.asList(Roles.MANAGE_USERS, Roles.MANAGE_SLIDES, Roles.MANAGE_PROJECTS, Roles.MANAGE_PERSONAL_PROJECTS)),
+        EnumSet.of(Roles.MANAGE_USERS, Roles.MANAGE_SLIDES, Roles.MANAGE_PROJECTS, Roles.MANAGE_PERSONAL_PROJECTS),
         ORGANIZATION_A
     );
 
@@ -66,36 +73,46 @@ public class DummyDb {
         "aeae48ac-961a-425e-a715-c01205d2e83d",
         "Admin",
         "admin@example.com",
-        new LinkedHashSet<>(Arrays.asList(Roles.MANAGE_USERS, Roles.MANAGE_SLIDES, Roles.MANAGE_PROJECTS, Roles.ADMIN, Roles.MANAGE_PERSONAL_PROJECTS)),
+        EnumSet.of(Roles.MANAGE_USERS, Roles.MANAGE_SLIDES, Roles.MANAGE_PROJECTS, Roles.ADMIN, Roles.MANAGE_PERSONAL_PROJECTS),
         ORGANIZATION_A
-    );
-
-    public static Project PROJECT_A = new Project(
-        "bd818664-6896-4632-933d-af3e59c43c36",
-        "Project A",
-        "Project A description",
-        ORGANIZATION_A
-    );
-
-    public static Project PROJECT_B = new Project(
-        "87babe71-3f7a-48d7-9c6e-28c617b8d0ee",
-        "Project B",
-        "Project B description",
-        ORGANIZATION_B
     );
 
     public static Workspace WORKSPACE_A = new Workspace(
         "cf869d47-686e-4e69-bc20-5a233feb2a54",
         "Workspace A",
         ORGANIZATION_A,
-        List.of(PROJECT_A)
+        null
     );
 
     public static Workspace WORKSPACE_B = new Workspace(
         "958af329-05cf-4a2a-9321-9a603d0ac6d7",
         "Workspace B",
         ORGANIZATION_B,
-        List.of(PROJECT_B)
+        null
+    );
+
+    public static Subject SUBJECT_A = new Subject(
+        "Subject A in workspace A",
+        WORKSPACE_A
+    );
+
+    public static Subject SUBJECT_B = new Subject(
+        "Subject A in workspace B",
+        WORKSPACE_B
+    );
+
+    public static Project PROJECT_A = new Project(
+        "bd818664-6896-4632-933d-af3e59c43c36",
+        "Project A",
+        "Project A description",
+        SUBJECT_A
+    );
+
+    public static Project PROJECT_B = new Project(
+        "87babe71-3f7a-48d7-9c6e-28c617b8d0ee",
+        "Project B",
+        "Project B description",
+        SUBJECT_B
     );
 
     public static Slide SLIDE_A = new Slide(

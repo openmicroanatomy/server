@@ -1,6 +1,7 @@
 package fi.ylihallila.server.tests;
 
-import fi.ylihallila.server.Application;
+import fi.ylihallila.server.Main;
+import fi.ylihallila.server.util.Constants;
 import io.javalin.plugin.json.JavalinJson;
 import kong.unirest.Unirest;
 import org.apache.commons.io.FileUtils;
@@ -18,25 +19,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestProjectsAPI {
 
     private static String API_URL = "http://localhost:1337/api/v0";
-    private static Application app;
 
     @BeforeAll
-    static void init() throws IOException {
-        app = new Application();
+    static void init() throws IOException, InterruptedException {
+        Main.main(new String[]{ "--insecure" });
 
         DummyDb.create();
 
-        Files.createDirectory(Path.of("projects"));
-        Files.createDirectory(Path.of("backups"));
-
         Files.copy(
-            Path.of("Dummy.zip"),
-            Path.of("projects/" + DummyDb.PROJECT_B.getId() + ".zip")
+            Path.of("Dummy.json"),
+            Path.of("projects/" + DummyDb.PROJECT_B.getId() + ".json")
         );
 
         Files.copy(
-            Path.of("Dummy.zip"),
-            Path.of("projects/" + DummyDb.PROJECT_A.getId() + ".zip")
+            Path.of("Dummy.json"),
+            Path.of("projects/" + DummyDb.PROJECT_A.getId() + ".json")
         );
     }
 
@@ -51,7 +48,7 @@ public class TestProjectsAPI {
     @Test
     @Order(1)
     public void GetAllProjectsSuccess() {
-        var response = Unirest.get(API_URL + "/projects").basicAuth("Admin", "admin").asString();
+        var response = Unirest.get(API_URL + "/projects").basicAuth("admin@example.com", "admin").asString();
 
         assertThat(response.getBody().length())
                 .isEqualTo(JavalinJson.toJson(List.of(DummyDb.PROJECT_A, DummyDb.PROJECT_B)).length());
@@ -68,10 +65,10 @@ public class TestProjectsAPI {
 
     @Test
     @Order(1)
-    public void DownloadProjectSuccess() {
+    public void DownloadProjectSuccess() throws IOException {
         var response = Unirest.get(API_URL + "/projects/" + DummyDb.PROJECT_A.getId()).asBytes();
 
-        assertThat(response.getBody().length).isEqualTo(1055);
+        assertThat(response.getBody().length).isEqualTo(Files.size(Path.of(String.format(Constants.PROJECT_FILE_FORMAT, DummyDb.PROJECT_A.getId()))));
         assertThat(response.getStatus()).isEqualTo(200);
     }
 
@@ -87,7 +84,7 @@ public class TestProjectsAPI {
     @Order(2)
     public void UpdateProjectSuccessSameOrganization() {
         var response = Unirest.put(API_URL + "/projects/" + DummyDb.PROJECT_A.getId())
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .field("name", "New Project Name")
                 .asString();
 
@@ -98,7 +95,7 @@ public class TestProjectsAPI {
     @Order(2)
     public void UpdateProjectFailureWrongOrganization() {
         var response = Unirest.put(API_URL + "/projects/" + DummyDb.PROJECT_B.getId())
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .field("name", "New Project Name")
                 .asString();
 
@@ -119,7 +116,7 @@ public class TestProjectsAPI {
     @Order(2)
     public void UpdateProjectSuccessAdminOverride() {
         var response = Unirest.put(API_URL + "/projects/" + DummyDb.PROJECT_B.getId())
-                .basicAuth("Admin", "admin")
+                .basicAuth("admin@example.com", "admin")
                 .field("name", "New Project Name")
                 .asString();
 
@@ -130,8 +127,8 @@ public class TestProjectsAPI {
     @Order(2)
     public void CreateProjectSuccess() {
         var response = Unirest.post(API_URL + "/projects")
-                .basicAuth("Teacher", "teacher")
-                .field("workspace-id", DummyDb.WORKSPACE_A.getId())
+                .basicAuth("teacher@example.com", "teacher")
+                .field("subject-id", DummyDb.SUBJECT_A.getId())
                 .field("project-name", "New Project")
                 .asString();
 
@@ -142,7 +139,7 @@ public class TestProjectsAPI {
     @Order(2)
     public void CreateProjectUnauthorized() {
         var response = Unirest.post(API_URL + "/projects")
-                .field("workspace-id", DummyDb.WORKSPACE_A.getId())
+                .field("subject-id", DummyDb.SUBJECT_A.getId())
                 .field("project-name", "New Project")
                 .asString();
 
@@ -153,7 +150,7 @@ public class TestProjectsAPI {
     @Order(3)
     public void DeleteProjectSuccess() {
         var response = Unirest.delete(API_URL + "/projects/" + DummyDb.PROJECT_A.getId())
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .asString();
 
         assertThat(response.getStatus()).isEqualTo(200);
@@ -172,7 +169,7 @@ public class TestProjectsAPI {
     @Order(3)
     public void DeleteProjectForbiddenWrongOrganization() {
         var response = Unirest.delete(API_URL + "/projects/" + DummyDb.PROJECT_B.getId())
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .asString();
 
         assertThat(response.getStatus()).isEqualTo(403);
@@ -182,7 +179,7 @@ public class TestProjectsAPI {
     @Order(3)
     public void DeleteProjectNotFound() {
         var response = Unirest.delete(API_URL + "/projects/404")
-                .basicAuth("Teacher", "teacher")
+                .basicAuth("teacher@example.com", "teacher")
                 .asString();
 
         assertThat(response.getStatus()).isEqualTo(404);
