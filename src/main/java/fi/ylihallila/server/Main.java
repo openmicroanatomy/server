@@ -57,10 +57,9 @@ public class Main {
             Files.createDirectories(Path.of("slides"));
             Files.createDirectories(Path.of("tiles"));
             Files.createDirectories(Path.of("backups"));
-            Files.createDirectories(Path.of("uploads"));
+            Files.createDirectories(Path.of("temp"));
             Files.createDirectories(Path.of("logos"));
-            Files.createDirectories(Path.of("organizations"));
-            Files.createDirectories(Path.of("editor-uploads"));
+            Files.createDirectories(Path.of("uploads"));
 
             /*
              * TODO:

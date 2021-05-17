@@ -66,13 +66,13 @@ public class SlideController extends Controller {
 
 			byte[] data = file.getContent().readAllBytes();
 
-			RandomAccessFile writer = new RandomAccessFile(String.format(Constants.UPLOADED_FILE, fileName), "rw");
+			RandomAccessFile writer = new RandomAccessFile(String.format(Constants.TEMP_FILE, fileName), "rw");
 			writer.seek(index * buffer);
 			writer.write(data, 0, data.length);
 			writer.close();
 
 			// The file is fully uploaded we can start processing it.
-			if (Files.size(Path.of(String.format(Constants.UPLOADED_FILE, fileName))) == totalSize) {
+			if (Files.size(Path.of(String.format(Constants.TEMP_FILE, fileName))) == totalSize) {
 				processUploadedSlide(ctx, fileName);
 			}
 
@@ -182,7 +182,7 @@ public class SlideController extends Controller {
 	}
 
 	private void processUploadedSlide(Context ctx, String slideName) throws IOException {
-		Optional<OpenSlide> openSlide = OpenSlideCache.get(String.format(Constants.UPLOADED_FILE, slideName));
+		Optional<OpenSlide> openSlide = OpenSlideCache.get(String.format(Constants.TEMP_FILE, slideName));
 
 		if (openSlide.isEmpty()) {
 			logger.error("Error when processing uploaded file: Couldn't create OpenSlide instance."
@@ -208,7 +208,7 @@ public class SlideController extends Controller {
 		// Move slide to slides pending tiling. See Tiler for further processing.
 
 		Files.move(
-			Path.of(String.format(Constants.UPLOADED_FILE, slideName)),
+			Path.of(String.format(Constants.TEMP_FILE, slideName)),
 			Path.of(String.format(Constants.PENDING_SLIDES, id))
 		);
 	}

@@ -35,9 +35,9 @@ public class Application {
         config.accessManager(Authenticator::accessManager);
         config.showJavalinBanner = false;
         config.maxRequestSize = Long.MAX_VALUE;
-        config.addStaticFiles("/logos", Path.of("organizations").toAbsolutePath().toString(), Location.EXTERNAL);
+        config.addStaticFiles("/logos", Path.of("logos").toAbsolutePath().toString(), Location.EXTERNAL);
         config.addStaticFiles("/tiles", Path.of("tiles").toAbsolutePath().toString(), Location.EXTERNAL);
-        config.addStaticFiles("/editor-uploads", Path.of("editor-uploads").toAbsolutePath().toString(), Location.EXTERNAL);
+        config.addStaticFiles("/uploads", Path.of("uploads").toAbsolutePath().toString(), Location.EXTERNAL);
         config.enableCorsForAllOrigins();
 
         config.server(() -> {
