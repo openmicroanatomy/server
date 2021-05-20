@@ -2,6 +2,7 @@ package fi.ylihallila.server.controllers;
 
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.commons.Roles;
+import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
 import fi.ylihallila.server.models.Organization;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.util.Constants;
@@ -16,7 +17,10 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.InputStream;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -136,10 +140,14 @@ public class OrganizationController extends Controller implements CrudHandler {
         Organization organization = getOrganization(ctx, id);
         organization.setName(ctx.formParam("name", organization.getName()));
 
-        UploadedFile logo = ctx.uploadedFile("logo");
-        if (logo != null) {
-            // TODO: Validate that proper file is proper PNG image
-            FileUtil.streamToFile(logo.getContent(), String.format(Constants.ORGANIZATION_LOGOS, id));
+        UploadedFile file = ctx.uploadedFile("logo");
+
+        if (file != null) {
+            if (!isValidImage(file.getContent())) {
+                throw new UnprocessableEntityResponse("Provided file was not an PNG file or is too small.");
+            }
+
+            FileUtil.streamToFile(file.getContent(), String.format(Constants.ORGANIZATION_LOGOS, id));
         }
 
         logger.info("Organization {} ({}) edited by {}", organization.getName(), id, user.getName());
@@ -156,5 +164,27 @@ public class OrganizationController extends Controller implements CrudHandler {
         }
 
         return organization;
+    }
+
+    /**
+     * Tries to test if provided InputStream is a valid image by running it through {@link ImageIO#read(InputStream)}
+     * and checking that the image is of width >= 400px and height >= 80px.
+     *
+     * @param is InputStream of Image
+     * @return true if an valid image
+     */
+    private boolean isValidImage(@NotNull InputStream is) {
+        try {
+            BufferedImage image = ImageIO.read(is);
+
+            if (image == null) {
+                return false;
+            }
+
+            return image.getType() == BufferedImage.TYPE_INT_ARGB
+                    && image.getWidth() >= 400 && image.getHeight() >= 80;
+        } catch (Exception ignored) {}
+
+        return false;
     }
 }

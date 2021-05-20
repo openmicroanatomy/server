@@ -3,6 +3,7 @@ package fi.ylihallila.server.authentication;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.authentication.impl.BasicAuth;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
+import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
 import fi.ylihallila.server.models.Error;
 import fi.ylihallila.server.models.User;
 import io.javalin.core.security.Role;
@@ -30,6 +31,8 @@ public class Authenticator {
 					ctx.status(401).json(new Error("Forbidden. Use Basic authentication or provide `Token` header."));
 				}
 			}
+		} catch (UnprocessableEntityResponse e) {
+			ctx.status(422).json(new Error(e.getLocalizedMessage()));
 		} catch (NotFoundResponse e) {
 			ctx.status(404).json(new Error(e.getLocalizedMessage()));
 		} catch (ForbiddenResponse e) {
