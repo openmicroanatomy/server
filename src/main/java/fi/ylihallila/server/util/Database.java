@@ -3,7 +3,6 @@ package fi.ylihallila.server.util;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.Metadata;
-import org.hibernate.boot.MetadataBuilder;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -39,10 +38,10 @@ public class Database {
 	}
 
 	/**
-	 * Creates a new session.
-	 * @return Session
+	 * Opens a new session. This session must be closed with {@link Session#close()}.
+	 * @return A new session
 	 */
-	public static Session getSession() {
+	public static Session openSession() {
 		return sessionFactory.openSession();
 	}
 }

@@ -95,19 +95,19 @@ public class TokenAuth implements Auth {
     /* Private API */
 
     private User getUser(DecodedJWT jwt) {
-        Session session = Database.getSession();
+        Session session = Database.openSession();
         session.beginTransaction();
 
         User user = session.find(User.class, jwt.getClaim("oid").asString());
 
-        session.getTransaction();
+        session.getTransaction().commit();
         session.close();
 
-        if (user != null) {
-            return user;
+        if (user == null) {
+            throw new NotFoundResponse("No user found with given OID");
         }
 
-        throw new NotFoundResponse("No user found with given OID");
+        return user;
     }
 
     public static DecodedJWT validate(Context ctx) {

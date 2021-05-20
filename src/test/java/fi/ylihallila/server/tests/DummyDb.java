@@ -5,9 +5,7 @@ import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.models.*;
 import org.hibernate.Session;
 
-import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -23,7 +21,7 @@ import java.util.List;
 public class DummyDb {
 
     public static void create() {
-        Session session = Database.getSession();
+        Session session = Database.openSession();
         session.beginTransaction();
 
         session.save(ORGANIZATION_A);

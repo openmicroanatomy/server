@@ -114,7 +114,7 @@ public class Util {
             return Optional.of(cache.get(id));
         }
 
-        Session session = Database.getSession();
+        Session session = Database.openSession();
         session.beginTransaction();
 
         Project project = session.find(Project.class, id);
@@ -137,7 +137,7 @@ public class Util {
      * @return Organization
      */
     public static Organization getOrganization(String id) {
-        Session session = Database.getSession();
+        Session session = Database.openSession();
         session.beginTransaction();
 
         Organization organization = session.find(Organization.class, id);

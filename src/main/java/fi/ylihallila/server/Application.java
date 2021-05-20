@@ -87,10 +87,10 @@ public class Application {
         createControllers();
 
         app.routes(() -> path("/api/v0/", () -> {
-            before(ctx -> { // TODO: Annotate methods with @Database; only these have Session available to save resources?
+            before(ctx -> {
                 logger.debug("Creating Database Session for Request");
 
-                Session session = Database.getSession();
+                Session session = Database.openSession();
                 session.beginTransaction();
 
                 ctx.register(Session.class, session);
@@ -101,8 +101,11 @@ public class Application {
 
                 Session session = ctx.use(Session.class);
 
-                if (session != null && session.getTransaction() != null) {
-                    session.getTransaction().commit();
+                if (session != null) {
+                    if (session.getTransaction() != null) {
+                        session.getTransaction().commit();
+                    }
+
                     session.close();
                 }
             });

@@ -35,7 +35,7 @@ public class BasicAuth implements Auth {
 
     static {
         try {
-            Session session = Database.getSession();
+            Session session = Database.openSession();
             session.beginTransaction();
 
             JsonArray users = (JsonArray) JsonParser.parseString(Files.readString(Path.of(Constants.USERS_FILE)));

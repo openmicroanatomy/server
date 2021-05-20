@@ -131,7 +131,7 @@ public class User extends Owner {
         EmailValidator validator = EmailValidator.getInstance(false, true);
 
         if (validator.isValid(email)) {
-            Session session = Database.getSession();
+            Session session = Database.openSession();
             session.getTransaction().begin();
 
             Query query = session.createQuery("from User where email = :email", User.class);
