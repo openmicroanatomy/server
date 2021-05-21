@@ -45,7 +45,7 @@ public class ProjectController extends Controller {
 		Project project = new Project();
 		project.setName("Copy of " + projectName);
 		project.setId(projectId);
-		project.getSubject().getWorkspace().setOwner(user);
+		project.setSubject(user.getCopiedProjectsSubject());
 		session.save(project);
 
 		createProjectJsonFile(projectId);

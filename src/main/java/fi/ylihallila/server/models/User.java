@@ -20,6 +20,7 @@ import javax.persistence.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.UUID;
 
 @Entity
@@ -214,6 +215,61 @@ public class User extends Owner {
      */
     public boolean hasRole(Roles role) {
         return getRoles().contains(role) || getRoles().contains(Roles.ADMIN);
+    }
+
+    /**
+     * Each user has <b>one</b> personal workspace, where they can create their own subjects and projects.
+     * This method creates the workspace if it does not exist.
+     */
+    @Transient
+    @JsonIgnore
+    public Workspace getPersonalWorkspace() {
+        Session session = Database.openSession();
+        session.getTransaction().begin();
+
+        try {
+            return session.createQuery("from Workspace where owner.id = :id", Workspace.class)
+                    .setParameter("id", getId())
+                    .getSingleResult();
+        } catch (NoResultException e) {
+            Workspace workspace = new Workspace(getName() + "'s Personal Workspace", this);
+            session.save(workspace);
+
+            return workspace;
+        } catch (Exception e) {
+            throw new InternalServerErrorResponse(e.getMessage());
+        } finally {
+            session.getTransaction().commit();
+            session.close();
+        }
+    }
+
+    /**
+     * All copied projects are saved into <i>Personal Projects</i> subject. There should only be one of these.
+     * This method creates the subject if it does note exist.
+     */
+    @Transient
+    @JsonIgnore
+    public Subject getCopiedProjectsSubject() {
+        Workspace personalWorkspace = getPersonalWorkspace();
+
+        Session session = Database.openSession();
+        session.getTransaction().begin();
+
+        // TODO: What happens when the user renames a new subject as `Personal Projects`
+        Optional<Subject> possibleSubject = personalWorkspace.findSubject("Personal Projects");
+
+        if (possibleSubject.isPresent()) {
+            return possibleSubject.get();
+        }
+
+        Subject subject = new Subject("Personal Projects", personalWorkspace);
+        session.save(subject);
+
+        session.getTransaction().commit();
+        session.close();
+
+        return subject;
     }
 
     @Override

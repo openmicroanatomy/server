@@ -12,6 +12,7 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Entity
@@ -49,11 +50,15 @@ public class Workspace {
 	 */
 	private boolean hidden;
 
-	@OneToMany(mappedBy = "workspace", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(mappedBy = "workspace", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
 	@OnDelete(action = OnDeleteAction.CASCADE)
 	private List<Subject> subjects = new ArrayList<>();
 
 	public Workspace() {}
+
+	public Workspace(String name, Owner owner) {
+		this(UUID.randomUUID().toString(), name, owner, List.of());
+	}
 
 	public Workspace(String id, String name, Owner owner, List<Subject> subjects) {
 		this.id = id;
@@ -119,6 +124,12 @@ public class Workspace {
 
 		return owner.getId().equals(user.getOrganization().getId())
 				&& user.getRoles().contains(Roles.MANAGE_PROJECTS);
+	}
+
+	public Optional<Subject> findSubject(String name) {
+		return subjects.stream()
+				.filter(subject -> subject.getName().equalsIgnoreCase(name))
+				.findFirst();
 	}
 
 	public boolean isHidden() {

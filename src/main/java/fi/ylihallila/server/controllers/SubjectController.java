@@ -1,6 +1,7 @@
 package fi.ylihallila.server.controllers;
 
 import fi.ylihallila.server.authentication.Authenticator;
+import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
 import fi.ylihallila.server.models.Subject;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.models.Workspace;
@@ -57,6 +58,11 @@ public class SubjectController {
         User user = Authenticator.getUser(ctx);
 
         Subject subject = getSubject(id, session, user);
+
+        if (subject.getName().equals("Copied Projects")) {
+            throw new UnprocessableEntityResponse("Not allowed to rename copied projects.");
+        }
+
         subject.setName(ctx.formParam("subject-name", subject.getName()));
 
         logger.info("Subject {} edited by {}", id, user.getName());

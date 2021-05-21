@@ -1,7 +1,7 @@
 package fi.ylihallila.server.controllers;
 
 import fi.ylihallila.server.authentication.Authenticator;
-import fi.ylihallila.server.commons.Roles;
+import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
 import fi.ylihallila.server.models.*;
 import io.javalin.http.Context;
 import io.javalin.http.ForbiddenResponse;
@@ -69,6 +69,10 @@ public class WorkspaceController extends Controller {
 
 		if (!workspace.hasPermission(user)) {
 			throw new ForbiddenResponse();
+		}
+
+		if (workspace.getName().contains("Personal Workspace")) {
+			throw new UnprocessableEntityResponse("Not allowed to rename personal workspaces");
 		}
 
 		workspace.setName(ctx.formParam("workspace-name", workspace.getName()));
