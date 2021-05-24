@@ -13,6 +13,8 @@ public class Constants {
     public final static String EDITOR_UPLOADS_FOLDER = "uploads";
     public final static String EDITOR_UPLOADS_URL    = "%s:%s/" + EDITOR_UPLOADS_FOLDER + "/%s";
 
+    public final static Long DEFAULT_MAX_UPLOAD_SIZE = 5 * 1024L * 1024L; // 2 MB
+
     /**
      * Slides that are pending tiling & upload to <a href="https://docs.csc.fi/data/Allas/">Allas</a>.
      * These files are scanned regularly by the tiler. (@see Tiler)

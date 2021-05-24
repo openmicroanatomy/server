@@ -40,8 +40,8 @@ public class SimpleDebugger {
         logger.debug("allas.tenant.id: " + Config.getString("allas.tenant.id"));
         logger.debug("allas.tenant.name: " + Config.getString("allas.tenant.name"));
         logger.debug("flatfile.directory: " + Config.getString("flatfile.directory"));
-        logger.debug("app.id: " + Config.getString("app.id"));
-        logger.debug("jwk.provider: " + Config.getString("jwk.provider"));
+        logger.debug("app.id: " + Config.getString("microsoft.app.id"));
+        logger.debug("jwk.provider: " + Config.getString("microsoft.jwk.provider"));
         logger.debug("=============================================================================");
     }
 

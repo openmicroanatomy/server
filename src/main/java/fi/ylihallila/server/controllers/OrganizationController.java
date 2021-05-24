@@ -17,10 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.InputStream;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -143,7 +140,7 @@ public class OrganizationController extends Controller implements CrudHandler {
         UploadedFile file = ctx.uploadedFile("logo");
 
         if (file != null) {
-            if (!isValidImage(file.getContent())) {
+            if (!isValidOrganizationLogo(file.getContent())) {
                 throw new UnprocessableEntityResponse("Provided file was not an PNG file or is too small.");
             }
 
@@ -164,27 +161,5 @@ public class OrganizationController extends Controller implements CrudHandler {
         }
 
         return organization;
-    }
-
-    /**
-     * Tries to test if provided InputStream is a valid image by running it through {@link ImageIO#read(InputStream)}
-     * and checking that the image is of width >= 400px and height >= 80px.
-     *
-     * @param is InputStream of Image
-     * @return true if an valid image
-     */
-    private boolean isValidImage(@NotNull InputStream is) {
-        try {
-            BufferedImage image = ImageIO.read(is);
-
-            if (image == null) {
-                return false;
-            }
-
-            return image.getType() == BufferedImage.TYPE_INT_ARGB
-                    && image.getWidth() >= 400 && image.getHeight() >= 80;
-        } catch (Exception ignored) {}
-
-        return false;
     }
 }

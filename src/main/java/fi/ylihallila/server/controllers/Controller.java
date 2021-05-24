@@ -10,9 +10,12 @@ import io.javalin.core.validation.Validator;
 import io.javalin.http.Context;
 import io.javalin.http.UnauthorizedResponse;
 import org.hibernate.Session;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -143,5 +146,37 @@ public class Controller {
 		}
 
 		return hasPermission;
+	}
+
+	public boolean isImage(@NotNull InputStream is ){
+		try {
+			ImageIO.read(is);
+
+			return true;
+		} catch (Exception ignored) {}
+
+		return false;
+	}
+
+	/**
+	 * Tries to test if provided InputStream is a valid image by running it through {@link ImageIO#read(InputStream)}
+	 * and checking that the image is of width >= 400px and height >= 80px.
+	 *
+	 * @param is InputStream of Image
+	 * @return true if an valid image
+	 */
+	public boolean isValidOrganizationLogo(@NotNull InputStream is) {
+		try {
+			BufferedImage image = ImageIO.read(is);
+
+			if (image == null) {
+				return false;
+			}
+
+			return image.getType() == BufferedImage.TYPE_INT_ARGB
+					&& image.getWidth() >= 400 && image.getHeight() >= 80;
+		} catch (Exception ignored) {}
+
+		return false;
 	}
 }

@@ -35,7 +35,7 @@ public class TokenAuth implements Auth {
      * GUID of Microsoft Application, used to verify that the
      * provided JWT was supplied by our application.
      */
-    private static final String APP_ID = Config.getString("app.id");
+    private static final String APP_ID = Config.getString("microsoft.app.id");
 
     /**
      * Each JWT can be signed using a different private key. JWKs provide
@@ -47,7 +47,7 @@ public class TokenAuth implements Auth {
 
     public TokenAuth() {
         try {
-            provider = new UrlJwkProvider(new URL(Config.getString("jwk.provider")));
+            provider = new UrlJwkProvider(new URL(Config.getString("microsoft.jwk.provider")));
         } catch (IOException e) {
             logger.error(e.getLocalizedMessage(), e);
         }
