@@ -6,6 +6,7 @@ import fi.ylihallila.server.authentication.impl.TokenAuth;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.models.Organization;
 import fi.ylihallila.server.models.User;
+import fi.ylihallila.server.util.Database;
 import io.javalin.apibuilder.CrudHandler;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
@@ -155,8 +156,16 @@ public class UserController extends Controller implements CrudHandler {
 			if (user.hasRole(Roles.MANAGE_USERS)) {
 				editRoles(user, editedUser, ctx);
 			}
+
+			if (user.hasRole(Roles.ADMIN)) {
+				editOrganization(editedUser, ctx);
+			}
 		} else if (user.hasRole(Roles.MANAGE_USERS)) {
 			// User can be edited if the user belongs to the same organization or the editing user has the role ADMIN
+
+			if (user.hasRole(Roles.ADMIN)) {
+				editOrganization(editedUser, ctx);
+			}
 
 			if (hasSameOrganization(user, editedUser) || user.hasRole(Roles.ADMIN)) {
 				editPersonalDetails(user, editedUser, ctx);
@@ -256,8 +265,8 @@ public class UserController extends Controller implements CrudHandler {
 		ctx.status(200).json(user);
 	}
 
-	/* PRIVATE API */
 
+	/* PRIVATE API */
 	private User getUser(Context ctx, String id) {
 		Session session = ctx.use(Session.class);
 		User user = session.find(User.class, id);
@@ -311,5 +320,27 @@ public class UserController extends Controller implements CrudHandler {
 		}
 
 		editedUser.setRoles(roles);
+	}
+
+	private void editOrganization(User editedUser, Context ctx) {
+		if (!(ctx.formParamMap().containsKey("organization"))) {
+			return;
+		}
+
+		Session session = Database.openSession();
+		session.beginTransaction();
+
+		try {
+			Organization organization = session.find(Organization.class, ctx.formParam("organization"));
+
+			if (organization == null) {
+				return;
+			}
+
+			editedUser.setOrganization(organization);
+		} finally {
+			session.getTransaction().commit();
+			session.close();
+		}
 	}
 }

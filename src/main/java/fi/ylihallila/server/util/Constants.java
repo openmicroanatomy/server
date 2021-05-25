@@ -25,7 +25,7 @@ public class Constants {
 
     public final static String BACKUP_FOLDER         = "backups/";
     public final static String TEMP_FILE             = "temp/%s";
-    public final static String USERS_FILE            = "users.json";
+    public final static String ADMINISTRATORS_FILE   = "administrators.json";
     public final static String ALLAS_URL             = "{host}/{id}/tiles/{level}_{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
 
     public static boolean SECURE_SERVER;

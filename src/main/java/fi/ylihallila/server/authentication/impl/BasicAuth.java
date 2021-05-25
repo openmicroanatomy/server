@@ -38,7 +38,7 @@ public class BasicAuth implements Auth {
             Session session = Database.openSession();
             session.beginTransaction();
 
-            JsonArray users = (JsonArray) JsonParser.parseString(Files.readString(Path.of(Constants.USERS_FILE)));
+            JsonArray users = (JsonArray) JsonParser.parseString(Files.readString(Path.of(Constants.ADMINISTRATORS_FILE)));
 
             for (JsonElement element : users) {
                 JsonObject data = element.getAsJsonObject();
@@ -49,11 +49,15 @@ public class BasicAuth implements Auth {
                         .map(o -> Roles.valueOf(o.getAsString()))
                         .collect(Collectors.toSet());
 
-                User user = new User();
+                User user = session.find(User.class, data.get("id").getAsString());
+
+                if (user == null) {
+                    user = new User();
+                }
+
                 user.setId(data.get("id").getAsString());
                 user.setName(data.get("name").getAsString());
                 user.setEmail(data.get("email").getAsString());
-                user.setOrganization(data.get("organization").getAsString());
                 user.setPassword(data.get("password").getAsString());
                 user.setOAuth(false);
                 user.setRoles(EnumSet.copyOf(roles));
@@ -64,15 +68,15 @@ public class BasicAuth implements Auth {
             session.getTransaction().commit();
             session.close();
         } catch (IOException e) {
-            logger.error("Error while reading BasicAuth user.json", e);
+            logger.error("Error while registering administrator accounts", e);
         }
     }
 
     @Override
     public boolean isLoggedIn(Context ctx) {
-//        if (!ctx.basicAuthCredentialsExist()) {
-//            return false;
-//        }
+        if (!ctx.basicAuthCredentialsExist()) {
+            return false;
+        }
 
         try {
             getUserObject(ctx);
@@ -118,9 +122,9 @@ public class BasicAuth implements Auth {
         try {
             Session session = ctx.use(Session.class);
 
-//            if (!ctx.basicAuthCredentialsExist()) {
-//                throw new UnauthorizedResponse("No username or password provided.");
-//            }
+            if (!ctx.basicAuthCredentialsExist()) {
+                throw new UnauthorizedResponse("No username or password provided.");
+            }
 
             BasicAuthCredentials auth = ctx.basicAuthCredentials();
 

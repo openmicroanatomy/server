@@ -129,6 +129,10 @@ public class User extends Owner {
      * @throws BadRequestResponse if the email is already in use or is invalid
      */
     public void setEmail(String email) {
+        if (this.email.equalsIgnoreCase(email)) {
+            return;
+        }
+
         EmailValidator validator = EmailValidator.getInstance(false, true);
 
         if (validator.isValid(email)) {
