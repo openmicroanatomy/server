@@ -20,6 +20,7 @@ import javax.persistence.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -129,7 +130,7 @@ public class User extends Owner {
      * @throws BadRequestResponse if the email is already in use or is invalid
      */
     public void setEmail(String email) {
-        if (this.email.equalsIgnoreCase(email)) {
+        if (Objects.equals(email, this.email)) {
             return;
         }
 
