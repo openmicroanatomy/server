@@ -39,7 +39,7 @@ mainClassName = 'fi.ylihallila.server.Main'
 group = 'fi.yli-hallila'
 version = '1.1-SNAPSHOT'
 description = 'QuPath Edu Server'
-java.sourceCompatibility = JavaVersion.VERSION_15
+java.sourceCompatibility = JavaVersion.VERSION_14
 
 jar {
     manifest {

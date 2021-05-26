@@ -42,6 +42,12 @@ public class DummyDb {
         session.save(PROJECT_A);
         session.save(PROJECT_B);
 
+        ADMIN.hashPassword("admin");
+        TEACHER.hashPassword("teacher");
+
+        session.save(ADMIN);
+        session.save(TEACHER);
+
         session.getTransaction().commit();
         session.close();
     }
@@ -55,9 +61,6 @@ public class DummyDb {
         "962c10fa-caab-4c09-908a-1a67152a3e15",
         "Organization B"
     );
-
-    // THESE USERS ARE DEFINED IN USERS.JSON AND ARE AUTOMATICALLY INSERTED TO THE DATABASE!
-    // These objects are here only to make unit testing easier
 
     public static User TEACHER = new User(
         "70e99eac-b439-4a73-967e-2d83870b8326",

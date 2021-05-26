@@ -30,6 +30,7 @@ import static io.javalin.core.security.SecurityUtil.roles;
 public class Application {
 
     private Logger logger = LoggerFactory.getLogger(Application.class);
+
     private Javalin app = Javalin.create(config -> {
         config.registerPlugin(new OpenApiPlugin(getOpenApiOptions()));
         config.accessManager(Authenticator::accessManager);
@@ -73,19 +74,17 @@ public class Application {
         });
     }).start();
 
-    private OrganizationController OrganizationController;
-    private WorkspaceController WorkspaceController;
-    private ProjectController ProjectController;
-    private SubjectController SubjectController;
-    private BackupController BackupController;
-    private ServerController ServerController;
-    private SlideController SlideController;
-    private UserController UserController;
-    private FileController FileController;
+    private final OrganizationController OrganizationController = new OrganizationController();
+    private final WorkspaceController    WorkspaceController    = new WorkspaceController();
+    private final ProjectController      ProjectController      = new ProjectController();
+    private final SubjectController      SubjectController      = new SubjectController();
+    private final BackupController       BackupController       = new BackupController();
+    private final ServerController       ServerController       = new ServerController();
+    private final SlideController        SlideController        = new SlideController();
+    private final UserController         UserController         = new UserController();
+    private final FileController         FileController         = new FileController();
 
     public Application() {
-        createControllers();
-
         app.routes(() -> path("/api/v0/", () -> {
             before(ctx -> {
                 logger.debug("Creating Database Session for Request");
@@ -127,57 +126,27 @@ public class Application {
             crud("/users/:id", UserController, roles(ANYONE));
 
             /* Upload */
-            post("upload", SlideController::upload, roles(MANAGE_SLIDES));
-            post("upload/ckeditor", FileController::upload, roles(MANAGE_PROJECTS));
+
+            post("upload/ckeditor",                FileController::upload,  roles(MANAGE_PROJECTS));
             app.options("/api/v0/upload/ckeditor", FileController::options, roles(ANYONE));
 
             /* Slides */
-            path("slides", () -> {
-                get(SlideController::getAllSlides, roles(ANYONE));
 
-                path(":slide-id", () -> {
-                    get(SlideController::getSlideProperties, roles(ANYONE));
-                    put(SlideController::updateSlide,        roles(MANAGE_SLIDES));
-                    delete(SlideController::deleteSlide,     roles(MANAGE_SLIDES));
-                    get("tile/:tileX/:tileY/:level/:tileWidth/:tileHeight", SlideController::renderTile, roles(ANYONE));
-                });
-            });
+            crud("slides/:id", SlideController, roles(ANYONE));
+            get("slides/:id/tile/:tileX/:tileY/:level/:tileWidth/:tileHeight", SlideController::renderTile, roles(ANYONE));
 
             /* Workspaces */
-            path("workspaces", () -> {
-                get(WorkspaceController::getAllWorkspaces, roles(ANYONE));
-                post(WorkspaceController::createWorkspace, roles(MANAGE_PROJECTS));
 
-                path(":workspace-id", () -> {
-                    get(WorkspaceController::getWorkspace,       roles(ANYONE));
-                    put(WorkspaceController::updateWorkspace,    roles(MANAGE_PROJECTS));
-                    delete(WorkspaceController::deleteWorkspace, roles(MANAGE_PROJECTS));
-                });
-            });
+            crud("workspaces/:id", WorkspaceController, roles(ANYONE));
 
             /* Projects */
-            path("projects", () -> {
-                get(ProjectController::getAllProjects,                          roles(ADMIN));
-                post(ProjectController::createProject,                          roles(MANAGE_PROJECTS));
-                post("personal", ProjectController::createPersonalProject, roles(MANAGE_PERSONAL_PROJECTS));
 
-                path(":project-id", () -> {
-                    get(ProjectController::downloadProject,  roles(ANYONE));
-                    put(ProjectController::updateProject,    roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
-                    delete(ProjectController::deleteProject, roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
-                    post(ProjectController::uploadProject,   roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
-                });
-            });
+            crud("projects/:id", ProjectController, roles(ANYONE));
+            post("projects/:id", ProjectController::uploadProject, roles(ANYONE));
 
             /* Subjects */
-            path("subjects", () -> {
-                post(SubjectController::createSubject, roles(MANAGE_PROJECTS, MANAGE_PERSONAL_PROJECTS));
 
-                path(":subject-id", () -> {
-                   put(SubjectController::updateSubject, roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
-                   delete(SubjectController::deleteSubject, roles(MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS));
-                });
-            });
+            crud("/subjects/:id", SubjectController, roles(MANAGE_PROJECTS, MANAGE_PERSONAL_PROJECTS));
 
             /* Backups */
             path("backups", () -> {
@@ -189,18 +158,6 @@ public class Application {
             /* Organizations */
             crud("/organizations/:id", OrganizationController, roles(ANYONE));
         }));
-    }
-
-    private void createControllers() {
-        this.OrganizationController = new OrganizationController();
-        this.WorkspaceController = new WorkspaceController();
-        this.ProjectController = new ProjectController();
-        this.SubjectController = new SubjectController();
-        this.BackupController = new BackupController();
-        this.ServerController = new ServerController();
-        this.SlideController = new SlideController();
-        this.UserController = new UserController();
-        this.FileController = new FileController();
     }
 
     private OpenApiOptions getOpenApiOptions() {
@@ -227,7 +184,8 @@ public class Application {
             return sslContextFactory;
         } catch (URISyntaxException e) {
             logger.error("Couldn't start HTTPS server, no valid keystore.");
-            return null;
         }
+
+        return null;
     }
 }

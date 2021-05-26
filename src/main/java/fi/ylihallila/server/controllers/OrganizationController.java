@@ -59,11 +59,9 @@ public class OrganizationController extends Controller implements CrudHandler {
     @OpenApi(
         summary = "Delete given organization",
         tags = { "organization" },
-        pathParams = @OpenApiParam(
-            name = "id",
-            description = "UUID of organization to be deleted",
-            required = true
-        ),
+        pathParams = {
+            @OpenApiParam(name = "id", description = "UUID of organization to be deleted", required = true)
+        },
         responses = {
             @OpenApiResponse(status = "200"),
             @OpenApiResponse(status = "403"),
@@ -74,9 +72,14 @@ public class OrganizationController extends Controller implements CrudHandler {
         Allow(ctx, Roles.ADMIN);
 
         Session session = ctx.use(Session.class);
-        User user = Authenticator.getUser(ctx);
+        User user       = Authenticator.getUser(ctx);
 
-        Organization organization = getOrganization(ctx, id);
+        Organization organization = session.find(Organization.class, id);
+
+        if (organization == null) {
+            throw new NotFoundResponse();
+        }
+
         session.delete(organization);
 
         logger.info("Organization {} ({}) deleted by {}", organization.getName(), organization.getId(), user.getName());
@@ -91,6 +94,7 @@ public class OrganizationController extends Controller implements CrudHandler {
     )
     @Override public void getAll(@NotNull Context ctx) {
         Session session = ctx.use(Session.class);
+
         List<Organization> organizations = session.createQuery("from Organization ", Organization.class).list();
         organizations.sort(Comparator.comparing(Organization::getName));
 
@@ -100,11 +104,9 @@ public class OrganizationController extends Controller implements CrudHandler {
     @OpenApi(
         summary = "Get given organization",
         tags = { "organization" },
-        pathParams = @OpenApiParam(
-            name = "id",
-            description = "UUID of organization to be fetched",
-            required = true
-        ),
+        pathParams = {
+            @OpenApiParam(name = "id", description = "UUID of organization to be fetched", required = true)
+        },
         responses = {
             @OpenApiResponse(status = "200", content = @OpenApiContent(from = Organization.class)),
             @OpenApiResponse(status = "403"),
@@ -112,7 +114,13 @@ public class OrganizationController extends Controller implements CrudHandler {
         }
     )
     @Override public void getOne(@NotNull Context ctx, @NotNull String id) {
-        Organization organization = getOrganization(ctx, id);
+        Session session = ctx.use(Session.class);
+
+        Organization organization = session.find(Organization.class, id);
+
+        if (organization == null) {
+            throw new NotFoundResponse();
+        }
 
         ctx.status(200).json(organization);
     }
@@ -120,11 +128,9 @@ public class OrganizationController extends Controller implements CrudHandler {
     @OpenApi(
         summary = "Update given organization",
         tags = { "organization" },
-        pathParams = @OpenApiParam(
-            name = "id",
-            description = "UUID of organization to be updated",
-            required = true
-        ),
+        pathParams = {
+            @OpenApiParam(name = "id",description = "UUID of organization to be updated",required = true)
+        },
         formParams = {
             @OpenApiFormParam(name = "name"),
             @OpenApiFormParam(name = "logo", type = File.class)
@@ -132,9 +138,16 @@ public class OrganizationController extends Controller implements CrudHandler {
     )
     @Override public void update(@NotNull Context ctx, @NotNull String id) {
         Allow(ctx, Roles.ADMIN);
-        User user = Authenticator.getUser(ctx);
 
-        Organization organization = getOrganization(ctx, id);
+        Session session = ctx.use(Session.class);
+        User user       = Authenticator.getUser(ctx);
+
+        Organization organization = session.find(Organization.class, id);
+
+        if (organization == null) {
+            throw new NotFoundResponse();
+        }
+
         organization.setName(ctx.formParam("name", organization.getName()));
 
         UploadedFile file = ctx.uploadedFile("logo");
@@ -148,18 +161,5 @@ public class OrganizationController extends Controller implements CrudHandler {
         }
 
         logger.info("Organization {} ({}) edited by {}", organization.getName(), id, user.getName());
-    }
-
-    /*  PRIVATE API   */
-
-    private Organization getOrganization(Context ctx, String id) {
-        Session session = ctx.use(Session.class);
-        Organization organization = session.find(Organization.class, id);
-
-        if (organization == null) {
-            throw new NotFoundResponse();
-        }
-
-        return organization;
     }
 }

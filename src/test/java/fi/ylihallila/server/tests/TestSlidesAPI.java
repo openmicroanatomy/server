@@ -51,12 +51,10 @@ public class TestSlidesAPI {
     @Test
     @Order(2)
     public void EditSlideSuccess() {
-        var response = Unirest.put(API_URL + "/slides/" + DummyDb.SLIDE_A.getId())
+        var response = Unirest.patch(API_URL + "/slides/" + DummyDb.SLIDE_A.getId())
                 .basicAuth("teacher@example.com", "teacher")
                 .field("slide-name", "Slide A New Name")
                 .asString();
-
-        System.out.println(API_URL + "/slides/" + DummyDb.SLIDE_A.getId());
 
         assertThat(response.getStatus()).isEqualTo(200);
     }
@@ -64,7 +62,7 @@ public class TestSlidesAPI {
     @Test
     @Order(2)
     public void EditSlideFailureForbiddenNotLoggedIn() {
-        var response = Unirest.put(API_URL + "/slides/" + DummyDb.SLIDE_A.getId())
+        var response = Unirest.patch(API_URL + "/slides/" + DummyDb.SLIDE_A.getId())
                 .field("slide-name", "Not logged in")
                 .asString();
 
@@ -74,7 +72,7 @@ public class TestSlidesAPI {
     @Test
     @Order(2)
     public void EditSlideFailureNotFound() {
-        var response = Unirest.put(API_URL + "/slides/404")
+        var response = Unirest.patch(API_URL + "/slides/404")
                 .basicAuth("teacher@example.com", "teacher")
                 .field("slide-name", "Not Found")
                 .asString();
@@ -85,7 +83,7 @@ public class TestSlidesAPI {
     @Test
     @Order(2)
     public void EditSlideFailureForbiddenWrongOrganization() {
-        var response = Unirest.put(API_URL + "/slides/" + DummyDb.SLIDE_B.getId())
+        var response = Unirest.patch(API_URL + "/slides/" + DummyDb.SLIDE_B.getId())
                 .basicAuth("teacher@example.com", "teacher")
                 .field("slide-name", "Wrong Organization")
                 .asString();

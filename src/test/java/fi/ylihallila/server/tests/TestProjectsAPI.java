@@ -68,7 +68,10 @@ public class TestProjectsAPI {
     public void DownloadProjectSuccess() throws IOException {
         var response = Unirest.get(API_URL + "/projects/" + DummyDb.PROJECT_A.getId()).asBytes();
 
-        assertThat(response.getBody().length).isEqualTo(Files.size(Path.of(String.format(Constants.PROJECT_FILE_FORMAT, DummyDb.PROJECT_A.getId()))));
+        Path path = Path.of(String.format(Constants.PROJECT_FILE_FORMAT, DummyDb.PROJECT_A.getId()));
+        String JSON = JavalinJson.toJson(Files.readString(path));
+
+        assertThat(response.getBody().length).isEqualTo(JSON.length());
         assertThat(response.getStatus()).isEqualTo(200);
     }
 
@@ -83,7 +86,7 @@ public class TestProjectsAPI {
     @Test
     @Order(2)
     public void UpdateProjectSuccessSameOrganization() {
-        var response = Unirest.put(API_URL + "/projects/" + DummyDb.PROJECT_A.getId())
+        var response = Unirest.patch(API_URL + "/projects/" + DummyDb.PROJECT_A.getId())
                 .basicAuth("teacher@example.com", "teacher")
                 .field("name", "New Project Name")
                 .asString();
@@ -94,7 +97,7 @@ public class TestProjectsAPI {
     @Test
     @Order(2)
     public void UpdateProjectFailureWrongOrganization() {
-        var response = Unirest.put(API_URL + "/projects/" + DummyDb.PROJECT_B.getId())
+        var response = Unirest.patch(API_URL + "/projects/" + DummyDb.PROJECT_B.getId())
                 .basicAuth("teacher@example.com", "teacher")
                 .field("name", "New Project Name")
                 .asString();
@@ -105,7 +108,7 @@ public class TestProjectsAPI {
     @Test
     @Order(2)
     public void UpdateProjectFailureUnauthorized() {
-        var response = Unirest.put(API_URL + "/projects/" + DummyDb.PROJECT_A.getId())
+        var response = Unirest.patch(API_URL + "/projects/" + DummyDb.PROJECT_A.getId())
                 .field("name", "New Project Name")
                 .asString();
 
@@ -115,7 +118,7 @@ public class TestProjectsAPI {
     @Test
     @Order(2)
     public void UpdateProjectSuccessAdminOverride() {
-        var response = Unirest.put(API_URL + "/projects/" + DummyDb.PROJECT_B.getId())
+        var response = Unirest.patch(API_URL + "/projects/" + DummyDb.PROJECT_B.getId())
                 .basicAuth("admin@example.com", "admin")
                 .field("name", "New Project Name")
                 .asString();

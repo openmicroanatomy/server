@@ -1,18 +1,3 @@
 [
-  {
-    "id" : "aeae48ac-961a-425e-a715-c01205d2e83d",
-    "name" : "Admin",
-    "password": "1000:3a1b00af5a904d4d2afdbec866a18a4a:ececd74fc7723d828f60e23e8d3a63ded3be8fa424b52dc0ca14734f04d957b3d276e2a086d04245dc6d30a05acef6be204bcc7380045153e42122713137013c",
-    "email" : "admin@example.com",
-    //"organization" : "0d9e61c5-3642-4f3a-bf26-58ce7852ae33",
-    "roles" : [ "ADMIN", "MANAGE_PROJECTS", "MANAGE_SLIDES", "MANAGE_USERS", "MANAGE_PERSONAL_PROJECTS" ]
-  },
-  {
-    "id" : "70e99eac-b439-4a73-967e-2d83870b8326",
-    "name" : "Teacher",
-    "email" : "teacher@example.com",
-    "password": "1000:9a522ff3eba57876b5e15d3823abd110:3b19f11a9e0fa6d141aa442f1bb8d0676fd8171c22a0bfb8a773e7f003e5ff841fad7a4faac47ebb268e32bd509bad81e7a959514971fd9fd674f0c75d6ad465", // teacher
-    //"organization" : "0d9e61c5-3642-4f3a-bf26-58ce7852ae33",
-    "roles" : [ "MANAGE_PROJECTS", "MANAGE_SLIDES", "MANAGE_USERS", "MANAGE_PERSONAL_PROJECTS" ]
-  }
+
 ]

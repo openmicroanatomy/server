@@ -11,10 +11,7 @@ import io.javalin.apibuilder.CrudHandler;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
 import io.javalin.http.UnauthorizedResponse;
-import io.javalin.plugin.openapi.annotations.OpenApi;
-import io.javalin.plugin.openapi.annotations.OpenApiContent;
-import io.javalin.plugin.openapi.annotations.OpenApiParam;
-import io.javalin.plugin.openapi.annotations.OpenApiResponse;
+import io.javalin.plugin.openapi.annotations.*;
 import org.hibernate.Session;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -130,11 +127,9 @@ public class UserController extends Controller implements CrudHandler {
 	@OpenApi(
 		summary = "Update given user",
 		tags = { "user" },
-		pathParams = @OpenApiParam(
-			name = "id",
-			description = "UUID of user to be updated",
-			required = true
-		),
+		pathParams = {
+			@OpenApiParam(name = "id",description = "UUID of user to be updated", required = true)
+		},
 		responses = {
 			@OpenApiResponse(status = "200", content = @OpenApiContent(from = User.class)),
 			@OpenApiResponse(status = "403"),
@@ -215,6 +210,16 @@ public class UserController extends Controller implements CrudHandler {
 		}
 	}
 
+	@OpenApi(
+		summary = "Check if user is authorized to edit given resource. The resource can represent either a workspace or a project.",
+		pathParams = @OpenApiParam(name = "id", required = true),
+		responses = {
+			@OpenApiResponse(status = "200", content = @OpenApiContent(from = Boolean.class))
+		},
+		tags = { "user" },
+		method = HttpMethod.GET,
+		path = "/api/v0/auth/write/:id"
+	)
 	public void hasPermission(Context ctx) {
 		String id = ctx.pathParam("id", String.class).get();
 
@@ -224,9 +229,20 @@ public class UserController extends Controller implements CrudHandler {
 	/**
 	 * This method is used when authenticating with Basic Authentication. The endpoint returns an User object.
 	 * If the credentials are invalid, an NotAuthorizedException is thrown.
-
-	 * @param ctx Context
 	 */
+	@OpenApi(
+		summary = "Authenticate via Basic Authentication",
+		responses = {
+			@OpenApiResponse(status = "200", content = @OpenApiContent(from = User.class)),
+			@OpenApiResponse(status = "401"),
+		},
+		headers = {
+			@OpenApiParam(name = "Authorization", description = "Use the Basic HTTP Authentication Scheme", required = true)
+		},
+		tags = { "user" },
+		method = HttpMethod.GET,
+		path = "/api/v0/auth/login"
+	)
 	public void login(Context ctx) {
 		User user = Authenticator.getUser(ctx);
 
@@ -234,13 +250,23 @@ public class UserController extends Controller implements CrudHandler {
 	}
 
 	/**
-	 * This method checks that the given JWT token was issued by Azure AD and is valid.
+	 * This method checks that the given JWT was issued by Azure AD and is valid.
 	 *
-	 * If verified, returns a list of roles for that user. This endpoint *does not* return
-	 * the userId and organizationId, as these are encoded within the JWT itself.
-	 *
-	 * @param ctx Context
+	 * On success, returns an User object.
 	 */
+	@OpenApi(
+		summary = "Authenticate via JWT",
+		responses = {
+			@OpenApiResponse(status = "200", content = @OpenApiContent(from = User.class)),
+			@OpenApiResponse(status = "401")
+		},
+		headers = {
+			@OpenApiParam(name = "token", required = true)
+		},
+		tags = { "user" },
+		method = HttpMethod.GET,
+		path = "/api/v0/auth/verify"
+	)
 	public void verify(Context ctx) {
 		DecodedJWT jwt = TokenAuth.validate(ctx);
 		String id = jwt.getClaim("oid").asString();
@@ -267,8 +293,16 @@ public class UserController extends Controller implements CrudHandler {
 
 
 	/* PRIVATE API */
+
+	/**
+	 * Fetches the user from the database and throws NotFoundResponse if not found.
+	 *
+	 * @param id id of the user
+	 * @throws NotFoundResponse if the user was not found
+	 */
 	private User getUser(Context ctx, String id) {
 		Session session = ctx.use(Session.class);
+
 		User user = session.find(User.class, id);
 
 		if (user == null) {
@@ -285,6 +319,8 @@ public class UserController extends Controller implements CrudHandler {
 	/**
 	 * Personal details include username, email and password.
 	 * Passwords can be changed by only the user themselves or by an user with the ADMIN role.
+	 *
+	 * This method checks only for the admin role; rest is left to the caller.
 	 */
 	private void editPersonalDetails(User user, User editedUser, Context ctx) {
 		if (user.equals(editedUser) || user.hasRole(Roles.ADMIN)) {
@@ -299,6 +335,12 @@ public class UserController extends Controller implements CrudHandler {
 		editedUser.setEmail(ctx.formParam("email", editedUser.getEmail()));
 	}
 
+	/**
+	 * Editing roles requires the MANAGE_USERS or ADMIN role.
+	 * Administrators can make other users administrators.
+	 *
+	 * This method checks only for the admin role; rest is left to the caller.
+	 */
 	private void editRoles(User user, User editedUser, Context ctx) {
 		EnumSet<Roles> roles = editedUser.getRoles();
 
@@ -322,25 +364,24 @@ public class UserController extends Controller implements CrudHandler {
 		editedUser.setRoles(roles);
 	}
 
+	/**
+	 * Only administrators can change an users organization.
+	 *
+	 * This method does not check any roles; it is left to the caller.
+	 */
 	private void editOrganization(User editedUser, Context ctx) {
 		if (!(ctx.formParamMap().containsKey("organization"))) {
 			return;
 		}
 
-		Session session = Database.openSession();
-		session.beginTransaction();
+		Session session = ctx.use(Session.class);
 
-		try {
-			Organization organization = session.find(Organization.class, ctx.formParam("organization"));
+		Organization organization = session.find(Organization.class, ctx.formParam("organization"));
 
-			if (organization == null) {
-				return;
-			}
-
-			editedUser.setOrganization(organization);
-		} finally {
-			session.getTransaction().commit();
-			session.close();
+		if (organization == null) {
+			return;
 		}
+
+		editedUser.setOrganization(organization);
 	}
 }

@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static fi.ylihallila.server.util.Config.*;
 
-public class ServerController {
+public class ServerController extends Controller {
 
     @OpenApi(
         summary = "Returns the server configuration",

@@ -88,6 +88,10 @@ public class Controller {
 		return String.format(Constants.BACKUP_FILE_FORMAT, filename, timestamp);
 	}
 
+	/**
+	 * Wrapper for Javalin validator, as it only supports defaultValue of strings. This implementation supports
+	 * any data type for defaultValue.
+	 */
 	protected <T> T validate(Context ctx, String key, Class<T> clazz, T defaultValue) {
 		if (ctx.formParamMap().containsKey(key)) {
 			Validator<T> validator = ctx.formParam(key, clazz);

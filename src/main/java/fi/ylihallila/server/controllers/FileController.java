@@ -2,6 +2,10 @@ package fi.ylihallila.server.controllers;
 
 import fi.ylihallila.server.util.Constants;
 import io.javalin.http.*;
+import io.javalin.plugin.openapi.annotations.HttpMethod;
+import io.javalin.plugin.openapi.annotations.OpenApi;
+import io.javalin.plugin.openapi.annotations.OpenApiFormParam;
+import io.javalin.plugin.openapi.annotations.OpenApiResponse;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +22,19 @@ public class FileController extends Controller {
 
     private static final Logger logger = LoggerFactory.getLogger(FileController.class);
 
+    @OpenApi(
+        tags = { "ckeditor" },
+        summary = "Upload a new file using CKEditor",
+        formParams = {
+            @OpenApiFormParam(name = "upload", required = true, type = File.class)
+        },
+        responses = {
+            @OpenApiResponse(status = "200", description = "See CKEditor Simple Upload Adapter for description of data returned"),
+            @OpenApiResponse(status = "422", description = "Invalid data"),
+        },
+        path = "/api/v0/upload/ckeditor",
+        method = HttpMethod.POST
+    )
     public void upload(Context ctx) {
         // TODO: Store metadata in database.
 
@@ -59,6 +76,12 @@ public class FileController extends Controller {
         }
     }
 
+    @OpenApi(
+        tags = { "ckeditor" },
+        path = "/api/v0/upload/ckeditor",
+        method = HttpMethod.OPTIONS,
+        summary = "Returns proper Access-Control headers for CKEditor"
+    )
     public void options(Context ctx) {
         ctx.header("Access-Control-Allow-Origin", "*");
         ctx.header("Access-Control-Allow-Headers", "Authorization");

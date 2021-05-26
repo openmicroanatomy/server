@@ -25,8 +25,7 @@ public enum Roles implements Role {
     private final static Set<Roles> MODIFIABLE_ROLES = Set.of(ADMIN, MANAGE_USERS, MANAGE_SLIDES, MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS);
 
     /**
-     * List of which roles can be added / removed by users with MANAGE_USERS role
-     * @return Set<Roles>
+     * List of roles which can be modified by administrators / users with MANAGE_USERS permission.
      */
     public static Set<Roles> getModifiableRoles() {
         return MODIFIABLE_ROLES;

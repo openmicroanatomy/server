@@ -1,16 +1,18 @@
 package fi.ylihallila.server.controllers;
 
 import fi.ylihallila.server.authentication.Authenticator;
+import fi.ylihallila.server.commons.Roles;
+import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
 import fi.ylihallila.server.models.Slide;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.util.OpenSlideCache;
 import fi.ylihallila.server.util.Util;
-import io.javalin.http.Context;
-import io.javalin.http.ForbiddenResponse;
-import io.javalin.http.NotFoundResponse;
-import io.javalin.http.UploadedFile;
+import io.javalin.apibuilder.CrudHandler;
+import io.javalin.http.*;
+import io.javalin.plugin.openapi.annotations.*;
 import org.hibernate.Session;
+import org.jetbrains.annotations.NotNull;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +24,117 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class SlideController extends Controller {
+public class SlideController extends Controller implements CrudHandler {
 
 	private Logger logger = LoggerFactory.getLogger(SlideController.class);
 
-	public void getAllSlides(Context ctx) {
+	@OpenApi(
+		tags = { "slide" },
+		summary = "Upload a chunk of a new slide. Slide will be created when all chunks are uploaded.",
+		queryParams = {
+			@OpenApiParam(name = "filename", required = true),
+			@OpenApiParam(name = "fileSize", type = Long.class, required = true),
+			@OpenApiParam(name = "chunkSize", type = Integer.class, required = true),
+			@OpenApiParam(name = "chunk", type = Integer.class, required = true),
+		},
+		formParams = {
+			@OpenApiFormParam(name = "file", required = true, type = File.class)
+		},
+		responses = {
+			@OpenApiResponse(status = "200"),
+			@OpenApiResponse(status = "422")
+		}
+	)
+	@Override public void create(@NotNull Context ctx) {
+		Allow(ctx, Roles.MANAGE_SLIDES);
+
+		String fileName = ctx.queryParam("filename");
+		long totalSize  = ctx.queryParam("fileSize", Long.class).get();
+		long buffer     = ctx.queryParam("chunkSize", Integer.class).get();
+		long index      = ctx.queryParam("chunk", Integer.class).get();
+
+		UploadedFile file = ctx.uploadedFile("file");
+
+		if (file == null) {
+			throw new UnprocessableEntityResponse("Slide not provided");
+		}
+
+		try {
+			logger.trace("Uploading slide chunk: {} [Size: {}, Buffer: {}, Index: {}]", fileName, totalSize, buffer, index);
+
+			byte[] data = file.getContent().readAllBytes();
+
+			RandomAccessFile writer = new RandomAccessFile(String.format(Constants.TEMP_FILE, fileName), "rw");
+			writer.seek(index * buffer);
+			writer.write(data, 0, data.length);
+			writer.close();
+
+			// The slide is fully uploaded we can start processing it.
+			if (Files.size(Path.of(String.format(Constants.TEMP_FILE, fileName))) == totalSize) {
+				processUploadedSlide(ctx, fileName);
+			}
+
+			ctx.status(200);
+		} catch (IOException e) {
+			logger.error("Error while generating tiles for slide", e);
+			throw new InternalServerErrorResponse(e.getMessage());
+		}
+	}
+
+	@OpenApi(
+		tags = { "slide" },
+		summary = "Delete given slide",
+		pathParams = @OpenApiParam(
+			name = "id",
+			description = "UUID of slide to be deleted",
+			required = true
+		),
+		responses = {
+			@OpenApiResponse(status = "200"),
+			@OpenApiResponse(status = "403"),
+			@OpenApiResponse(status = "404"),
+		}
+	)
+	@Override public void delete(@NotNull Context ctx, @NotNull String id) {
+		Allow(ctx, Roles.MANAGE_SLIDES);
+
+		User user = Authenticator.getUser(ctx);
+		Session session = ctx.use(Session.class);
+
+		Slide slide = session.find(Slide.class, id);
+
+		if (slide == null) {
+			throw new NotFoundResponse();
+		}
+
+		if (!slide.hasPermission(user)) {
+			throw new ForbiddenResponse();
+		}
+
+		session.delete(slide);
+
+		Path propertiesPath = Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, id));
+		backup(propertiesPath);
+
+		try {
+			Files.delete(propertiesPath);
+		} catch (IOException e) {
+			logger.warn("Could not delete properties file for {} [{}]", id, e);
+		}
+
+		ctx.status(200);
+
+		logger.info("Slide {} deleted by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
+	}
+
+	@OpenApi(
+		tags = { "slide" },
+		summary = "Get all slides and their properties. Properties are defined in the OpenSlide documentation.",
+		responses = {
+			@OpenApiResponse(status = "200", content = @OpenApiContent(from = Slide.class, isArray = true))
+		}
+	)
+	@Override public void getAll(@NotNull Context ctx) {
 		Session session = ctx.use(Session.class);
 
 		List<Slide> slides = session.createQuery("from Slide", Slide.class).list();
@@ -53,46 +161,49 @@ public class SlideController extends Controller {
 		ctx.status(200).json(slidesWithProperties);
 	}
 
-	public void upload(Context ctx) throws IOException {
-		String fileName = ctx.queryParam("filename");
-		long totalSize  = ctx.queryParam("fileSize", Long.class).get();
-		long buffer     = ctx.queryParam("chunkSize", Integer.class).get();
-		long index      = ctx.queryParam("chunk", Integer.class).get();
-
-		UploadedFile file = ctx.uploadedFile("file");
-
-		if (file != null) {
-			logger.trace("Uploading slide chunk: {} [Size: {}, Buffer: {}, Index: {}]", fileName, totalSize, buffer, index);
-
-			byte[] data = file.getContent().readAllBytes();
-
-			RandomAccessFile writer = new RandomAccessFile(String.format(Constants.TEMP_FILE, fileName), "rw");
-			writer.seek(index * buffer);
-			writer.write(data, 0, data.length);
-			writer.close();
-
-			// The file is fully uploaded we can start processing it.
-			if (Files.size(Path.of(String.format(Constants.TEMP_FILE, fileName))) == totalSize) {
-				processUploadedSlide(ctx, fileName);
-			}
-
-			ctx.status(200);
+	@OpenApi(
+		tags = { "slide" },
+		summary = "Get properties for specified slide",
+		pathParams = {
+			@OpenApiParam(name = "id", description = "UUID of slide to be fetched", required = true)
+		},
+		responses = {
+			@OpenApiResponse(status = "200", content = @OpenApiContent(from = Slide.class))
+		}
+	)
+	@Override public void getOne(@NotNull Context ctx, @NotNull String id) {
+		if (ctx.queryParamMap().containsKey("openslide")) {
+			getSlidePropertiesFromOpenslide(ctx, id);
 		} else {
-			ctx.status(400);
+			getSlidePropertiesFromFile(ctx, id);
 		}
 	}
 
-	public void updateSlide(Context ctx) {
-		String id = ctx.pathParam("slide-id", String.class).get();
+	@OpenApi(
+		tags = { "slide" },
+		summary = "Update given slide",
+		formParams = {
+			@OpenApiFormParam(name = "slide-name")
+		},
+		responses = {
+			@OpenApiResponse(status = "200"),
+			@OpenApiResponse(status = "403"),
+			@OpenApiResponse(status = "404"),
+		}
+	)
+	@Override public void update(@NotNull Context ctx, @NotNull String id) {
+		Allow(ctx, Roles.MANAGE_SLIDES);
+
 		User user = Authenticator.getUser(ctx);
 		Session session = ctx.use(Session.class);
 
 		Slide slide = session.find(Slide.class, id);
+
 		if (slide == null) {
 			throw new NotFoundResponse();
 		}
 
-		if (!slide.hasPermission(user)) {
+		if (!(slide.hasPermission(user))) {
 			throw new ForbiddenResponse();
 		}
 
@@ -104,59 +215,26 @@ public class SlideController extends Controller {
 		logger.info("Slide {} edited by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 	}
 
-	public void deleteSlide(Context ctx) throws IOException {
-		String id = ctx.pathParam("slide-id", String.class).get();
-		User user = Authenticator.getUser(ctx);
-		Session session = ctx.use(Session.class);
-
-		Slide slide = session.find(Slide.class, id);
-		if (slide == null) {
-			throw new NotFoundResponse();
-		}
-
-		if (!slide.hasPermission(user)) {
-			throw new ForbiddenResponse();
-		}
-
-		session.delete(slide);
-
-		Path propertiesPath = Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, id));
-		backup(propertiesPath);
-		Files.delete(propertiesPath);
-
-		ctx.status(200);
-
-		logger.info("Slide {} deleted by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
-	}
-
-	public void getSlideProperties(Context ctx) throws IOException {
-		if (ctx.queryParam("openslide") != null) {
-			getSlidePropertiesFromOpenslide(ctx);
-		} else {
-			getSlidePropertiesFromFile(ctx);
-		}
-	}
-
-	private void getSlidePropertiesFromFile(Context ctx) throws IOException {
-		String id = ctx.pathParam("slide-id", String.class).get();
-
-		File propertiesFile = new File(String.format(Constants.SLIDE_PROPERTIES_FILE, id));
-
-		if (propertiesFile.exists()) {
-			ctx.status(200).json(Util.getMapper().readValue(propertiesFile, Map.class));
-		} else {
-			throw new NotFoundResponse();
-		}
-	}
-
-	private void getSlidePropertiesFromOpenslide(Context ctx) throws IOException {
-		Map<String, String> properties = OpenSlideCache.get(ctx.pathParam("slide-name")).get().getProperties();
-
-		ctx.status(200).json(properties); // TODO: Test
-	}
-
+	@OpenApi(
+		tags = { "slide" },
+		summary = "Fetch a tile for a slide",
+		pathParams = {
+			@OpenApiParam(name = "id", required = true),
+			@OpenApiParam(name = "tileX",      type = Integer.class, required = true),
+			@OpenApiParam(name = "tileY",      type = Integer.class, required = true),
+			@OpenApiParam(name = "level",      type = Integer.class, required = true),
+			@OpenApiParam(name = "tileWidth",  type = Integer.class, required = true),
+			@OpenApiParam(name = "tileHeight", type = Integer.class, required = true),
+		},
+		responses = {
+			@OpenApiResponse(status = "200"),
+			@OpenApiResponse(status = "404")
+		},
+		method = HttpMethod.GET,
+		path = "/api/v0/slides/:id/tile/:tileX/:tileY/:level/:tileWidth/:tileHeight"
+	)
 	public void renderTile(Context ctx) throws Exception {
-		String slide   = ctx.pathParam("slide-id");
+		String slide   = ctx.pathParam("id");
 		int tileX      = ctx.pathParam("tileX", Integer.class).get();
 		int tileY      = ctx.pathParam("tileY", Integer.class).get();
 		int level      = ctx.pathParam("level", Integer.class).get();
@@ -178,6 +256,35 @@ public class SlideController extends Controller {
 		} else {
 			logger.info("Couldn't find tile [{}, {},{} / {} / {},{}]", fileName, tileX, tileY, level, tileWidth, tileHeight);
 			throw new NotFoundResponse();
+		}
+	}
+
+
+	/* Private API */
+
+	private void getSlidePropertiesFromFile(Context ctx, String id) {
+		try {
+			File propertiesFile = new File(String.format(Constants.SLIDE_PROPERTIES_FILE, id));
+
+			if (propertiesFile.exists()) {
+				ctx.status(200).json(Util.getMapper().readValue(propertiesFile, Map.class));
+			} else {
+				throw new NotFoundResponse();
+			}
+		} catch (IOException e) {
+			logger.error("Error while reading slide properties from file", e);
+			throw new InternalServerErrorResponse(e.getMessage());
+		}
+	}
+
+	private void getSlidePropertiesFromOpenslide(Context ctx, String id) {
+		try {
+			Map<String, String> properties = OpenSlideCache.get(id).get().getProperties();
+
+			ctx.status(200).json(properties); // TODO: Test
+		} catch (Exception e) {
+			logger.error("Error while reading slide properties using OpenSlide", e);
+			throw new InternalServerErrorResponse(e.getMessage());
 		}
 	}
 
