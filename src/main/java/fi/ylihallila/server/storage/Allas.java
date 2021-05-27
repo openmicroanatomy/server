@@ -16,6 +16,9 @@ import static fi.ylihallila.server.util.Config.Config;
 
 public class Allas implements StorageProvider {
 
+    public final static String SLIDE_URL     = "{host}/{id}/tiles/{level}_{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
+    public final static String THUMBNAIL_URL = "{host}/{id}_thumbnail.jpg";
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
@@ -87,7 +90,13 @@ public class Allas implements StorageProvider {
     @Override public String getTilesURI() {
         String host = account.getPublicURL();
 
-        return Constants.ALLAS_URL.replace("{host}", host);
+        return SLIDE_URL.replace("{host}", host);
+    }
+
+    @Override public String getThumbnailURI() {
+        String host = account.getPublicURL();
+
+        return THUMBNAIL_URL.replace("{host}", host);
     }
 
     public static class Builder {

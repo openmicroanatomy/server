@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import java.awt.Color;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -137,6 +138,7 @@ public class TileGenerator {
 			Files.delete(archive.toPath());
 		}
 
+		generateThumbnail(id, storage);
 		generateProperties(id, storage);
 
 		logger.debug("Deleting original slide");
@@ -185,8 +187,29 @@ public class TileGenerator {
 	}
 
 	/**
-	 * Generates the .properties file for this slide and adds property
-	 * `openslide.remoteserver.uri` based on {@link StorageProvider#getTilesURI()}
+	 * Generates the thumbnail for the slide and saves it using the provided StorageProvider.
+	 */
+	private void generateThumbnail(String id, StorageProvider storageProvider) {
+		try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+			BufferedImage thumbnail = openSlide.createThumbnailImage(500);
+
+			Path path = Path.of(String.format(Constants.TEMP_FILE, id + "_thumbnail.jpg"));
+
+			ImageIO.write(thumbnail, "jpg", os);
+
+			Files.write(path, os.toByteArray());
+
+			storageProvider.commitFile(path.toFile());
+
+			Files.delete(path);
+		} catch (IOException e) {
+			logger.error("Error while generating thumbnail", e);
+		}
+	}
+
+	/**
+	 * Generates the .properties file for this slide and adds custom properties such as <b>openslide.remoteserver.uri</b>
+	 * and <b>openslide.thumbnail.uri</b>.
 	 *
 	 * @param id id of the slide.
 	 * @param storageProvider StorageProvider used to upload this slide.
@@ -194,13 +217,15 @@ public class TileGenerator {
 	private void generateProperties(String id, StorageProvider storageProvider) {
 		Map<String, String> properties = new HashMap<>(openSlide.getProperties());
 		properties.put("openslide.remoteserver.uri", storageProvider.getTilesURI().replace("{id}", id));
+		properties.put("openslide.thumbnail.uri",    storageProvider.getThumbnailURI().replace("{id}", id));
 		properties.put("openslide.level[0].tile-width", "1024");
 		properties.put("openslide.level[0].tile-height", "1024");
 
-		String json = new GsonBuilder().setPrettyPrinting().create().toJson(properties);
+		Path propertiesFilePath = Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, id));
+		String JSON = new GsonBuilder().setPrettyPrinting().create().toJson(properties);
 
 		try {
-			Files.write(Path.of(String.format(Constants.SLIDE_PROPERTIES_FILE, id)), json.getBytes());
+			Files.writeString(propertiesFilePath, JSON);
 		} catch (IOException e) {
 			logger.error("Error while saving {} properties file", id, e);
 		}

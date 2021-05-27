@@ -71,6 +71,10 @@ public class S3 implements StorageProvider {
         return null;
     }
 
+    @Override public String getThumbnailURI() {
+        return null;
+    }
+
     public void finish() {
         client.close();
     }

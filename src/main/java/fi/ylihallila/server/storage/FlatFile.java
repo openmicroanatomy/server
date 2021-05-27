@@ -1,6 +1,5 @@
 package fi.ylihallila.server.storage;
 
-import fi.ylihallila.server.util.Config;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.compress.utils.FileNameUtils;
@@ -61,11 +60,16 @@ public class FlatFile implements StorageProvider {
 
             Files.delete(archivePath);
         } catch (IOException e) {
-            logger.error("Error while saving tile archive to flat file.");
+            logger.error("Error while saving tile archive to flat file.", e);
         }
     }
 
     @Override public String getTilesURI() {
+        // TODO: Check if server is running in secure mode; could also try to update these automatically via some script
         return Config.getString("server.host") + ":" + Config.getString("server.port.insecure") + "/tiles/{id}-level-{level}-tiles/{level}_{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
+    }
+
+    @Override public String getThumbnailURI() {
+        return Config.getString("server.host") + ":" + Config.getString("server.port.insecure") + "/tiles/{id}_thumbnail.jpg";
     }
 }

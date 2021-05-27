@@ -29,4 +29,11 @@ public interface StorageProvider {
      */
     String getTilesURI();
 
+    /**
+     * Returns the URI where the thumbnail is located. Contains placeholders {id}.
+     *
+     * @return string URI with placeholders.
+     */
+    String getThumbnailURI();
+
 }
