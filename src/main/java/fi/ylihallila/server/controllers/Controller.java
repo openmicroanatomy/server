@@ -148,8 +148,15 @@ public class Controller {
 		} else {
 			Workspace workspace = session.find(Workspace.class, id);
 
-			if (workspace != null && workspace.getOwner().getId().equals(user.getOrganization().getId())
+			if (workspace == null) {
+				return false;
+			}
+
+			if (workspace.getOwner().getId().equals(user.getOrganization().getId())
 					&& roles.contains(Roles.MANAGE_PROJECTS)) {
+				hasPermission = true;
+			} else if (workspace.getOwner().getId().equals(user.getId())
+					&& roles.contains(Roles.MANAGE_PERSONAL_PROJECTS)) {
 				hasPermission = true;
 			}
 		}

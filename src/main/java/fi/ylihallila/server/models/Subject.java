@@ -30,7 +30,7 @@ public class Subject {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Workspace workspace;
 
-    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JsonManagedReference
     private List<Project> projects;

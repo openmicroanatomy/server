@@ -4,6 +4,7 @@ import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
 import fi.ylihallila.server.models.*;
+import fi.ylihallila.server.util.Constants;
 import io.javalin.apibuilder.CrudHandler;
 import io.javalin.http.Context;
 import io.javalin.http.ForbiddenResponse;
@@ -14,8 +15,8 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 // TODO: Add support for personal workspaces
 public class WorkspaceController extends Controller implements CrudHandler {
@@ -97,9 +98,16 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		Session session = ctx.use(Session.class);
 
 		// TODO: Remove hidden projects from API for users without write access
-		List<Workspace> workspaces = session.createQuery("from Workspace", Workspace.class).list();
 
-		// TODO: Reimplement personal projects
+		List<Workspace> workspaces = session.createQuery("from Workspace", Workspace.class).stream()
+				.filter(workspace -> !(workspace.getName().contains(Constants.PERSONAL_WORKSPACE_NAME))) // Remove Personal Workspaces
+				.sorted(Comparator.comparing(Workspace::getName))
+				.collect(Collectors.toList());
+
+		if (Authenticator.isLoggedIn(ctx) && Authenticator.hasRoles(ctx, Roles.MANAGE_PERSONAL_PROJECTS)) {
+			User user = Authenticator.getUser(ctx);
+			workspaces.add(user.getPersonalWorkspace());
+		}
 
 		ctx.status(200).json(workspaces);
 	}
@@ -159,7 +167,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 			throw new ForbiddenResponse();
 		}
 
-		if (workspace.getName().contains("Personal Workspace")) {
+		if (workspace.getName().contains(Constants.PERSONAL_WORKSPACE_NAME)) {
 			throw new UnprocessableEntityResponse("Not allowed to rename personal workspaces");
 		}
 

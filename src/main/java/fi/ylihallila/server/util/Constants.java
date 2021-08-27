@@ -2,6 +2,9 @@ package fi.ylihallila.server.util;
 
 public class Constants {
 
+    public final static String PERSONAL_WORKSPACE_NAME = "Personal Workspace";
+    public final static String COPIED_PROJECTS_NAME    = "Copied Projects";
+
     public final static String SLIDE_PROPERTIES_FILE = "slides/%s.properties";
     public final static String PROJECT_FILE_FORMAT   = "projects/%s.json";
     public final static String BACKUP_FILE_FORMAT    = "backups/%s@%s";

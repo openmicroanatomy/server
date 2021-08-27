@@ -3,6 +3,7 @@ package fi.ylihallila.server.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.hibernate.EnumSetType;
+import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.util.PasswordHelper;
 import fi.ylihallila.server.util.Util;
@@ -268,7 +269,7 @@ public class User extends Owner {
             return possibleSubject.get();
         }
 
-        Subject subject = new Subject("Personal Projects", personalWorkspace);
+        Subject subject = new Subject(Constants.COPIED_PROJECTS_NAME, personalWorkspace);
         session.save(subject);
 
         session.getTransaction().commit();

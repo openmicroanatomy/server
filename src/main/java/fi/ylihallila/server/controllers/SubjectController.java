@@ -6,6 +6,7 @@ import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
 import fi.ylihallila.server.models.Subject;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.models.Workspace;
+import fi.ylihallila.server.util.Constants;
 import io.javalin.apibuilder.CrudHandler;
 import io.javalin.http.Context;
 import io.javalin.http.ForbiddenResponse;
@@ -16,6 +17,7 @@ import io.javalin.plugin.openapi.annotations.OpenApiFormParam;
 import io.javalin.plugin.openapi.annotations.OpenApiResponse;
 import org.apache.commons.lang3.NotImplementedException;
 import org.hibernate.Session;
+import org.hibernate.jdbc.Work;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +53,7 @@ public class SubjectController extends Controller implements CrudHandler {
             throw new NotFoundResponse();
         }
 
-        if (!workspace.hasPermission(user)) {
+        if (!(workspace.hasPermission(user))) {
             throw new ForbiddenResponse();
         }
 
@@ -80,7 +82,22 @@ public class SubjectController extends Controller implements CrudHandler {
         Session session = ctx.use(Session.class);
         User user = Authenticator.getUser(ctx);
 
-        Subject subject = getSubject(id, session, user);
+        Subject subject = session.find(Subject.class, id);
+
+        if (subject == null) {
+            throw new NotFoundResponse();
+        }
+
+        if (!(subject.getWorkspace().hasPermission(user))) {
+            throw new ForbiddenResponse();
+        }
+
+        if (subject.getName().equals(Constants.COPIED_PROJECTS_NAME)) {
+            throw new UnprocessableEntityResponse("Not allowed to delete Copied Projects.");
+        }
+
+        // Hibernate requires removing the association prior to deleting the subject from the database.
+        subject.getWorkspace().removeSubject(subject);
 
         session.delete(subject);
 
@@ -105,10 +122,18 @@ public class SubjectController extends Controller implements CrudHandler {
         Session session = ctx.use(Session.class);
         User user = Authenticator.getUser(ctx);
 
-        Subject subject = getSubject(id, session, user);
+        Subject subject = session.find(Subject.class, id);
 
-        if (subject.getName().equals("Copied Projects")) {
-            throw new UnprocessableEntityResponse("Not allowed to rename copied projects.");
+        if (subject == null) {
+            throw new NotFoundResponse();
+        }
+
+        if (!(subject.getWorkspace().hasPermission(user))) {
+            throw new ForbiddenResponse();
+        }
+
+        if (subject.getName().equals(Constants.COPIED_PROJECTS_NAME)) {
+            throw new UnprocessableEntityResponse("Not allowed to rename Copied Projects.");
         }
 
         subject.setName(ctx.formParam("subject-name", subject.getName()));
@@ -126,29 +151,5 @@ public class SubjectController extends Controller implements CrudHandler {
     @OpenApi(ignore = true)
     @Override public void getOne(@NotNull Context ctx, @NotNull String id) {
         throw new NotFoundResponse();
-    }
-
-    /**
-     * Gets a subject and checks that the given user has write permissions for that subject.
-     *
-     * @param id subject id
-     * @param session database session
-     * @param user user who is accessing the data
-     * @return Subject
-     * @throws NotFoundResponse when unknown subject id
-     * @throws ForbiddenResponse when user has no permission for provided session
-     */
-    private Subject getSubject(String id, Session session, User user) {
-        Subject subject = session.find(Subject.class, id);
-
-        if (subject == null) {
-            throw new NotFoundResponse();
-        }
-
-        if (!subject.getWorkspace().hasPermission(user)) {
-            throw new ForbiddenResponse();
-        }
-
-        return subject;
     }
 }

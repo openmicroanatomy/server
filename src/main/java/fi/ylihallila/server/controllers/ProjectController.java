@@ -128,6 +128,9 @@ public class ProjectController extends Controller implements CrudHandler {
 			throw new ForbiddenResponse();
 		}
 
+		// Hibernate requires removing the association prior to deleting the project from the database.
+		project.getSubject().removeProject(project);
+
 		session.delete(project);
 		backupAndDelete(getProjectFile(id));
 
@@ -265,8 +268,6 @@ public class ProjectController extends Controller implements CrudHandler {
 	}
 
 	public void createPersonalProject(Context ctx) {
-//		TODO: Rework. Personal projects now belong to "[Name]'s workspace" with default subject "Personal projects"
-
 		String projectName = ctx.formParam("project-name", String.class).get();
 		String projectId = UUID.randomUUID().toString();
 		User user = Authenticator.getUser(ctx);

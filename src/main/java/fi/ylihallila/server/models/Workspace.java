@@ -122,8 +122,8 @@ public class Workspace {
 			return true;
 		}
 
-		return owner.getId().equals(user.getOrganization().getId())
-				&& user.getRoles().contains(Roles.MANAGE_PROJECTS);
+		return (owner.equals(user.getOrganization()) && user.hasRole(Roles.MANAGE_PROJECTS))
+		    || (owner.equals(user)                   && user.hasRole(Roles.MANAGE_PERSONAL_PROJECTS));
 	}
 
 	public Optional<Subject> findSubject(String name) {
