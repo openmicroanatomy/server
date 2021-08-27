@@ -49,6 +49,7 @@
         <mapping class="fi.ylihallila.server.models.User"/>
         <mapping class="fi.ylihallila.server.models.Organization"/>
         <mapping class="fi.ylihallila.server.models.Owner"/>
+        <mapping class="fi.ylihallila.server.models.PasswordResetRequest"/>
 
     </session-factory>
 </hibernate-configuration>

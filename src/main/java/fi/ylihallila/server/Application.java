@@ -119,6 +119,11 @@ public class Application {
                 get("login", UserController::login,             roles(ANYONE));
                 get("verify", UserController::verify,           roles(ANYONE));
                 get("write/:id", UserController::hasPermission, roles(ANYONE));
+
+                path("password", () -> {
+                    get("set/:token", UserController::reset,    roles(ANYONE));
+                    get("recovery",   UserController::recovery, roles(ANYONE));
+                });
             });
 
             /* Users */

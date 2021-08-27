@@ -1,12 +1,17 @@
 package fi.ylihallila.server.controllers;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.google.common.io.Resources;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
 import fi.ylihallila.server.commons.Roles;
+import fi.ylihallila.server.models.Error;
 import fi.ylihallila.server.models.Organization;
+import fi.ylihallila.server.models.PasswordResetRequest;
 import fi.ylihallila.server.models.User;
-import fi.ylihallila.server.util.Database;
+import fi.ylihallila.server.util.Constants;
+import fi.ylihallila.server.util.Mailer;
+import fi.ylihallila.server.util.Util;
 import io.javalin.apibuilder.CrudHandler;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
@@ -17,6 +22,8 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.mail.MessagingException;
+import javax.persistence.NoResultException;
 import java.util.*;
 
 import static fi.ylihallila.server.util.Config.Config;
@@ -289,6 +296,97 @@ public class UserController extends Controller implements CrudHandler {
 		}
 
 		ctx.status(200).json(user);
+	}
+
+	@OpenApi(
+		summary = "Reset password",
+		responses = {
+			@OpenApiResponse(status = "200"),
+			@OpenApiResponse(status = "404")
+		},
+		pathParams = {
+			@OpenApiParam(name = "token", required = true)
+		},
+		formParams = {
+			@OpenApiFormParam(name = "password"),
+		},
+		tags = { "user" },
+		method = HttpMethod.POST,
+		path = "/api/v0/auth/password/set/:token"
+	)
+	public void reset(Context ctx) {
+		Session session = ctx.use(Session.class);
+		String token    = ctx.pathParam("token", String.class).get();
+		String password = ctx.formParam("password", String.class).get();
+
+		try {
+			PasswordResetRequest pwResetRequest = session.createQuery("from PasswordResetRequest where token = :token", PasswordResetRequest.class)
+					.setParameter("token", token).getSingleResult();
+
+			if (System.currentTimeMillis() > pwResetRequest.getExpiryDate()) {
+				ctx.status(404).json(new Error("Token has expired"));
+				session.delete(pwResetRequest);
+				return;
+			}
+
+			User user = pwResetRequest.getUser();
+			user.hashPassword(password);
+
+			session.delete(pwResetRequest);
+			session.update(user);
+
+			ctx.status(200);
+		} catch (NoResultException e) {
+			ctx.status(404);
+		} catch (Exception e) {
+			ctx.status(500).json(new Error("Internal Server Error while resetting password."));
+			logger.error("Error while resetting password", e);
+		}
+	}
+
+	@OpenApi(
+		summary = "Forgot password, generates a reset password token",
+		responses = {
+			@OpenApiResponse(status = "200"),
+			@OpenApiResponse(status = "404"),
+		},
+		tags = { "user" },
+		method = HttpMethod.GET,
+		path = "/api/v0/auth/password/recovery"
+	)
+	public void recovery(Context ctx) {
+		String email = ctx.formParam("email", String.class).get();
+		Session session = ctx.use(Session.class);
+
+		try {
+			User user = session.createQuery("from User where email = :email", User.class)
+					.setParameter("email", email).getSingleResult();
+
+			PasswordResetRequest passwordResetRequest = new PasswordResetRequest(user);
+			session.save(passwordResetRequest);
+
+			String token = passwordResetRequest.getToken();
+			String host = Config.getString("server.host");
+
+			String body = Util.getResourceFileAsString("email/password_recovery.html")
+							.replace("{{token}}", token)
+							.replace("{{link}}", String.format(Constants.PASSWORD_RESET_URL, host, token));
+
+//			Mailer mailer = new Mailer();
+//			mailer.sendMail(user.getEmail(), "QuPath Edu Password Recovery", body);
+
+			logger.info(body);
+
+			ctx.status(200);
+		} catch (NoResultException e) {
+			ctx.status(404);
+//		} catch (MessagingException e) {
+//			ctx.status(500).json(new Error("Error while sending recovery token email."));
+//			logger.error("Error while sending recovery token email", e);
+		} catch (Exception e) {
+			ctx.status(500).json(new Error("Internal Server Error while generating password recovery token."));
+			logger.error("Error while generating recovery token for {}. {}", email, e);
+		}
 	}
 
 

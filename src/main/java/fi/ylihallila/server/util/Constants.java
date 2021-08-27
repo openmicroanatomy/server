@@ -30,6 +30,8 @@ public class Constants {
     public final static String TEMP_FILE             = "temp/%s";
     public final static String ADMINISTRATORS_FILE   = "administrators.json";
 
+    public final static String PASSWORD_RESET_URL = "%s/api/v0/auth/password/set/%s";
+
     public static boolean SECURE_SERVER;
 
 }

@@ -29,6 +29,7 @@ dependencies {
     implementation 'com.typesafe:config:1.4.1'
     implementation 'com.h2database:h2:1.4.195'
     implementation 'org.hibernate:hibernate-c3p0:5.4.31.Final'
+    implementation 'javax.mail:javax.mail-api:1.6.2'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
     testImplementation 'org.mockito:mockito-core:3.2.4'
     testImplementation 'com.konghq:unirest-java:3.4.00'
