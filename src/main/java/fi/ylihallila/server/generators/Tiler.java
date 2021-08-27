@@ -3,6 +3,7 @@ package fi.ylihallila.server.generators;
 import fi.ylihallila.server.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -20,6 +21,8 @@ public class Tiler implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public Tiler() {
+        MDC.put("process", "tiler");
+
         run();
     }
 

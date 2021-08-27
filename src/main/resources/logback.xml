@@ -2,23 +2,36 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>[%d{dd.MM.YYYY HH:mm:ss}] [%t/%level]: %msg%n</pattern>
         </encoder>
     </appender>
 
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>server.log</file>
+    <appender name="SIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
 
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/archived/app.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <maxFileSize>10MB</maxFileSize>
-            <totalSizeCap>5GB</totalSizeCap>
-            <maxHistory>180</maxHistory>
-        </rollingPolicy>
+        <timeout>365 days</timeout>
+        <maxAppenderCount>2</maxAppenderCount>
 
-        <encoder>
-            <pattern>%date %level [%thread] %msg [%logger{20}.%file:%line] %n</pattern>
-        </encoder>
+        <discriminator>
+            <key>process</key>
+            <defaultValue>server</defaultValue>
+        </discriminator>
+
+        <sift>
+            <appender name="FILE-${process}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <file>${process}.log</file>
+
+                <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                    <fileNamePattern>logs/archived/${process}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                    <maxFileSize>10MB</maxFileSize>
+                    <totalSizeCap>5GB</totalSizeCap>
+                    <maxHistory>180</maxHistory>
+                </rollingPolicy>
+
+                <encoder>
+                    <pattern>%date [%t/%level] [%logger]: %msg%n</pattern>
+                </encoder>
+            </appender>
+        </sift>
     </appender>
 
 <!--    <logger name="fi.ylihallila" level="debug" additivity="false">-->
@@ -27,7 +40,7 @@
 <!--    </logger>-->
 
     <root level="info">
-        <appender-ref ref="FILE" />
+        <appender-ref ref="SIFT" />
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>
