@@ -176,10 +176,10 @@ public class Controller {
 
 	/**
 	 * Tries to test if provided InputStream is a valid image by running it through {@link ImageIO#read(InputStream)}
-	 * and checking that the image is of width >= 400px and height >= 80px.
+	 * and checking that the image is of width >= 400px, height >= 80px and aspect ratio of 5:1.
 	 *
 	 * @param is InputStream of Image
-	 * @return true if an valid image
+	 * @return true if a valid image
 	 */
 	public boolean isValidOrganizationLogo(@NotNull InputStream is) {
 		try {
@@ -189,10 +189,14 @@ public class Controller {
 				return false;
 			}
 
-			return image.getType() == BufferedImage.TYPE_INT_ARGB
-					&& image.getWidth() >= 400 && image.getHeight() >= 80;
+			return image.getColorModel().hasAlpha() &&
+					image.getWidth() >= 400 && image.getHeight() >= 80 && getImageAspectRatio(image) == 5.0;
 		} catch (Exception ignored) {}
 
 		return false;
+	}
+
+	private double getImageAspectRatio(BufferedImage image) {
+		return (double) image.getWidth() / image.getHeight();
 	}
 }

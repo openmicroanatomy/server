@@ -12,12 +12,14 @@ import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
 import io.javalin.http.UploadedFile;
 import io.javalin.plugin.openapi.annotations.*;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.hibernate.Session;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.io.*;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -153,11 +155,23 @@ public class OrganizationController extends Controller implements CrudHandler {
         UploadedFile file = ctx.uploadedFile("logo");
 
         if (file != null) {
-            if (!isValidOrganizationLogo(file.getContent())) {
-                throw new UnprocessableEntityResponse("Provided file was not an PNG file or is too small.");
-            }
+            // We create a ByteArrayOutputStream, because ImageIO reads our InputStream, which means FileUtil
+            // cannot copy the InputStream, because we're already at the end of the InputStream and the default
+            // implementation of InputStream does not support seeking.
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                IOUtils.copy(file.getContent(), baos);
+                byte[] bytes = baos.toByteArray();
 
-            FileUtil.streamToFile(file.getContent(), String.format(Constants.ORGANIZATION_LOGOS, id));
+                if (!isValidOrganizationLogo(new ByteArrayInputStream(bytes))) {
+                    throw new UnprocessableEntityResponse("Provided file was not an PNG file or doesn't need the criteria for logos.");
+                }
+
+                String path = String.format(Constants.ORGANIZATION_LOGOS, id);
+
+                FileUtils.copyInputStreamToFile(new ByteArrayInputStream(bytes), new File(path));
+            } catch (IOException e) {
+                logger.error("Error while saving organization logo", e);
+            }
         }
 
         logger.info("Organization {} ({}) edited by {}", organization.getName(), id, user.getName());
