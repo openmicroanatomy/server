@@ -59,4 +59,8 @@ public class PasswordResetRequest {
     public Long getExpiryDate() {
         return expiryDate;
     }
+
+    public boolean hasExpired() {
+        return System.currentTimeMillis() > getExpiryDate();
+    }
 }

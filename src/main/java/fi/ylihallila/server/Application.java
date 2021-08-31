@@ -74,15 +74,17 @@ public class Application {
         });
     }).start();
 
-    private final OrganizationController OrganizationController = new OrganizationController();
-    private final WorkspaceController    WorkspaceController    = new WorkspaceController();
-    private final ProjectController      ProjectController      = new ProjectController();
-    private final SubjectController      SubjectController      = new SubjectController();
-    private final BackupController       BackupController       = new BackupController();
-    private final ServerController       ServerController       = new ServerController();
-    private final SlideController        SlideController        = new SlideController();
-    private final UserController         UserController         = new UserController();
-    private final FileController         FileController         = new FileController();
+    private final OrganizationController   OrganizationController = new OrganizationController();
+    private final WorkspaceController      WorkspaceController    = new WorkspaceController();
+    private final PasswordController       PasswordController     = new PasswordController();
+    private final ProjectController        ProjectController      = new ProjectController();
+    private final SubjectController        SubjectController      = new SubjectController();
+    private final BackupController         BackupController       = new BackupController();
+    private final ServerController         ServerController       = new ServerController();
+    private final SlideController          SlideController        = new SlideController();
+    private final UserController           UserController         = new UserController();
+    private final FileController           FileController         = new FileController();
+    private final AuthenticationController AuthController         = new AuthenticationController();
 
     public Application() {
         app.routes(() -> path("/api/v0/", () -> {
@@ -115,15 +117,17 @@ public class Application {
 
             /* Authentication */
 
-            path("/auth/", () -> {
-                get("login", UserController::login,             roles(ANYONE));
-                get("verify", UserController::verify,           roles(ANYONE));
-                get("write/:id", UserController::hasPermission, roles(ANYONE));
+            path("auth", () -> {
+                get("login", AuthController::login,             roles(ANYONE));
+                get("verify", AuthController::verify,           roles(ANYONE));
+                get("write/:id", AuthController::hasPermission, roles(ANYONE));
+            });
 
-                path("password", () -> {
-                    get("set/:token", UserController::reset,    roles(ANYONE));
-                    get("recovery",   UserController::recovery, roles(ANYONE));
-                });
+            /* Password Recovery */
+
+            path("password", () -> {
+                post("set/:token", PasswordController::reset,    roles(ANYONE));
+                post("recovery",   PasswordController::recovery, roles(ANYONE));
             });
 
             /* Users */
