@@ -19,8 +19,8 @@ public class Constants {
     public final static Long DEFAULT_MAX_UPLOAD_SIZE = 5 * 1024L * 1024L; // 2 MB
 
     /**
-     * Slides that are pending tiling & upload to <a href="https://docs.csc.fi/data/Allas/">Allas</a>.
-     * These files are scanned regularly by the tiler. (@see Tiler)
+     * Slides that are pending tiling & upload to a {@link fi.ylihallila.server.storage.StorageProvider StorageProvider}.
+     * These files are scanned regularly by the {@link fi.ylihallila.server.generators.Tiler Tiler}
      */
     public final static String PENDING_SLIDES        = "slides/%s.pending";
 

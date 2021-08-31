@@ -7,8 +7,10 @@ import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * Searches the slides directory for slides that are pending upload and submits
@@ -32,6 +34,30 @@ public class Tiler implements Runnable {
 
         try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
             path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
+
+            logger.info("Checking for pending slides ...");
+
+            List<Path> files = Files.list(Path.of(Constants.SLIDES_DIRECTORY))
+                    .filter(p -> p.endsWith(".pending"))
+                    .collect(Collectors.toList());
+
+            if (files.size() > 0) {
+                logger.info("Found " + files.size() + " pending slides, adding to queue.");
+
+                for (Path file : files) {
+                    logger.info("Adding {} to queue.", file.getFileName());
+
+                    executor.submit(() -> {
+                        try {
+                            new TileGenerator(file);
+                        } catch (IOException | InterruptedException e) {
+                            logger.error("Error while generating tiles for {}", file.getFileName(), e);
+                        }
+                    });
+                }
+            } else {
+                logger.info("No pending slides.");
+            }
 
             logger.info("Waiting for slides ...");
 

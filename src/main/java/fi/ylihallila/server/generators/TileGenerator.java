@@ -20,6 +20,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -31,6 +32,13 @@ public class TileGenerator {
 	private final ForkJoinPool executor = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
 
 	private final OpenSlide openSlide;
+
+	/**
+	 * How long should the tile generation process take for one slide.
+	 *
+	 * After the duration specified any remaining tiles are ignored and the generated tiles are uploaded.
+	 */
+	private final long TIMEOUT = Duration.ofMinutes(30).toMillis();
 
 	static {
 		ImageIO.setUseCache(false);
@@ -123,12 +131,15 @@ public class TileGenerator {
 			int tiles = rows * cols;
 
 			synchronized (executor) {
-				while (!executor.isQuiescent() && (System.currentTimeMillis() - start < 300000)) {
+				while (!executor.isQuiescent() && !hasTimedOut(start)) {
 					System.out.print("\rProcessing tiles [L=" + level + "; generated ~" + (tiles - executor.getQueuedSubmissionCount()) +" / ~" + tiles + " tiles]");
 					executor.wait(100);
 				}
 			}
 
+			/* TODO: This might be called while there is still tiles being processed and result in a IOException:
+			    "Stream has already been finished" in TarTileArchive#addTile, caused by TarArchiveOutputStream:342
+			    Probably has to do when processing takes longer than the timeout period. */
 			File archive = tileArchive.save();
 
 			logger.debug("Committing archive to storage");
@@ -179,7 +190,6 @@ public class TileGenerator {
 				color = Color.decode(bg);
 			}
 		} catch (Exception e) {
-			color = null;
 			logger.debug("Unable to find background color: {}", e.getLocalizedMessage());
 		}
 
@@ -241,5 +251,9 @@ public class TileGenerator {
 
 	private int readIntegerProperty(String property) {
 		return Integer.parseInt(openSlide.getProperties().get(property));
+	}
+
+	private boolean hasTimedOut(float startTime) {
+		return (System.currentTimeMillis() - startTime) < TIMEOUT;
 	}
 }
