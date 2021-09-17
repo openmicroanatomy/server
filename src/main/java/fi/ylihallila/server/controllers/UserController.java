@@ -181,7 +181,7 @@ public class UserController extends Controller implements CrudHandler {
 
 		session.update(editedUser);
 
-		ctx.status(200).json(user);
+		ctx.status(200);
 
 		var cleanedFormParamMap = ctx.formParamMap();
 		cleanedFormParamMap.remove("password");

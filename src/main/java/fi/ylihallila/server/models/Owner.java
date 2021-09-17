@@ -1,5 +1,7 @@
 package fi.ylihallila.server.models;
 
+import org.hibernate.annotations.GenericGenerator;
+
 import javax.persistence.*;
 import java.util.Objects;
 
@@ -9,9 +11,15 @@ import java.util.Objects;
 public class Owner {
 
 	@Id
-	private String id;
+	@GeneratedValue(generator = "UUID")
+	@GenericGenerator(
+		name = "UUID",
+		strategy = "org.hibernate.id.UUIDGenerator"
+	)
+	@Column(name = "id", updatable = false, nullable = false)
+	protected String id;
 
-	private String name;
+	protected String name;
 
 	public String getId() {
 		return id;

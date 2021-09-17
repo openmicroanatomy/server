@@ -10,12 +10,6 @@ import static fi.ylihallila.server.util.Config.Config;
 @DiscriminatorValue("Organization")
 public class Organization extends Owner {
 
-	@Id
-	@Column(name = "id", updatable = false, nullable = false)
-	private String id;
-
-	private String name;
-
 	public Organization() {}
 
 	public Organization(String id, String name) {

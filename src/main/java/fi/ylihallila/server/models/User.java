@@ -33,24 +33,6 @@ public class User extends Owner {
     private transient final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
-     * ID is defined as the Azure Active Directory Tenant ID
-     * @see <a href="https://docs.microsoft.com/fi-fi/onedrive/find-your-office-365-tenant-id">Microsoft documentation</a>
-     */
-    @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(
-        name = "UUID",
-        strategy = "org.hibernate.id.UUIDGenerator"
-    )
-    @Column(name = "id", updatable = false, nullable = false)
-    private String id;
-
-    /**
-     * Name of this organization or user, visible in QuPath.
-     */
-    private String name;
-
-    /**
      * Email for this user. Also used to identify user.
      */
     private String email;
@@ -263,7 +245,7 @@ public class User extends Owner {
         session.getTransaction().begin();
 
         // TODO: What happens when the user renames a new subject as `Personal Projects`
-        Optional<Subject> possibleSubject = personalWorkspace.findSubject("Personal Projects");
+        Optional<Subject> possibleSubject = personalWorkspace.findSubject(Constants.COPIED_PROJECTS_NAME);
 
         if (possibleSubject.isPresent()) {
             return possibleSubject.get();
