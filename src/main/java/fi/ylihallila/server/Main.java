@@ -21,7 +21,6 @@ import java.nio.file.Path;
  *      users.json
  *
  *      keystore.jks
- *      Dummy.zip
  *
  *      tiles/
  *          [slide 1]/
