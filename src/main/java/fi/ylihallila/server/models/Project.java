@@ -1,7 +1,6 @@
 package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import fi.ylihallila.server.commons.Roles;
 
 import javax.persistence.*;
 import java.util.UUID;
@@ -122,15 +121,8 @@ public class Project {
 		this.hidden = hidden;
 	}
 
-	public boolean hasPermission(User user) {
-		if (user.hasRole(Roles.ADMIN)) {
-			return true;
-		}
-
-		Owner owner = getSubject().getWorkspace().getOwner();
-
-		return (owner.equals(user)                   && user.hasRole(Roles.MANAGE_PERSONAL_PROJECTS))
-			|| (owner.equals(user.getOrganization()) && user.hasRole(Roles.MANAGE_PROJECTS));
+	public boolean hasWritePermission(User user) {
+		return getSubject().getWorkspace().hasWritePermission(user);
 	}
 
 	@Override

@@ -1,14 +1,20 @@
 package fi.ylihallila.server.controllers;
 
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
 import fi.ylihallila.server.models.*;
 import fi.ylihallila.server.util.Constants;
+import fi.ylihallila.server.jackson.CustomToJsonMapper;
+import fi.ylihallila.server.util.Util;
 import io.javalin.apibuilder.CrudHandler;
 import io.javalin.http.Context;
 import io.javalin.http.ForbiddenResponse;
 import io.javalin.http.NotFoundResponse;
+import io.javalin.http.UnauthorizedResponse;
+import io.javalin.plugin.json.JavalinJson;
 import io.javalin.plugin.openapi.annotations.*;
 import org.hibernate.Session;
 import org.jetbrains.annotations.NotNull;
@@ -34,7 +40,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		}
 	)
 	@Override public void create(@NotNull Context ctx) {
-		Allow(ctx, Roles.MANAGE_PROJECTS);
+		Allow(ctx, Roles.MODERATOR);
 
 		String workspaceName = ctx.formParam("workspace-name", String.class).get();
 		String workspaceId   = UUID.randomUUID().toString();
@@ -46,10 +52,16 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		workspace.setName(workspaceName);
 		workspace.setOwner(user.getOrganization());
 		workspace.setSubjects(Collections.emptyList());
+		workspace.setWritePermissions(List.of(user));
 
 		session.save(workspace);
 
+		var temp = JavalinJson.getToJsonMapper();
+		JavalinJson.setToJsonMapper(new CustomToJsonMapper(user));
+
 		ctx.status(200).json(workspace);
+
+		JavalinJson.setToJsonMapper(temp);
 
 		logger.info("Workspace {} created by {}", workspaceId, user.getName());
 	}
@@ -67,7 +79,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		}
 	)
 	@Override public void delete(@NotNull Context ctx, @NotNull String id) {
-		Allow(ctx, Roles.MANAGE_PROJECTS);
+		Allow(ctx, Roles.MODERATOR);
 
 		Session session = ctx.use(Session.class);
 		User user       = Authenticator.getUser(ctx);
@@ -78,7 +90,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 			throw new NotFoundResponse();
 		}
 
-		if (!(workspace.hasPermission(user))) {
+		if (!(workspace.getOwner().equals(user.getOrganization()))) {
 			throw new ForbiddenResponse();
 		}
 
@@ -96,20 +108,32 @@ public class WorkspaceController extends Controller implements CrudHandler {
 	)
 	@Override public void getAll(@NotNull Context ctx) {
 		Session session = ctx.use(Session.class);
+		User user = Authenticator.getUserOrCreateGuestUser(ctx);
 
-		// TODO: Remove hidden projects from API for users without write access
+		/*
+		 * Projects which doesn't have defined any Read permissions is available to everyone, including guests.
+		 * If the Read permissions has an organization, only _authenticated_ users belonging to that organization
+		 * can view that workspace.
+		 */
+
+		// TODO: Remove hidden projects from API
 
 		List<Workspace> workspaces = session.createQuery("from Workspace", Workspace.class).stream()
-				.filter(workspace -> !(workspace.getName().contains(Constants.PERSONAL_WORKSPACE_NAME))) // Remove Personal Workspaces
+				.filter(workspace -> !(workspace.getName().contains(Constants.PERSONAL_WORKSPACE_NAME))) // Remove all Personal Workspaces
+				.filter(workspace -> workspace.hasReadPermission(user))
 				.sorted(Comparator.comparing(Workspace::getName))
 				.collect(Collectors.toList());
 
-		if (Authenticator.isLoggedIn(ctx) && Authenticator.hasRoles(ctx, Roles.MANAGE_PERSONAL_PROJECTS)) {
-			User user = Authenticator.getUser(ctx);
+		if (Authenticator.isLoggedIn(ctx)) {
 			workspaces.add(user.getPersonalWorkspace());
 		}
 
+		var temp = JavalinJson.getToJsonMapper();
+		JavalinJson.setToJsonMapper(new CustomToJsonMapper(user));
+
 		ctx.status(200).json(workspaces);
+
+		JavalinJson.setToJsonMapper(temp);
 	}
 
 	@OpenApi(
@@ -125,6 +149,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 	)
 	@Override public void getOne(@NotNull Context ctx, @NotNull String id) {
 		Session session = ctx.use(Session.class);
+		User user = Authenticator.getUserOrCreateGuestUser(ctx);
 
 		Workspace workspace = session.find(Workspace.class, id);
 
@@ -132,7 +157,16 @@ public class WorkspaceController extends Controller implements CrudHandler {
 			throw new NotFoundResponse();
 		}
 
+		if (!(workspace.hasReadPermission(user))) {
+			throw new UnauthorizedResponse();
+		}
+
+		var temp = JavalinJson.getToJsonMapper();
+		JavalinJson.setToJsonMapper(new CustomToJsonMapper(user));
+
 		ctx.status(200).json(workspace);
+
+		JavalinJson.setToJsonMapper(temp);
 	}
 
 	@OpenApi(
@@ -152,7 +186,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		}
 	)
 	@Override public void update(@NotNull Context ctx, @NotNull String id) {
-		Allow(ctx, Roles.MANAGE_PROJECTS);
+		Allow(ctx, Roles.ANYONE);
 
 		Session session = ctx.use(Session.class);
 		User user       = Authenticator.getUser(ctx);
@@ -163,7 +197,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 			throw new NotFoundResponse();
 		}
 
-		if (!workspace.hasPermission(user)) {
+		if (!(workspace.hasWritePermission(user))) {
 			throw new ForbiddenResponse();
 		}
 
@@ -173,6 +207,55 @@ public class WorkspaceController extends Controller implements CrudHandler {
 
 		workspace.setName(ctx.formParam("workspace-name", workspace.getName()));
 
+		editWritePermissions(session, workspace, ctx);
+		editReadPermissions(session, workspace, ctx);
+
 		logger.info("Workspace {} edited by {}", id, user.getName());
+	}
+
+	/* Private API */
+
+	/**
+	 * Edit write permissions for a workspace. Looks for <code>write</code> form parameter, which should be a JSON
+	 * array of UUIDs. Each UUID should point to a {@link fi.ylihallila.server.models.Owner}, which is then set to have
+	 * write permissions for the specified <code>workspace</code>.
+	 **/
+	private void editWritePermissions(Session session, Workspace workspace, Context ctx) {
+		if (!(ctx.formParamMap().containsKey("write"))) {
+			return;
+		}
+
+		try {
+			List<String> write = Util.getMapper().readValue(ctx.formParam("write"), new TypeReference<>() {});
+
+			List<Owner> owners = session
+					.byMultipleIds(Owner.class)
+					.multiLoad(write);
+
+			workspace.setWritePermissions(owners);
+		} catch (JacksonException e) {
+			logger.error("Error while parsing JSON", e);
+		}
+	}
+
+	/**
+	 * @see WorkspaceController#editReadPermissions(Session, Workspace, Context)
+	 */
+	private void editReadPermissions(Session session, Workspace workspace, Context ctx) {
+		if (!(ctx.formParamMap().containsKey("read"))) {
+			return;
+		}
+
+		try {
+			List<String> read = Util.getMapper().readValue(ctx.formParam("read"), new TypeReference<>() {});
+
+			List<Owner> owners = session
+					.byMultipleIds(Owner.class)
+					.multiLoad(read);
+
+			workspace.setReadPermissions(owners);
+		} catch (JacksonException e) {
+			logger.error("Error while parsing JSON", e);
+		}
 	}
 }

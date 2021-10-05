@@ -1,6 +1,7 @@
 package fi.ylihallila.server.controllers;
 
 import fi.ylihallila.server.commons.Roles;
+import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.util.Util;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.Backup;
@@ -30,8 +31,14 @@ public class BackupController extends Controller {
         path = "/api/v0/backups"
     )
     public void getAllBackups(Context ctx) throws IOException {
-        Allow(ctx, Roles.MANAGE_PROJECTS);
+        Allow(ctx, Roles.ANYONE);
+        User user = Authenticator.getUser(ctx);
 
+        if (!(user.hasWriteAccessSomewhere())) {
+            throw new UnauthorizedResponse();
+        }
+
+        // TODO: Show only projects the user has write access to
         List<Backup> backups = Util.getBackups(backup -> backup.getType().equals(Backup.BackupType.PROJECT));
 
         ctx.json(backups);
@@ -41,20 +48,24 @@ public class BackupController extends Controller {
         tags = { "backup" },
         summary = "Restore given backup to specified timestamp",
         pathParams = {
-            @OpenApiParam(name = "file", description = "Filename to restore", required = true),
+            @OpenApiParam(name = "id", description = "Project ID to restore", required = true),
             @OpenApiParam(name = "timestamp", description = "UNIX Epoch time", required = true),
         },
         method = HttpMethod.GET,
-        path = "/api/v0/backups/restore/:file/:timestamp"
+        path = "/api/v0/backups/restore/:id/:timestamp"
     )
     public void restore(Context ctx) throws IOException {
-        Allow(ctx, Roles.MANAGE_PROJECTS);
+        Allow(ctx, Roles.ANYONE);
 
-        String filename = ctx.pathParam(":file", String.class).get();
+        String projectId = ctx.pathParam(":id", String.class).get();
         long timestamp = ctx.pathParam(":timestamp", Long.class).get();
 
+        if (!(hasWritePermission(ctx, projectId))) {
+            throw new UnauthorizedResponse();
+        }
+
         List<Backup> backups = Util.getBackups(backup ->
-            backup.getFilename().equalsIgnoreCase(filename) && backup.getTimestamp() == timestamp
+            backup.getFilename().equalsIgnoreCase(projectId) && backup.getTimestamp() == timestamp
         );
 
         if (backups.size() != 1) {
@@ -62,12 +73,8 @@ public class BackupController extends Controller {
         }
 
         Backup backup = backups.get(0);
-
-        if (!hasPermission(ctx, backup.getBaseName())) {
-            throw new UnauthorizedResponse();
-        }
-
         backup.restore();
-        logger.info("Backup {}@{} restored by {}", filename, timestamp, Authenticator.getUsername(ctx).orElse("Unknown"));
+
+        logger.info("Backup {}@{} restored by {}", projectId, timestamp, Authenticator.getUsername(ctx).orElse("Unknown"));
     }
 }

@@ -3,10 +3,7 @@ package fi.ylihallila.server.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.hibernate.EnumSetType;
-import fi.ylihallila.server.util.Constants;
-import fi.ylihallila.server.util.Database;
-import fi.ylihallila.server.util.PasswordHelper;
-import fi.ylihallila.server.util.Util;
+import fi.ylihallila.server.util.*;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.InternalServerErrorResponse;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -23,22 +20,23 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 @Entity
 @TypeDef(name = "enum-set", defaultForType = EnumSet.class, typeClass = EnumSetType.class)
 @DiscriminatorValue("User")
 public class User extends Owner {
 
+    @Transient
+    @JsonIgnore
     private transient final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * Email for this user. Also used to identify user.
      */
-    private String email;
+    protected String email;
 
     /**
-     * Human readable presentation of @var organizationId;
+     * Organization the user belongs to
      */
     @ManyToOne
     @OnDelete(action = OnDeleteAction.CASCADE)
@@ -47,7 +45,7 @@ public class User extends Owner {
     /**
      * If true, this user authenticates via OAuth and has no password.
      */
-    @Column(nullable = true)
+    @Column
     private boolean oauth;
 
     /**
@@ -79,28 +77,13 @@ public class User extends Owner {
         this.organization = organization;
     }
 
-    public void setId(UUID id) {
-        setId(id.toString());
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
+    @Override
     public void setName(String name) {
         if (name.length() >= 3) {
             this.name = name;
         } else {
             throw new BadRequestResponse("Username too short.");
         }
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public String getEmail() {
@@ -189,7 +172,7 @@ public class User extends Owner {
     }
 
     public EnumSet<Roles> getRoles() {
-        return roles;
+        return roles == null ? EnumSet.noneOf(Roles.class) : roles;
     }
 
     public void setRoles(EnumSet<Roles> roles) {
@@ -203,6 +186,23 @@ public class User extends Owner {
      */
     public boolean hasRole(Roles role) {
         return getRoles().contains(role) || getRoles().contains(Roles.ADMIN);
+    }
+
+    @Transient
+    @JsonIgnore
+    public boolean hasWriteAccessSomewhere() {
+        Session session = Database.openSession();
+
+        try {
+            session.getTransaction().begin();
+
+            return session.createQuery("from Workspace w join w.write write where write =: user")
+                    .setParameter("user", this)
+                    .getResultList().size() > 0;
+        } finally {
+            session.getTransaction().commit();
+            session.close();
+        }
     }
 
     /**

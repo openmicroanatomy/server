@@ -1,5 +1,7 @@
 package fi.ylihallila.server.controllers;
 
+import fi.ylihallila.server.authentication.Authenticator;
+import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.util.Constants;
 import io.javalin.http.*;
 import io.javalin.plugin.openapi.annotations.HttpMethod;
@@ -37,6 +39,13 @@ public class FileController extends Controller {
     )
     public void upload(Context ctx) {
         // TODO: Store metadata in database.
+        //       Add logging.
+
+        User user = Authenticator.getUser(ctx);
+
+        if (!(user.hasWriteAccessSomewhere())) {
+            throw new UnauthorizedResponse();
+        }
 
         ctx.header("Access-Control-Allow-Origin", "*");
         ctx.header("Access-Control-Allow-Headers", "Authorization");

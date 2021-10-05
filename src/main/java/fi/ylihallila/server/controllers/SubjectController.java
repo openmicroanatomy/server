@@ -40,7 +40,7 @@ public class SubjectController extends Controller implements CrudHandler {
         }
     )
     @Override public void create(@NotNull Context ctx) {
-        Allow(ctx, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS);
+        Allow(ctx, Roles.ANYONE);
 
         String workspaceId = ctx.formParam("workspace-id", String.class).get();
         String subjectName = ctx.formParam("subject-name", String.class).get();
@@ -53,7 +53,7 @@ public class SubjectController extends Controller implements CrudHandler {
             throw new NotFoundResponse();
         }
 
-        if (!(workspace.hasPermission(user))) {
+        if (!(workspace.hasWritePermission(user))) {
             throw new ForbiddenResponse();
         }
 
@@ -77,7 +77,7 @@ public class SubjectController extends Controller implements CrudHandler {
         }
     )
     @Override public void delete(@NotNull Context ctx, @NotNull String id) {
-        Allow(ctx, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS);
+        Allow(ctx, Roles.ANYONE);
 
         Session session = ctx.use(Session.class);
         User user = Authenticator.getUser(ctx);
@@ -88,7 +88,7 @@ public class SubjectController extends Controller implements CrudHandler {
             throw new NotFoundResponse();
         }
 
-        if (!(subject.getWorkspace().hasPermission(user))) {
+        if (!(subject.getWorkspace().hasWritePermission(user))) {
             throw new ForbiddenResponse();
         }
 
@@ -117,7 +117,7 @@ public class SubjectController extends Controller implements CrudHandler {
         }
     )
     @Override public void update(@NotNull Context ctx, @NotNull String id) {
-        Allow(ctx, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS);
+        Allow(ctx, Roles.ANYONE);
 
         Session session = ctx.use(Session.class);
         User user = Authenticator.getUser(ctx);
@@ -128,7 +128,7 @@ public class SubjectController extends Controller implements CrudHandler {
             throw new NotFoundResponse();
         }
 
-        if (!(subject.getWorkspace().hasPermission(user))) {
+        if (!(subject.getWorkspace().hasWritePermission(user))) {
             throw new ForbiddenResponse();
         }
 

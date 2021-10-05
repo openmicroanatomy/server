@@ -67,7 +67,7 @@ public class BasicAuth implements Auth {
 
             session.getTransaction().commit();
             session.close();
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("Error while registering administrator accounts", e);
         }
     }
@@ -110,7 +110,7 @@ public class BasicAuth implements Auth {
 
         Set<Roles> userRoles = getUserRoles(ctx);
 
-        return permittedRoles.stream().anyMatch(userRoles::contains);
+        return userRoles.contains(Roles.ADMIN) || permittedRoles.stream().anyMatch(userRoles::contains);
     }
 
     @Override

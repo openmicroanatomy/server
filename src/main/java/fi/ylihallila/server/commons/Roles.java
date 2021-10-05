@@ -8,13 +8,10 @@ public enum Roles implements Role {
 
     ANYONE("Anyone"),
     ADMIN("Administrative tasks"),
+    MODERATOR("Moderator tasks"),
 
     MANAGE_USERS("Manage users"),
-
-    MANAGE_SLIDES("Manage slides"),
-
-    MANAGE_PERSONAL_PROJECTS("Manage personal projects"),
-    MANAGE_PROJECTS("Manage projects");
+    MANAGE_SLIDES("Manage slides");
 
     private String description;
 
@@ -22,7 +19,7 @@ public enum Roles implements Role {
         this.description = description;
     }
 
-    private final static Set<Roles> MODIFIABLE_ROLES = Set.of(ADMIN, MANAGE_USERS, MANAGE_SLIDES, MANAGE_PERSONAL_PROJECTS, MANAGE_PROJECTS);
+    private final static Set<Roles> MODIFIABLE_ROLES = Set.of(ADMIN, MODERATOR, MANAGE_USERS, MANAGE_SLIDES);
 
     /**
      * List of roles which can be modified by administrators / users with MANAGE_USERS permission.

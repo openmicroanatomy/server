@@ -6,6 +6,7 @@ import fi.ylihallila.server.authentication.impl.TokenAuth;
 import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
 import fi.ylihallila.server.models.Error;
 import fi.ylihallila.server.models.User;
+import fi.ylihallila.server.util.Guest;
 import io.javalin.core.security.Role;
 import io.javalin.http.*;
 import org.slf4j.Logger;
@@ -68,6 +69,18 @@ public class Authenticator {
 	 */
 	public static User getUser(Context ctx) {
 		return getAuthImpl(ctx).getUser(ctx);
+	}
+
+	/**
+	 * Checks if the user is logged in, if so, then returns the user object.
+	 * If not logged in, generate a guest user object which lacks all permissions and roles.
+	 */
+	public static User getUserOrCreateGuestUser(Context ctx) {
+		if (isLoggedIn(ctx)) {
+			return getUser(ctx);
+		} else {
+			return new Guest.User();
+		}
 	}
 
 	public static Optional<String> getUsername(Context ctx) {

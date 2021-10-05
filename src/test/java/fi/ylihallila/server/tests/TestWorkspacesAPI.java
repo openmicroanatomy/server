@@ -29,10 +29,21 @@ public class TestWorkspacesAPI {
     public void GetAllWorkspaces() {
         var response = Unirest.get(API_URL + "/workspaces").asString();
 
-        assertThat(response.getBody().length())
-                .isEqualTo(JavalinJson.toJson(List.of(DummyDb.WORKSPACE_A, DummyDb.WORKSPACE_B)).length());
+        assertThat(response.getStatus()).isEqualTo(200);
     }
 
+    @Test
+    @Order(1)
+    public void GetAllWorkspacesDifferentWhenLoggedIn() {
+        var response1 = Unirest.get(API_URL + "/workspaces").asString();
+        var response2 = Unirest.get(API_URL + "/workspaces")
+                .basicAuth("teacher@example.com", "teacher")
+                .asString();
+
+        assertThat(response1.getStatus()).isEqualTo(200);
+        assertThat(response2.getStatus()).isEqualTo(200);
+        assertThat(response1).isNotEqualTo(response2);
+    }
 
     @Test
     @Order(1)
@@ -40,9 +51,7 @@ public class TestWorkspacesAPI {
         var response = Unirest.get(API_URL + "/workspaces")
                 .basicAuth("teacher@example.com", "teacher").asString();
 
-        assertThat(response.getBody().length())
-                .isGreaterThan(JavalinJson.toJson(List.of(DummyDb.WORKSPACE_A, DummyDb.WORKSPACE_B)).length());
-        assertThat(response.getBody()).contains("My Projects");
+        assertThat(response.getBody()).contains("Personal Workspace");
     }
 
     @Test
@@ -90,7 +99,7 @@ public class TestWorkspacesAPI {
     @Test
     @Order(3)
     public void EditWorkspaceSuccess() {
-        var response = Unirest.put(API_URL + "/workspaces/" + DummyDb.WORKSPACE_A.getId())
+        var response = Unirest.patch(API_URL + "/workspaces/" + DummyDb.WORKSPACE_A.getId())
                 .basicAuth("teacher@example.com", "teacher")
                 .field("workspace-name", "New Workspace A")
                 .asString();
@@ -101,7 +110,7 @@ public class TestWorkspacesAPI {
     @Test
     @Order(3)
     public void EditWorkspaceFailureNotFound() {
-        var response = Unirest.put(API_URL + "/workspaces/404")
+        var response = Unirest.patch(API_URL + "/workspaces/404")
                 .basicAuth("teacher@example.com", "teacher")
                 .field("workspace-name", "New Workspace A")
                 .asString();
@@ -112,7 +121,7 @@ public class TestWorkspacesAPI {
     @Test
     @Order(3)
     public void EditWorkspaceFailureUnauthorizedNotLoggedIn() {
-        var response = Unirest.put(API_URL + "/workspaces/" + DummyDb.WORKSPACE_A.getId())
+        var response = Unirest.patch(API_URL + "/workspaces/" + DummyDb.WORKSPACE_A.getId())
                 .field("", "")
                 .asString();
 
@@ -122,7 +131,7 @@ public class TestWorkspacesAPI {
     @Test
     @Order(3)
     public void EditWorkspaceFailureUnauthorizedWrongOrganization() {
-        var response = Unirest.put(API_URL + "/workspaces/" + DummyDb.WORKSPACE_B.getId())
+        var response = Unirest.patch(API_URL + "/workspaces/" + DummyDb.WORKSPACE_B.getId())
                 .basicAuth("teacher@example.com", "teacher")
                 .field("workspace-name", "New Workspace B")
                 .asString();

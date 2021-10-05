@@ -1,28 +1,34 @@
 package fi.ylihallila.server.models;
 
-import org.hibernate.annotations.GenericGenerator;
-
 import javax.persistence.*;
 import java.util.Objects;
+import java.util.UUID;
 
 @Entity
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 @DiscriminatorValue("null")
 public class Owner {
 
 	@Id
-	@GeneratedValue(generator = "UUID")
-	@GenericGenerator(
-		name = "UUID",
-		strategy = "org.hibernate.id.UUIDGenerator"
-	)
 	@Column(name = "id", updatable = false, nullable = false)
-	protected String id;
+	public String id;
 
-	protected String name;
+	public String name;
+
+	public void setId(UUID id) {
+		this.setId(id.toString());
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
 
 	public String getId() {
 		return id;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public String getName() {

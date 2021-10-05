@@ -104,9 +104,9 @@ public class TestUserAPI {
     @Test
     @Order(2)
     public void EditUserRolesSuccess() {
-        var response = Unirest.patch(API_URL + "/users/70e99eac-b439-4a73-967e-2d83870b8326")
+        var response = Unirest.patch(API_URL + "/users/" + DummyDb.TEACHER.getId())
                 .basicAuth("admin@example.com", "admin")
-                .field(Roles.MANAGE_PERSONAL_PROJECTS.name(), false)
+                .field(Roles.MANAGE_SLIDES.name(), false)
                 .asString();
 
         assertThat(response.getStatus()).isEqualTo(200);
@@ -115,23 +115,23 @@ public class TestUserAPI {
     @Test
     @Order(3)
     public void UserRolesReallyEdited() {
-        var response = Unirest.get(API_URL + "/users/70e99eac-b439-4a73-967e-2d83870b8326")
+        var response = Unirest.get(API_URL + "/users/" + DummyDb.TEACHER.getId())
                 .basicAuth("admin@example.com", "admin")
                 .asString();
 
-        DummyDb.TEACHER.getRoles().remove(Roles.MANAGE_PERSONAL_PROJECTS);
+        DummyDb.TEACHER.getRoles().remove(Roles.MANAGE_SLIDES);
 
         String JSON = JavalinJson.toJson(DummyDb.TEACHER);
 
         assertThat(response.getBody().length()).isEqualTo(JSON.length());
 
-        DummyDb.TEACHER.getRoles().add(Roles.MANAGE_PERSONAL_PROJECTS);
+        DummyDb.TEACHER.getRoles().add(Roles.MANAGE_SLIDES);
     }
 
     @Test
     @Order(4)
     public void AdminCanMakeAnotherUserAdmin() {
-        var response = Unirest.patch(API_URL + "/users/70e99eac-b439-4a73-967e-2d83870b8326")
+        var response = Unirest.patch(API_URL + "/users/" + DummyDb.TEACHER.getId())
                 .basicAuth("admin@example.com", "admin")
                 .field(Roles.ADMIN.name(), true)
                 .asString();

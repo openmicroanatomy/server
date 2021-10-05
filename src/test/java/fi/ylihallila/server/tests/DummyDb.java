@@ -48,6 +48,13 @@ public class DummyDb {
         session.save(ADMIN);
         session.save(TEACHER);
 
+        WORKSPACE_A.setWritePermissions(List.of(ADMIN, TEACHER));
+        WORKSPACE_B.setWritePermissions(List.of(ADMIN));
+        WORKSPACE_B.setReadPermissions(List.of(ORGANIZATION_B));
+
+        session.update(WORKSPACE_A);
+        session.update(WORKSPACE_B);
+
         session.getTransaction().commit();
         session.close();
     }
@@ -66,7 +73,7 @@ public class DummyDb {
         "70e99eac-b439-4a73-967e-2d83870b8326",
         "Teacher",
         "teacher@example.com",
-        EnumSet.of(Roles.MANAGE_USERS, Roles.MANAGE_SLIDES, Roles.MANAGE_PROJECTS, Roles.MANAGE_PERSONAL_PROJECTS),
+        EnumSet.of(Roles.MANAGE_USERS, Roles.MANAGE_SLIDES, Roles.MODERATOR),
         ORGANIZATION_A
     );
 
@@ -74,7 +81,7 @@ public class DummyDb {
         "aeae48ac-961a-425e-a715-c01205d2e83d",
         "Admin",
         "admin@example.com",
-        EnumSet.of(Roles.MANAGE_USERS, Roles.MANAGE_SLIDES, Roles.MANAGE_PROJECTS, Roles.ADMIN, Roles.MANAGE_PERSONAL_PROJECTS),
+        EnumSet.of(Roles.ADMIN),
         ORGANIZATION_A
     );
 

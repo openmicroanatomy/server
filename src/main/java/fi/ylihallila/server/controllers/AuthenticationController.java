@@ -16,7 +16,7 @@ import static fi.ylihallila.server.util.Config.Config;
 public class AuthenticationController extends Controller {
 
     @OpenApi(
-        summary = "Check if user is authorized to edit given resource. The resource can represent either a workspace or a project.",
+        summary = "Check if user is authorized to edit given resource. The resource can represent either a workspace, subject or a project.",
         pathParams = @OpenApiParam(name = "id", required = true),
         responses = {
             @OpenApiResponse(status = "200", content = @OpenApiContent(from = Boolean.class))
@@ -25,10 +25,26 @@ public class AuthenticationController extends Controller {
         method = HttpMethod.GET,
         path = "/api/v0/auth/write/:id"
     )
-    public void hasPermission(Context ctx) {
+    public void hasWritePermission(Context ctx) {
         String id = ctx.pathParam("id", String.class).get();
 
-        ctx.status(200).json(hasPermission(ctx, id));
+        ctx.status(200).json(hasWritePermission(ctx, id));
+    }
+
+    @OpenApi(
+        summary = "Check if user is authorized to read given resource. The resource can represent either a workspace, subject or a project.",
+        pathParams = @OpenApiParam(name = "id", required = true),
+        responses = {
+            @OpenApiResponse(status = "200", content = @OpenApiContent(from = Boolean.class))
+        },
+        tags = { "authentication" },
+        method = HttpMethod.GET,
+        path = "/api/v0/auth/read/:id"
+    )
+    public void hasReadPermission(Context ctx) {
+        String id = ctx.pathParam("id", String.class).get();
+
+        ctx.status(200).json(hasReadPermission(ctx, id));
     }
 
     /**
@@ -85,10 +101,9 @@ public class AuthenticationController extends Controller {
             user.setName(jwt.getClaim("name").asString());
             user.setEmail(jwt.getClaim("email").asString());
             user.setOrganization(jwt.getClaim("tid").asString());
+            user.setRoles(EnumSet.noneOf(Roles.class));
 
-            if (Config.getBoolean("roles.manage.personal.projects.default")) {
-                user.setRoles(EnumSet.of(Roles.MANAGE_PERSONAL_PROJECTS));
-            }
+           // TODO: Reimplement permissions or config for personal projects
 
             session.save(user);
         }

@@ -46,7 +46,7 @@ public class ProjectController extends Controller implements CrudHandler {
 		}
 	)
 	@Override public void create(@NotNull Context ctx) {
-		Allow(ctx, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS);
+		Allow(ctx, Roles.ANYONE);
 
 		if (ctx.queryParamMap().containsKey("personal")) {
 			createPersonalProject(ctx);
@@ -73,7 +73,7 @@ public class ProjectController extends Controller implements CrudHandler {
 		}
 	)
 	@Override public void update(@NotNull Context ctx, @NotNull String id) {
-		Allow(ctx, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS);
+		Allow(ctx, Roles.ANYONE);
 
 		Session session = ctx.use(Session.class);
 		User user       = Authenticator.getUser(ctx);
@@ -84,7 +84,7 @@ public class ProjectController extends Controller implements CrudHandler {
 			throw new NotFoundResponse();
 		}
 
-		if (!(project.hasPermission(user))) {
+		if (!(project.hasWritePermission(user))) {
 			throw new ForbiddenResponse();
 		}
 
@@ -113,7 +113,7 @@ public class ProjectController extends Controller implements CrudHandler {
 		}
 	)
 	@Override public void delete(@NotNull Context ctx, @NotNull String id) {
-		Allow(ctx, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS);
+		Allow(ctx, Roles.ANYONE);
 
 		Session session = ctx.use(Session.class);
 		User user       = Authenticator.getUser(ctx);
@@ -124,7 +124,7 @@ public class ProjectController extends Controller implements CrudHandler {
 			throw new NotFoundResponse();
 		}
 
-		if (!(project.hasPermission(user))) {
+		if (!(project.hasWritePermission(user))) {
 			throw new ForbiddenResponse();
 		}
 
@@ -208,7 +208,7 @@ public class ProjectController extends Controller implements CrudHandler {
 		path = "/api/v0/projects/:id"
 	)
 	public void uploadProject(Context ctx) throws IOException {
-		Allow(ctx, Roles.MANAGE_PERSONAL_PROJECTS, Roles.MANAGE_PROJECTS);
+		Allow(ctx, Roles.ANYONE);
 
 		String projectData = ctx.formParam("project-data", String.class).get();
 		String id          = ctx.pathParam("id", String.class).get();
@@ -221,7 +221,7 @@ public class ProjectController extends Controller implements CrudHandler {
 			throw new NotFoundResponse();
 		}
 
-		if (!(project.hasPermission(user))) {
+		if (!(project.hasWritePermission(user))) {
 			throw new UnauthorizedResponse();
 		}
 
@@ -251,7 +251,7 @@ public class ProjectController extends Controller implements CrudHandler {
 			throw new NotFoundResponse();
 		}
 
-		if (!subject.getWorkspace().hasPermission(user)) {
+		if (!subject.getWorkspace().hasWritePermission(user)) {
 			throw new UnauthorizedResponse();
 		}
 

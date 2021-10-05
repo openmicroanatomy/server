@@ -1,17 +1,9 @@
 package fi.ylihallila.server.controllers;
 
-import com.auth0.jwt.interfaces.DecodedJWT;
-import com.google.common.io.Resources;
 import fi.ylihallila.server.authentication.Authenticator;
-import fi.ylihallila.server.authentication.impl.TokenAuth;
 import fi.ylihallila.server.commons.Roles;
-import fi.ylihallila.server.models.Error;
 import fi.ylihallila.server.models.Organization;
-import fi.ylihallila.server.models.PasswordResetRequest;
 import fi.ylihallila.server.models.User;
-import fi.ylihallila.server.util.Constants;
-import fi.ylihallila.server.util.Mailer;
-import fi.ylihallila.server.util.Util;
 import io.javalin.apibuilder.CrudHandler;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
@@ -22,11 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.mail.MessagingException;
-import javax.persistence.NoResultException;
 import java.util.*;
-
-import static fi.ylihallila.server.util.Config.Config;
 
 public class UserController extends Controller implements CrudHandler {
 
@@ -41,7 +29,7 @@ public class UserController extends Controller implements CrudHandler {
 		}
 	)
 	@Override public void getAll(@NotNull Context ctx) {
-		Allow(ctx, Roles.MANAGE_USERS);
+		Allow(ctx, Roles.ANYONE);
 
 		Session session = ctx.use(Session.class);
 		User user       = Authenticator.getUser(ctx);
@@ -50,9 +38,14 @@ public class UserController extends Controller implements CrudHandler {
 
 		if (user.hasRole(Roles.ADMIN)) {
 			users = session.createQuery("from User", User.class).list();
-		} else {
+		} else if (user.hasWriteAccessSomewhere()) {
+			// This is checked, because users who are able to edit workspace read/write
+			// permissions need a list of users belonging to the users' organization.
 			users = session.createQuery("from User where organization.id = :id")
-					.setParameter("id", user.getOrganization().getId()).list();
+					.setParameter("id", user.getOrganization().getId())
+					.list();
+		} else {
+			throw new UnauthorizedResponse();
 		}
 
 		ctx.status(200).json(users);
@@ -105,6 +98,7 @@ public class UserController extends Controller implements CrudHandler {
 		newUser.setName(name);
 		newUser.setEmail(email);
 		newUser.hashPassword(password);
+		newUser.setRoles(EnumSet.noneOf(Roles.class));
 
 		if (user.hasRole(Roles.ADMIN) && ctx.formParamMap().containsKey("organization")) {
 			Organization organization = session.find(Organization.class, ctx.formParam("organization", String.class).get());
@@ -116,12 +110,6 @@ public class UserController extends Controller implements CrudHandler {
 			}
 		} else {
 			newUser.setOrganization(user.getOrganization());
-		}
-
-		if (Config.getBoolean("roles.manage.personal.projects.default")) {
-			newUser.setRoles(EnumSet.of(Roles.MANAGE_PERSONAL_PROJECTS));
-		} else {
-			newUser.setRoles(EnumSet.noneOf(Roles.class));
 		}
 
 		session.save(newUser);

@@ -68,16 +68,12 @@ public class TestProjectsAPI {
     public void DownloadProjectSuccess() throws IOException {
         var response = Unirest.get(API_URL + "/projects/" + DummyDb.PROJECT_A.getId()).asBytes();
 
-        Path path = Path.of(String.format(Constants.PROJECT_FILE_FORMAT, DummyDb.PROJECT_A.getId()));
-        String JSON = JavalinJson.toJson(Files.readString(path));
-
-        assertThat(response.getBody().length).isEqualTo(JSON.length());
         assertThat(response.getStatus()).isEqualTo(200);
     }
 
     @Test
     @Order(1)
-    public void DownloadProjectFailure() {
+    public void DownloadProjectNotFound() {
         var response = Unirest.get(API_URL + "/projects/error").asString();
 
         assertThat(response.getStatus()).isEqualTo(404);

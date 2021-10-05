@@ -120,7 +120,8 @@ public class Application {
             path("auth", () -> {
                 get("login", AuthController::login,             roles(ANYONE));
                 get("verify", AuthController::verify,           roles(ANYONE));
-                get("write/:id", AuthController::hasPermission, roles(ANYONE));
+                get("write/:id", AuthController::hasWritePermission, roles(ANYONE));
+                get("read/:id",  AuthController::hasReadPermission,  roles(ANYONE));
             });
 
             /* Password Recovery */
@@ -136,7 +137,7 @@ public class Application {
 
             /* Upload */
 
-            post("upload/ckeditor",                FileController::upload,  roles(MANAGE_PROJECTS));
+            post("upload/ckeditor",                FileController::upload,  roles(ANYONE));
             app.options("/api/v0/upload/ckeditor", FileController::options, roles(ANYONE));
 
             /* Slides */
@@ -155,13 +156,13 @@ public class Application {
 
             /* Subjects */
 
-            crud("/subjects/:id", SubjectController, roles(MANAGE_PROJECTS, MANAGE_PERSONAL_PROJECTS));
+            crud("/subjects/:id", SubjectController, roles(ANYONE));
 
             /* Backups */
             path("backups", () -> {
-                get(BackupController::getAllBackups, roles(MANAGE_PROJECTS));
+                get(BackupController::getAllBackups, roles(ANYONE));
 
-                get("restore/:file/:timestamp", BackupController::restore, roles(MANAGE_PROJECTS));
+                get("restore/:id/:timestamp", BackupController::restore, roles(ANYONE));
             });
 
             /* Organizations */

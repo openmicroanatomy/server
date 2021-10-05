@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Set;
 
 public class Controller {
@@ -114,54 +115,56 @@ public class Controller {
 		}
 	}
 
-	/**
-	 * Checks if the given Context (User) has write permissions to given object by an ID. An ID can represent either a
-	 * workspace or a (personal) project.
-	 *
-	 * @param ctx User context
-	 * @param id Workspace / project ID
-	 * @return True if access to write (=modify), otherwise false.
-	 */
-	public boolean hasPermission(Context ctx, String id) {
-		User user = Authenticator.getUser(ctx);
-		Set<Roles> roles = user.getRoles();
+	protected boolean isAdmin(User user) {
+		return user.hasRole(Roles.ADMIN);
+	}
 
-		if (roles.contains(Roles.ADMIN)) {
+	public boolean hasWritePermission(Context ctx, String id) {
+		User user = Authenticator.getUser(ctx);
+
+		if (isAdmin(user)) {
 			return true;
 		}
 
-		var hasPermission = false;
-
 		Session session = ctx.use(Session.class);
-		Project project = session.find(Project.class, id);
 
-		if (project != null) {
-			Owner owner = project.getSubject().getWorkspace().getOwner();
+		Optional<Workspace> workspace = getWorkspaceById(session, id);
+		return workspace.map(w -> w.hasWritePermission(user)).orElse(false);
+	}
 
-			if (owner.getId().equals(user.getId())
-					&& roles.contains(Roles.MANAGE_PERSONAL_PROJECTS)) {
-				 hasPermission = true;
-			} else if (owner.getId().equals(user.getOrganization().getId())
-					&& roles.contains(Roles.MANAGE_PROJECTS)) {
-				hasPermission = true;
-			}
-		} else {
-			Workspace workspace = session.find(Workspace.class, id);
+	public boolean hasReadPermission(Context ctx, String id) {
+		User user = Authenticator.getUser(ctx);
 
-			if (workspace == null) {
-				return false;
-			}
-
-			if (workspace.getOwner().getId().equals(user.getOrganization().getId())
-					&& roles.contains(Roles.MANAGE_PROJECTS)) {
-				hasPermission = true;
-			} else if (workspace.getOwner().getId().equals(user.getId())
-					&& roles.contains(Roles.MANAGE_PERSONAL_PROJECTS)) {
-				hasPermission = true;
-			}
+		if (isAdmin(user)) {
+			return true;
 		}
 
-		return hasPermission;
+		Session session = ctx.use(Session.class);
+
+		Optional<Workspace> workspace = getWorkspaceById(session, id);
+		return workspace.map(w -> w.hasReadPermission(user)).orElse(false);
+	}
+
+	/**
+	 * Tries to fetch a workspace associated to an ID. The ID can represent a workspace, subject or a project.
+	 */
+	private Optional<Workspace> getWorkspaceById(Session session, String id) {
+		Workspace workspace = session.find(Workspace.class, id);
+		if (workspace != null) {
+			return Optional.of(workspace);
+		}
+
+		Subject subject = session.find(Subject.class, id);
+		if (subject != null) {
+			return Optional.of(subject.getWorkspace());
+		}
+
+		Project project = session.find(Project.class, id);
+		if (project != null) {
+			return Optional.of(project.getSubject().getWorkspace());
+		}
+
+		return Optional.empty();
 	}
 
 	public boolean isImage(@NotNull InputStream is ){

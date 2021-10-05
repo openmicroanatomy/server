@@ -81,8 +81,9 @@ public class TokenAuth implements Auth {
     @Override
     public boolean hasRoles(Context ctx, Set<Role> permittedRoles) {
         DecodedJWT jwt = validate(ctx);
+        Set<Roles> userRoles = getUser(jwt).getRoles();
 
-        return permittedRoles.stream().anyMatch(getUser(jwt).getRoles()::contains);
+        return userRoles.contains(Roles.ADMIN) || permittedRoles.stream().anyMatch(userRoles::contains);
     }
 
     @Override
