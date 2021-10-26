@@ -50,7 +50,7 @@ public class Main {
         } else if (args.length == 2 && args[0].equalsIgnoreCase("--properties")) {
             new PropertiesGenerator(args[1]);
         } else {
-            Constants.SECURE_SERVER = !(args.length == 1 && args[0].equals("--insecure"));
+            Constants.SECURE_SERVER = args.length == 1 && args[0].equals("--secure");
 
             Files.createDirectories(Path.of("projects"));
             Files.createDirectories(Path.of("slides"));
@@ -71,10 +71,10 @@ public class Main {
                 new Application();
             } catch (Exception e) {
                 if (e.getCause() != null && e.getCause().getClass() == IllegalStateException.class) {
-                    logger.info("Add a valid keystore or run in insecure mode with --insecure launch option.");
+                    logger.info("Add a valid keystore to launch the server in secure mode.");
                 }
 
-                logger.error("Launch error", e);
+                logger.error("Error while launching server", e);
             }
         }
     }

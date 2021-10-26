@@ -24,8 +24,7 @@ public class SimpleDebugger {
         logger.debug("Printing all config values");
         logger.debug("=============================================================================");
         logger.debug("server.host: " + Config.getString("server.host"));
-        logger.debug("server.port.secure: " + Config.getInt("server.port.secure"));
-        logger.debug("server.port: " + Config.getInt("server.port.insecure"));
+        logger.debug("server.port: " + Config.getInt("server.port"));
         logger.debug("auth.guest.enabled: " + Config.getString("auth.guest.enabled"));
         logger.debug("auth.simple.enabled: " + Config.getString("auth.simple.enabled"));
         logger.debug("auth.microsoft.enabled: " + Config.getString("auth.microsoft.enabled"));

@@ -44,12 +44,10 @@ public class Application {
         config.server(() -> {
             Server server = new Server();
 
-            // TODO: Allow only secure (production) server in the future.
-
             if (Constants.SECURE_SERVER) {
                 HttpConfiguration httpConfig = new HttpConfiguration();
                 httpConfig.setSecureScheme("https");
-                httpConfig.setSecurePort(Config.getInt("server.port.secure"));
+                httpConfig.setSecurePort(Config.getInt("server.port"));
 
                 SecureRequestCustomizer src = new SecureRequestCustomizer();
                 httpConfig.addCustomizer(src);
@@ -61,12 +59,12 @@ public class Application {
                     new OptionalSslConnectionFactory(sslConnectionFactory, HttpVersion.HTTP_1_1.toString()),
                     sslConnectionFactory,
                     httpConnectionFactory);
-                sslConnector.setPort(Config.getInt("server.port.secure"));
+                sslConnector.setPort(Config.getInt("server.port"));
 
                 server.addConnector(sslConnector);
             } else {
                 ServerConnector connector = new ServerConnector(server);
-                connector.setPort(Config.getInt("server.port.insecure"));
+                connector.setPort(Config.getInt("server.port"));
                 server.addConnector(connector);
             }
 

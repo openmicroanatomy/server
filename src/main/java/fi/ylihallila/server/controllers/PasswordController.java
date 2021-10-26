@@ -95,7 +95,7 @@ public class PasswordController extends Controller {
             session.save(passwordResetRequest);
 
             String token = passwordResetRequest.getToken();
-            String port = Config.getString("server.port.insecure");  // TODO: Secure server
+            String port = Config.getString("server.port");
             String host = Config.getString("server.host");
 
             String body = Util.getResourceFileAsString("email/password_recovery.html")
