@@ -149,7 +149,7 @@ public class SlideController extends Controller implements CrudHandler {
 
 			if (propertiesFile.exists()) {
 				try {
-					data.put("parameters", Util.getMapper().readValue(propertiesFile, Map.class)); // TODO: Rename Properties
+					data.put("properties", Util.getMapper().readValue(propertiesFile, Map.class));
 				} catch (IOException e) {
 					logger.error("Error while trying to get properties for slide {}", slide.getId(), e);
 				}
@@ -302,7 +302,7 @@ public class SlideController extends Controller implements CrudHandler {
 		String id = UUID.randomUUID().toString();
 		User user = Authenticator.getUser(ctx);
 
-		// Add slide to slides.json
+		// Add slide to database
 
 		Session session = ctx.use(Session.class);
 
@@ -312,7 +312,7 @@ public class SlideController extends Controller implements CrudHandler {
 		slide.setOwner(user.getOrganization());
 		session.save(slide);
 
-		// Move slide to slides pending tiling. See Tiler for further processing.
+		// Mark slide as pending tiling. See Tiler for further processing.
 
 		Files.move(
 			Path.of(String.format(Constants.TEMP_FILE, slideName)),
