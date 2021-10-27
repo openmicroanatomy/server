@@ -1,16 +1,22 @@
 package fi.ylihallila.server;
 
+import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.generators.PropertiesGenerator;
 import fi.ylihallila.server.generators.TileGenerator;
 import fi.ylihallila.server.generators.Tiler;
+import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.util.Constants;
+import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.util.SimpleDebugger;
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumSet;
+import java.util.Scanner;
 
 /**
  * Folder structure
@@ -60,12 +66,7 @@ public class Main {
             Files.createDirectories(Path.of("logos"));
             Files.createDirectories(Path.of("uploads"));
 
-            /*
-             * TODO:
-             *  * Copy Dummy.zip from resources to disk
-             *  * Add possibility to specify domain & port
-             *  * Confirm that database isn't locked.
-             */
+            preflight();
 
             try {
                 new Application();
@@ -76,6 +77,86 @@ public class Main {
 
                 logger.error("Error while launching server", e);
             }
+        }
+    }
+
+    /**
+     * A series of checks to validate that the server is ready to run.
+     */
+    private static void preflight() {
+        checkDatabaseConnection();
+
+        createAdministratorAccountIfOneDoesNotExist();
+    }
+
+    private static void checkDatabaseConnection() {
+        try {
+            Database.openSession().close();
+        } catch (Exception e) {
+            logger.error("Error while opening database connection -- cannot continue, exiting", e);
+            System.exit(0);
+        }
+    }
+
+    private static void createAdministratorAccountIfOneDoesNotExist() {
+        if (Files.exists(Path.of(Constants.ADMINISTRATORS_FILE))) {
+            return;
+        }
+
+        System.out.println("================================================================");
+        System.out.println("Missing administrators file, creating a new one ...");
+        System.out.println("If you believe this is an error, then stop the server and");
+        System.out.println("confirm that the administrators.json file exist and is readable.");
+        System.out.println("================================================================");
+
+        /* User details */
+
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Email: ");
+        String email = scanner.nextLine();
+
+        System.out.print("Name: ");
+        String name = scanner.nextLine();
+
+        String password, repeatPassword;
+
+        do {
+            System.out.print("Password: ");
+            password = scanner.nextLine();
+
+            System.out.print("Repeat password: ");
+            repeatPassword = scanner.nextLine();
+
+            if (!(password.equals(repeatPassword))) {
+                logger.error("Passwords do not match, try again ...");
+            }
+        } while (!(password.equals(repeatPassword)));
+
+
+        try {
+            User user = new User();
+            user.setEmail(email);
+            user.setName(name);
+            user.hashPassword(password);
+            user.setRoles(EnumSet.of(Roles.ADMIN));
+
+            Session session = Database.openSession();
+            session.beginTransaction();
+
+            session.save(user);
+
+            session.getTransaction().commit();
+            session.close();
+
+            System.out.println("================================================================");
+            System.out.println("Administrator account created.");
+            System.out.println("Please log-in to your account and create the first organization.");
+            System.out.println("================================================================");
+        } catch (Exception e) {
+            System.err.println("Error while creating administrator account -- cannot continue, exiting");
+            e.printStackTrace();
+            System.exit(0);
         }
     }
 }
