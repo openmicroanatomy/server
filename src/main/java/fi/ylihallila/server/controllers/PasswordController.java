@@ -73,8 +73,7 @@ public class PasswordController extends Controller {
     @OpenApi(
         summary = "Used to send a password recovery email (including link and recovery token) to the user.",
         responses = {
-            @OpenApiResponse(status = "200"),
-            @OpenApiResponse(status = "404", description = "User not found"),
+            @OpenApiResponse(status = "200")
         },
         formParams = {
             @OpenApiFormParam(name = "email", required = true)
@@ -109,7 +108,7 @@ public class PasswordController extends Controller {
 
             ctx.status(200);
         } catch (NoResultException e) {
-            ctx.status(404);
+            ctx.status(200);
 //		} catch (MessagingException e) {
 //			ctx.status(500).json(new Error("Error while sending recovery token email."));
 //			logger.error("Error while sending recovery token email", e);
