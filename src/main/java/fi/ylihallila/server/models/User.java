@@ -2,14 +2,12 @@ package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fi.ylihallila.server.commons.Roles;
-import fi.ylihallila.server.hibernate.EnumSetType;
 import fi.ylihallila.server.util.*;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.InternalServerErrorResponse;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.hibernate.Session;
 import org.hibernate.annotations.*;
-import org.hibernate.annotations.Parameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,12 +15,11 @@ import javax.persistence.Entity;
 import javax.persistence.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Entity
-@TypeDef(name = "enum-set", defaultForType = EnumSet.class, typeClass = EnumSetType.class)
 @DiscriminatorValue("User")
 public class User extends Owner {
 
@@ -58,18 +55,12 @@ public class User extends Owner {
     /**
      * Roles for this user.
      */
-    @Column(length = 20)
-    @Type(type = "enum-set", parameters = {
-        @Parameter(
-            name = "enumClass",
-            value = "fi.ylihallila.server.commons.Roles"
-        )
-    })
-    private EnumSet<Roles> roles;
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<Roles> roles;
 
     public User() {}
 
-    public User(String id, String name, String email, EnumSet<Roles> roles, Organization organization) {
+    public User(String id, String name, String email, Set<Roles> roles, Organization organization) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -171,11 +162,11 @@ public class User extends Owner {
         }
     }
 
-    public EnumSet<Roles> getRoles() {
-        return roles == null ? EnumSet.noneOf(Roles.class) : roles;
+    public Set<Roles> getRoles() {
+        return roles == null ? Set.of() : roles;
     }
 
-    public void setRoles(EnumSet<Roles> roles) {
+    public void setRoles(Set<Roles> roles) {
         this.roles = roles;
     }
 
@@ -258,6 +249,32 @@ public class User extends Owner {
         session.close();
 
         return subject;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        User user = (User) o;
+
+        if (oauth != user.oauth) return false;
+        if (!email.equals(user.email)) return false;
+        if (!organization.equals(user.organization)) return false;
+        if (!password.equals(user.password)) return false;
+        return roles.equals(user.roles);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + email.hashCode();
+        result = 31 * result + organization.hashCode();
+        result = 31 * result + (oauth ? 1 : 0);
+        result = 31 * result + password.hashCode();
+        result = 31 * result + roles.hashCode();
+        return result;
     }
 
     @Override

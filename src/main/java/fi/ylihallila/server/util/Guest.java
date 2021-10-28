@@ -1,8 +1,6 @@
 package fi.ylihallila.server.util;
 
-import fi.ylihallila.server.commons.Roles;
-
-import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -15,7 +13,7 @@ public class Guest {
     public static class User extends fi.ylihallila.server.models.User {
 
         public User() {
-            super(UUID.randomUUID().toString(), "Guest", "guest@localhost", EnumSet.noneOf(Roles.class), new Guest.Organization());
+            super(UUID.randomUUID().toString(), "Guest", "guest@localhost", Set.of(), new Guest.Organization());
         }
 
         @Override

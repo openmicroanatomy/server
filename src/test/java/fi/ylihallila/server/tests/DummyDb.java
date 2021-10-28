@@ -5,7 +5,7 @@ import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.models.*;
 import org.hibernate.Session;
 
-import java.util.EnumSet;
+import java.util.Set;
 import java.util.List;
 
 /**
@@ -73,7 +73,7 @@ public class DummyDb {
         "70e99eac-b439-4a73-967e-2d83870b8326",
         "Teacher",
         "teacher@example.com",
-        EnumSet.of(Roles.MANAGE_USERS, Roles.MANAGE_SLIDES, Roles.MODERATOR),
+        Set.of(Roles.MANAGE_USERS, Roles.MANAGE_SLIDES, Roles.MODERATOR),
         ORGANIZATION_A
     );
 
@@ -81,7 +81,7 @@ public class DummyDb {
         "aeae48ac-961a-425e-a715-c01205d2e83d",
         "Admin",
         "admin@example.com",
-        EnumSet.of(Roles.ADMIN),
+        Set.of(Roles.ADMIN),
         ORGANIZATION_A
     );
 

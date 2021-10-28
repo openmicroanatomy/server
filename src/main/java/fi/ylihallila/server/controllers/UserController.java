@@ -98,7 +98,7 @@ public class UserController extends Controller implements CrudHandler {
 		newUser.setName(name);
 		newUser.setEmail(email);
 		newUser.hashPassword(password);
-		newUser.setRoles(EnumSet.noneOf(Roles.class));
+		newUser.setRoles(Set.of());
 
 		if (user.hasRole(Roles.ADMIN) && ctx.formParamMap().containsKey("organization")) {
 			Organization organization = session.find(Organization.class, ctx.formParam("organization", String.class).get());
@@ -255,7 +255,7 @@ public class UserController extends Controller implements CrudHandler {
 	 * This method checks only for the admin role; rest is left to the caller.
 	 */
 	private void editRoles(User user, User editedUser, Context ctx) {
-		EnumSet<Roles> roles = editedUser.getRoles();
+		Set<Roles> roles = editedUser.getRoles();
 
 		for (Roles role : Roles.getModifiableRoles()) {
 			if (ctx.formParamMap().containsKey(role.name())) {
@@ -274,7 +274,7 @@ public class UserController extends Controller implements CrudHandler {
 			}
 		}
 
-		editedUser.setRoles(roles);
+		editedUser.setRoles(Set.copyOf(roles));
 	}
 
 	/**

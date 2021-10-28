@@ -3,15 +3,12 @@ package fi.ylihallila.server.controllers;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.authentication.impl.TokenAuth;
-import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.models.User;
 import io.javalin.http.Context;
 import io.javalin.plugin.openapi.annotations.*;
 import org.hibernate.Session;
 
-import java.util.EnumSet;
-
-import static fi.ylihallila.server.util.Config.Config;
+import java.util.Set;
 
 public class AuthenticationController extends Controller {
 
@@ -101,7 +98,7 @@ public class AuthenticationController extends Controller {
             user.setName(jwt.getClaim("name").asString());
             user.setEmail(jwt.getClaim("email").asString());
             user.setOrganization(jwt.getClaim("tid").asString());
-            user.setRoles(EnumSet.noneOf(Roles.class));
+            user.setRoles(Set.of());
 
            // TODO: Reimplement permissions or config for personal projects
 

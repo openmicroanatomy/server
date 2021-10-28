@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.EnumSet;
+import java.util.Set;
 import java.util.Scanner;
 
 /**
@@ -139,7 +139,7 @@ public class Main {
             user.setEmail(email);
             user.setName(name);
             user.hashPassword(password);
-            user.setRoles(EnumSet.of(Roles.ADMIN));
+            user.setRoles(Set.of(Roles.ADMIN));
 
             Session session = Database.openSession();
             session.beginTransaction();

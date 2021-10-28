@@ -20,10 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.persistence.NoResultException;
 import javax.persistence.NonUniqueResultException;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -60,7 +58,7 @@ public class BasicAuth implements Auth {
                 user.setEmail(data.get("email").getAsString());
                 user.hashPassword(data.get("password").getAsString());
                 user.setOAuth(false);
-                user.setRoles(EnumSet.copyOf(roles));
+                user.setRoles(Set.copyOf(roles));
 
                 session.saveOrUpdate(user);
             }
