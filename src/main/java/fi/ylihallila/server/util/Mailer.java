@@ -15,7 +15,7 @@ public class Mailer {
         prop.put("mail.smtp.auth", true);
         prop.put("mail.smtp.starttls.enable", Config.getBoolean("smtp.tls"));
         prop.put("mail.smtp.host", Config.getString("smtp.host"));
-        prop.put("mail.smtp.port", Config.getInt("smpt.port"));
+        prop.put("mail.smtp.port", Config.getInt("smtp.port"));
         prop.put("mail.smtp.ssl.trust", Config.getString("smtp.ssl.trust"));
 
         this.session = Session.getInstance(prop, new Authenticator() {

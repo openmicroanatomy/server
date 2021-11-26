@@ -1,9 +1,8 @@
 package fi.ylihallila.server.controllers;
 
-import fi.ylihallila.server.models.Error;
 import fi.ylihallila.server.models.PasswordResetRequest;
 import fi.ylihallila.server.models.User;
-import fi.ylihallila.server.util.Constants;
+import fi.ylihallila.server.util.Mailer;
 import fi.ylihallila.server.util.Util;
 import io.javalin.http.Context;
 import io.javalin.http.InternalServerErrorResponse;
@@ -13,9 +12,8 @@ import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.mail.MessagingException;
 import javax.persistence.NoResultException;
-
-import static fi.ylihallila.server.util.Config.Config;
 
 public class PasswordController extends Controller {
 
@@ -87,33 +85,34 @@ public class PasswordController extends Controller {
         Session session = ctx.use(Session.class);
 
         try {
-            User user = session.createQuery("from User where email = :email", User.class)
-                    .setParameter("email", email).getSingleResult();
+            User user = session
+                    .createQuery("from User where email = :email", User.class)
+                    .setParameter("email", email)
+                    .getSingleResult();
 
             PasswordResetRequest passwordResetRequest = new PasswordResetRequest(user);
             session.save(passwordResetRequest);
 
             String token = passwordResetRequest.getToken();
-            String host = Config.getString("server.host");
 
             String body = Util.getResourceFileAsString("email/password_recovery.html")
                     .replace("{{token}}", token)
-                    .replace("{{link}}", String.format(Constants.PASSWORD_RESET_URL, host, token));
+                    .replace("{{name}}", user.getName());
 
-//			Mailer mailer = new Mailer();
-//			mailer.sendMail(user.getEmail(), "QuPath Edu Password Recovery", body);
-
-            logger.info(body);
+			Mailer mailer = new Mailer();
+			mailer.sendMail(user.getEmail(), "QuPath Edu Password Recovery", body);
 
             ctx.status(200);
         } catch (NoResultException e) {
             ctx.status(200);
-//		} catch (MessagingException e) {
-//			ctx.status(500).json(new Error("Error while sending recovery token email."));
-//			logger.error("Error while sending recovery token email", e);
+		} catch (MessagingException e) {
+			logger.error("Error while sending recovery token email", e);
+
+            throw new InternalServerErrorResponse("Error while sending recovery token email.");
         } catch (Exception e) {
-            ctx.status(500).json(new Error("Internal Server Error while generating password recovery token."));
             logger.error("Error while generating recovery token for {}. {}", email, e);
+
+            throw new InternalServerErrorResponse("Error while generating password recovery token.");
         }
     }
 }
