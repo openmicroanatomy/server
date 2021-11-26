@@ -3,6 +3,7 @@ package fi.ylihallila.server.controllers;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
+import fi.ylihallila.server.jackson.CustomToJsonMapper;
 import fi.ylihallila.server.models.Subject;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.models.Workspace;
@@ -11,6 +12,7 @@ import io.javalin.apibuilder.CrudHandler;
 import io.javalin.http.Context;
 import io.javalin.http.ForbiddenResponse;
 import io.javalin.http.NotFoundResponse;
+import io.javalin.plugin.json.JavalinJson;
 import io.javalin.plugin.openapi.annotations.OpenApi;
 import io.javalin.plugin.openapi.annotations.OpenApiContent;
 import io.javalin.plugin.openapi.annotations.OpenApiFormParam;
@@ -60,7 +62,12 @@ public class SubjectController extends Controller implements CrudHandler {
         Subject subject = new Subject(subjectName, workspace);
         workspace.addSubject(subject);
 
+        var temp = JavalinJson.getToJsonMapper();
+        JavalinJson.setToJsonMapper(new CustomToJsonMapper(user));
+
         ctx.status(201).json(subject);
+
+        JavalinJson.setToJsonMapper(temp);
 
         logger.info("Subject {} [Workspace: {}] created by {}", subjectName, workspace.getName(), Authenticator.getUsername(ctx).orElse("Unknown"));
     }
@@ -101,7 +108,7 @@ public class SubjectController extends Controller implements CrudHandler {
 
         session.delete(subject);
 
-        logger.info("Subject {} deleted by {}", id, user.getName());
+        logger.info("Subject {} ({}) deleted by {}", subject.getName(), id, user.getName());
     }
 
     @OpenApi(
@@ -138,7 +145,12 @@ public class SubjectController extends Controller implements CrudHandler {
 
         subject.setName(ctx.formParam("subject-name", subject.getName()));
 
+        var temp = JavalinJson.getToJsonMapper();
+        JavalinJson.setToJsonMapper(new CustomToJsonMapper(user));
+
         ctx.status(200).json(subject);
+
+        JavalinJson.setToJsonMapper(temp);
 
         logger.info("Subject {} edited by {}", id, user.getName());
     }
