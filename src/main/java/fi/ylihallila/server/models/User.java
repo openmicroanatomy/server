@@ -139,7 +139,7 @@ public class User extends Owner {
         return password;
     }
 
-    private void setPassword(String password) {
+    protected void setPassword(String password) {
         this.password = password;
     }
 
@@ -260,20 +260,20 @@ public class User extends Owner {
         User user = (User) o;
 
         if (oauth != user.oauth) return false;
-        if (!email.equals(user.email)) return false;
-        if (!organization.equals(user.organization)) return false;
-        if (!password.equals(user.password)) return false;
-        return roles.equals(user.roles);
+        if (!Objects.equals(email, user.email)) return false;
+        if (!Objects.equals(organization, user.organization)) return false;
+        if (!Objects.equals(password, user.password)) return false;
+        return Objects.equals(roles, user.roles);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + email.hashCode();
-        result = 31 * result + organization.hashCode();
+        result = 31 * result + (email != null ? email.hashCode() : 0);
+        result = 31 * result + (organization != null ? organization.hashCode() : 0);
         result = 31 * result + (oauth ? 1 : 0);
-        result = 31 * result + password.hashCode();
-        result = 31 * result + roles.hashCode();
+        result = 31 * result + (password != null ? password.hashCode() : 0);
+        result = 31 * result + (roles != null ? roles.hashCode() : 0);
         return result;
     }
 
