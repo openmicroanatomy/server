@@ -14,7 +14,7 @@ public class Constants {
     public final static String ORGANIZATION_LOGOS    = "logos/%s.png";
 
     public final static String EDITOR_UPLOADS_FOLDER = "uploads";
-    public final static String EDITOR_UPLOADS_URL    = "%s:%s/" + EDITOR_UPLOADS_FOLDER + "/%s";
+    public final static String EDITOR_UPLOADS_URL    = "%s/" + EDITOR_UPLOADS_FOLDER + "/%s";
 
     public final static Long DEFAULT_MAX_UPLOAD_SIZE = 5 * 1024L * 1024L; // 2 MB
 
@@ -30,8 +30,11 @@ public class Constants {
     public final static String TEMP_FILE             = "temp/%s";
     public final static String ADMINISTRATORS_FILE   = "administrators.json";
 
-    public final static String PASSWORD_RESET_URL = "%s:%s/api/v0/auth/password/set/%s";
+    public final static String PASSWORD_RESET_URL = "%s/api/v0/auth/password/set/%s";
 
-    public static boolean SECURE_SERVER;
+    /* The following constants are set at runtime during server launch */
+
+    public static boolean ENABLE_SSL;
+    public static int     SERVER_PORT;
 
 }

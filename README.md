@@ -11,17 +11,15 @@
 
 Run `gradlew build -x test`
 
-_Tests should be skipped as they're pending a rewrite and are not guaranteed to be accurate_.
-
 ## 🏃‍♂️ Running
 
 ### Server
 
-`java -jar <jar> --insecure`
+`java -jar <jar> [-port <port>]`
 
-Edit the config at `application.conf`, which is generated after the server runs for the first time.
+On your first startup, you'll be prompted to create the initial administrator account. After creating the account, stop the server, edit the `application.conf` which was generated and restart the server.
 
-See the wiki for instructions for setting up the configuration, and an SSL certificate.
+See the [wiki](#) for instructions for setting up the configuration, reverse proxies / SSL certificate.
 
 ---
 

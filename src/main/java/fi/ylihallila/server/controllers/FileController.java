@@ -73,7 +73,6 @@ public class FileController extends Controller {
             data.put("url",
                 String.format(Constants.EDITOR_UPLOADS_URL,
                     Config.getString("server.host"),
-                    Config.getString("server.port"),
                     fileName
                 )
             );

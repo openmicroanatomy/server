@@ -23,7 +23,7 @@ public class Organization extends Owner {
 	}
 
 	public String getLogoUrl() {
-		return Config.getString("server.host") + ":" + Config.getString("server.port") + "/logos/" + id + ".png";
+		return Config.getString("server.host") + "/logos/" + id + ".png";
 	}
 
 	@Override

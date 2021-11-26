@@ -5,6 +5,7 @@ import fi.ylihallila.server.generators.PropertiesGenerator;
 import fi.ylihallila.server.generators.TileGenerator;
 import fi.ylihallila.server.generators.Tiler;
 import fi.ylihallila.server.models.User;
+import fi.ylihallila.server.util.CommandLineParser;
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.util.SimpleDebugger;
@@ -18,30 +19,6 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.Scanner;
 
-/**
- * Folder structure
- *
- *  /
- *
- *      server.jar
- *      users.json
- *
- *      keystore.jks
- *
- *      tiles/
- *          [slide 1]/
- *              [level]/[tileX]_[tileY]_[width]_[height].jpg
- *          [slide 2]/
- *  *           [level]/[tileX]_[tileY]_[width]_[height].jpg
- *      projects/
- *          [project 1].zip
- *          [project 2].zip
- *      slides/
- *          [slide 1].properties
- *          [slide 2].properties
- *      backups/
- *          [file].[timestamp]
- */
 public class Main {
 
     private static Logger logger = LoggerFactory.getLogger(Main.class);
@@ -56,7 +33,10 @@ public class Main {
         } else if (args.length == 2 && args[0].equalsIgnoreCase("--properties")) {
             new PropertiesGenerator(args[1]);
         } else {
-            Constants.SECURE_SERVER = args.length == 1 && args[0].equals("--secure");
+            CommandLineParser parser = new CommandLineParser(args);
+
+            Constants.SERVER_PORT = parser.hasArgument("port") ? parser.getInt("port") : 7777; // Default port 7777
+            Constants.ENABLE_SSL  = parser.hasFlag("secure");
 
             Files.createDirectories(Path.of("projects"));
             Files.createDirectories(Path.of("slides"));

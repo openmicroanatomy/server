@@ -65,10 +65,10 @@ public class FlatFile implements StorageProvider {
     }
 
     @Override public String getTilesURI() {
-        return Config.getString("server.host") + ":" + Config.getString("server.port") + "/tiles/{id}-level-{level}-tiles/{level}_{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
+        return Config.getString("server.host") + "/tiles/{id}-level-{level}-tiles/{level}_{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
     }
 
     @Override public String getThumbnailURI() {
-        return Config.getString("server.host") + ":" + Config.getString("server.port") + "/tiles/{id}_thumbnail.jpg";
+        return Config.getString("server.host") + "/tiles/{id}_thumbnail.jpg";
     }
 }

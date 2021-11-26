@@ -94,12 +94,11 @@ public class PasswordController extends Controller {
             session.save(passwordResetRequest);
 
             String token = passwordResetRequest.getToken();
-            String port = Config.getString("server.port");
             String host = Config.getString("server.host");
 
             String body = Util.getResourceFileAsString("email/password_recovery.html")
                     .replace("{{token}}", token)
-                    .replace("{{link}}", String.format(Constants.PASSWORD_RESET_URL, host, port, token));
+                    .replace("{{link}}", String.format(Constants.PASSWORD_RESET_URL, host, token));
 
 //			Mailer mailer = new Mailer();
 //			mailer.sendMail(user.getEmail(), "QuPath Edu Password Recovery", body);

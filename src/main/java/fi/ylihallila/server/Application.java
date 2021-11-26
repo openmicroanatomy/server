@@ -44,10 +44,12 @@ public class Application {
         config.server(() -> {
             Server server = new Server();
 
-            if (Constants.SECURE_SERVER) {
+            // Built-in SSL is not supported: use at your own risk!
+            // Set up a reverse proxy with nginx or Apache if possible.
+            if (Constants.ENABLE_SSL) {
                 HttpConfiguration httpConfig = new HttpConfiguration();
                 httpConfig.setSecureScheme("https");
-                httpConfig.setSecurePort(Config.getInt("server.port"));
+                httpConfig.setSecurePort(Constants.SERVER_PORT);
 
                 SecureRequestCustomizer src = new SecureRequestCustomizer();
                 httpConfig.addCustomizer(src);
@@ -59,12 +61,12 @@ public class Application {
                     new OptionalSslConnectionFactory(sslConnectionFactory, HttpVersion.HTTP_1_1.toString()),
                     sslConnectionFactory,
                     httpConnectionFactory);
-                sslConnector.setPort(Config.getInt("server.port"));
+                sslConnector.setPort(Constants.SERVER_PORT);
 
                 server.addConnector(sslConnector);
             } else {
                 ServerConnector connector = new ServerConnector(server);
-                connector.setPort(Config.getInt("server.port"));
+                connector.setPort(Constants.SERVER_PORT);
                 server.addConnector(connector);
             }
 
