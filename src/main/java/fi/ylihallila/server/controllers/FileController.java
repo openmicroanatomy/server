@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
+import java.io.InputStream;
 import java.util.Map;
 import java.util.UUID;
 
@@ -54,28 +54,33 @@ public class FileController extends Controller {
             UploadedFile file = ctx.uploadedFile("upload");
 
             if (file == null) {
-                ctx.status(422).json(getJsonErrorMessage("Image not uploaded")); return;
+                ctx.status(422).json(getJsonErrorMessage("Image not uploaded"));
+                return;
             }
 
-            if (!isImage(file.getContent())) {
-                ctx.status(422).json(getJsonErrorMessage("Provided file is not an valid image")); return;
+            // isImage() reads the InputStream so our read head is at the end.
+            // We mark the beginning here and later reset it to the beginning before copying it to a file.
+            InputStream image = file.getContent();
+            image.mark(0);
+
+            if (!isImage(image)) {
+                ctx.status(422).json(getJsonErrorMessage("Provided file is not an valid image"));
+                return;
             }
 
             if (file.getSize() > getMaxUploadSizeBytes()) {
-                ctx.status(422).json(getJsonErrorMessage("Image too large. Max size " + getMaxUploadSizeHumanReadable())); return;
+                ctx.status(422).json(getJsonErrorMessage("Image too large. Max size " + getMaxUploadSizeHumanReadable()));
+                return;
             }
 
             String fileName = UUID.randomUUID() + file.getExtension();
 
-            FileUtils.copyInputStreamToFile(file.getContent(), new File(Constants.EDITOR_UPLOADS_FOLDER, fileName));
+            image.reset();
 
-            Map<String, Object> data = new HashMap<>();
-            data.put("url",
-                String.format(Constants.EDITOR_UPLOADS_URL,
-                    Config.getString("server.host"),
-                    fileName
-                )
-            );
+            FileUtils.copyInputStreamToFile(image, new File(Constants.EDITOR_UPLOADS_FOLDER, fileName));
+
+            String url = String.format(Constants.EDITOR_UPLOADS_URL, Config.getString("server.host"), fileName);
+            var data = Map.of("url", url);
 
             ctx.status(200).json(data);
         } catch (IOException e) {
