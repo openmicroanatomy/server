@@ -5,8 +5,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-@DiscriminatorValue("null")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class Owner {
 
 	@Id
