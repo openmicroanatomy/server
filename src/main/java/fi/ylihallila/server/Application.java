@@ -87,6 +87,8 @@ public class Application {
     private final AuthenticationController AuthController         = new AuthenticationController();
 
     public Application() {
+        app.get("/", ctx -> ctx.html("QuPath Edu").status(200));
+
         app.routes(() -> path("/api/v0/", () -> {
             before(ctx -> {
                 logger.debug("Creating Database Session for Request");
