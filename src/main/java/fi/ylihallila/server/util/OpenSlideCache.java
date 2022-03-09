@@ -4,7 +4,6 @@ import org.openslide.OpenSlide;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Optional;
 

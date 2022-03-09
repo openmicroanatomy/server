@@ -254,6 +254,6 @@ public class TileGenerator {
 	}
 
 	private boolean hasTimedOut(float startTime) {
-		return (System.currentTimeMillis() - startTime) < TIMEOUT;
+		return (System.currentTimeMillis() - startTime) > TIMEOUT;
 	}
 }
