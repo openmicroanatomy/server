@@ -1,14 +1,12 @@
 package fi.ylihallila.server;
 
+import com.google.gson.Gson;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.generators.PropertiesGenerator;
 import fi.ylihallila.server.generators.TileGenerator;
 import fi.ylihallila.server.generators.Tiler;
 import fi.ylihallila.server.models.User;
-import fi.ylihallila.server.util.CommandLineParser;
-import fi.ylihallila.server.util.Constants;
-import fi.ylihallila.server.util.Database;
-import fi.ylihallila.server.util.SimpleDebugger;
+import fi.ylihallila.server.util.*;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,8 +14,10 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import java.util.Scanner;
+import java.util.UUID;
 
 public class Main {
 
@@ -113,9 +113,9 @@ public class Main {
             }
         } while (!(password.equals(repeatPassword)));
 
-
         try {
             User user = new User();
+            user.setId(UUID.randomUUID());
             user.setEmail(email);
             user.setName(name);
             user.hashPassword(password);
@@ -128,6 +128,11 @@ public class Main {
 
             session.getTransaction().commit();
             session.close();
+
+            Files.writeString(
+                Path.of(Constants.ADMINISTRATORS_FILE),
+                new Gson().toJson(List.of(user))
+            );
 
             System.out.println("================================================================");
             System.out.println("Administrator account created.");
