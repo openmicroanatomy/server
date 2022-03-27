@@ -19,6 +19,8 @@ import java.util.Set;
 import java.util.Scanner;
 import java.util.UUID;
 
+import org.flywaydb.core.Flyway;
+
 public class Main {
 
     private static Logger logger = LoggerFactory.getLogger(Main.class);
@@ -61,14 +63,29 @@ public class Main {
     }
 
     /**
-     * A series of checks to validate that the server is ready to run.
+     * A series of operations and checks before the server is ready to run.
      */
     private static void preflight() {
+        migrateDatabase();
+
         checkDatabaseConnection();
 
         createAdministratorAccountIfOneDoesNotExist();
     }
 
+    /**
+     * This creates the database or updates it to the latest version. It *must* be run before Hibernate.
+     */
+    private static void migrateDatabase() {
+        Flyway.configure()
+              .dataSource("jdbc:h2:./database;DB_CLOSE_DELAY=-1", "sa", null) // Use the same as in hibernate.cfg.xml
+              .load()
+              .migrate();
+    }
+
+    /**
+     * Validates that Hibernate has a valid database connection.
+     */
     private static void checkDatabaseConnection() {
         try {
             Database.openSession().close();

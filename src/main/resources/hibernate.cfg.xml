@@ -38,9 +38,6 @@
         <!-- Echo all executed SQL to stdout -->
         <property name="show_sql">false</property>
 
-        <!-- Drop and re-create the database schema on startup -->
-        <property name="hbm2ddl.auto">update</property>
-
         <!-- Names the annotated entity class -->
         <mapping class="fi.ylihallila.server.models.Slide"/>
         <mapping class="fi.ylihallila.server.models.Workspace"/>
