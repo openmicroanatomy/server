@@ -45,7 +45,7 @@ public class Backup {
         this.filename = filename;
         this.timestamp = timestamp;
         this.filepath = Path.of(String.format(Constants.BACKUP_FILE_FORMAT, filename, timestamp));
-        this.readable = Util.getHumanReadableName(getBaseName()).orElse(filename);
+        this.readable = Util.getHumanReadableName(getBaseName());
 
         if (filename.contains(".json")) {
             this.type = BackupType.PROJECT;

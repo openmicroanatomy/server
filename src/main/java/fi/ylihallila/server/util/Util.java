@@ -113,9 +113,9 @@ public class Util {
      * @param id UUID of organization, project, user or workspace.
      * @return Human readable name or Optional.empty(); if unable to find.
      */
-    public static Optional<String> getHumanReadableName(String id) {
+    public static String getHumanReadableName(String id) {
         if (cache.containsKey(id)) {
-            return Optional.of(cache.get(id));
+            return cache.get(id);
         }
 
         Session session = Database.openSession();
@@ -127,10 +127,12 @@ public class Util {
         session.close();
 
         if (project == null) {
-            return Optional.empty();
+            var name = String.format("Unknown lesson (%s)", id);
+            cache.put(id, name);
+            return name;
         } else {
             cache.put(id, project.getName());
-            return Optional.of(project.getName());
+            return project.getName();
         }
     }
 
