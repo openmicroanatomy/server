@@ -23,6 +23,7 @@ public class Tiler implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public Tiler() {
+        // Sets the logger process to tiler so we log into tiler.log
         MDC.put("process", "tiler");
 
         run();
@@ -30,15 +31,17 @@ public class Tiler implements Runnable {
 
     @Override
     public void run() {
-        Path path = FileSystems.getDefault().getPath(Constants.SLIDES_DIRECTORY);
+        checkForPendingSlides();
 
-        try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
-            path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
+        registerWatchService();
+    }
 
+    private void checkForPendingSlides() {
+        try {
             logger.info("Checking for pending slides ...");
 
-            List<Path> files = Files.list(Path.of(Constants.SLIDES_DIRECTORY))
-                    .filter(p -> p.endsWith(".pending"))
+            List<Path> files = Files.list(Path.of(Constants.SLIDES_DIRECTORY).toAbsolutePath())
+                    .filter(path -> path.toString().endsWith(".pending"))
                     .collect(Collectors.toList());
 
             if (files.size() > 0) {
@@ -58,6 +61,15 @@ public class Tiler implements Runnable {
             } else {
                 logger.info("No pending slides.");
             }
+        } catch (IOException e) {
+            logger.error("Error while checking for pending slides", e);
+        }
+    }
+
+    private void registerWatchService() {
+        try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
+            Path path = FileSystems.getDefault().getPath(Constants.SLIDES_DIRECTORY);
+            path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
 
             logger.info("Waiting for slides ...");
 
@@ -94,32 +106,7 @@ public class Tiler implements Runnable {
                 }
             }
         } catch (IOException | InterruptedException e) {
-            logger.error("Watch Service exception. Tiler unavailable.", e);
+            logger.error("WatchService error, tiler unavailable.", e);
         }
-//        while (true) {
-//            try {
-//                List<Path> files = Files.list(Path.of(Constants.SLIDES_DIRECTORY))
-//                        .filter(path -> path.endsWith(".pending"))
-//                        .collect(Collectors.toList());
-//
-//                if (files.size() > 0) {
-//                    System.out.println("\rFound " + files.size() + " new slides to tile.");
-//
-//                    for (Path file : files) {
-//                        new TileGenerator(file.getFileName().toString());
-//                    }
-//                } else {
-//                    System.out.println("\rNo new slides to tile.");
-//                }
-//
-//                wait(TimeUnit.MINUTES.toMillis(1));
-////                Thread.sleep(TimeUnit.MINUTES.toMillis(1));
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//                System.exit(0);
-//            }
-//        }
     }
 }
