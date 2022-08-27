@@ -27,6 +27,10 @@ public class Constants {
     public final static String SLIDES_DIRECTORY      = "slides";
 
     public final static String BACKUP_FOLDER         = "backups/";
+
+    public final static String DATABASE_BACKUP_FORMAT = BACKUP_FOLDER + "database-%s-%s-%s-%s.zip";
+
+    public final static String TEMP_DIRECTORY        = "temp";
     public final static String TEMP_FILE             = "temp/%s";
     public final static String ADMINISTRATORS_FILE   = "administrators.json";
 

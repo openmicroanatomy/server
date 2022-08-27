@@ -2,6 +2,7 @@ package fi.ylihallila.server;
 
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.controllers.*;
+import fi.ylihallila.server.scripts.*;
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.util.Database;
 import io.javalin.Javalin;
@@ -85,6 +86,10 @@ public class Application {
     private final UserController           UserController         = new UserController();
     private final FileController           FileController         = new FileController();
     private final AuthenticationController AuthController         = new AuthenticationController();
+
+    private final ScriptManager scriptManager = new ScriptManager(
+        new BackupDatabase(), new DeleteOldBackups(), new DeleteTempFiles()
+    );
 
     public Application() {
         app.get("/", ctx -> ctx.html("QuPath Edu").status(200));
@@ -170,6 +175,10 @@ public class Application {
             /* Organizations */
             crud("/organizations/:id", OrganizationController, roles(ANYONE));
         }));
+    }
+
+    public ScriptManager getScriptManager() {
+        return scriptManager;
     }
 
     private OpenApiOptions getOpenApiOptions() {
