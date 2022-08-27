@@ -1,7 +1,7 @@
 package fi.ylihallila.server.storage;
 
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipFile;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarFile;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Enumeration;
+import java.util.List;
 
 import static fi.ylihallila.server.util.Config.Config;
 
@@ -39,10 +39,9 @@ public class FlatFile implements StorageProvider {
                 archivePath
             );
 
-            ZipFile zipFile = new ZipFile(archivePath.toFile());
-            Enumeration<? extends ZipArchiveEntry> entries = zipFile.getEntries();
-            while (entries.hasMoreElements()) {
-                ZipArchiveEntry entry = entries.nextElement();
+            TarFile zipFile = new TarFile(archivePath.toFile());
+            List<TarArchiveEntry> entries = zipFile.getEntries();
+            for (TarArchiveEntry entry : entries) {
                 Path entryPath = tilePath.resolve(entry.getName());
 
                 if (entry.isDirectory()) {

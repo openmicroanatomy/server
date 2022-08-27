@@ -1,8 +1,8 @@
 package fi.ylihallila.server.generators;
 
 import com.google.gson.GsonBuilder;
+import fi.ylihallila.server.archivers.TarTileArchive;
 import fi.ylihallila.server.archivers.TileArchive;
-import fi.ylihallila.server.archivers.ZipTileArchive;
 import fi.ylihallila.server.storage.Allas;
 import fi.ylihallila.server.storage.FlatFile;
 import fi.ylihallila.server.storage.S3;
@@ -57,7 +57,7 @@ public class TileGenerator {
 	public TileGenerator(File slide) throws IOException, InterruptedException {
 		long startTime = System.currentTimeMillis();
 
-		openSlide = new OpenSlide(slide);
+		openSlide = new OpenSlide(slide.getAbsoluteFile());
 
 		String id = getOrGenerateUUID(FileNameUtils.getBaseName(slide.getName()));
 
@@ -110,7 +110,7 @@ public class TileGenerator {
 			int downsample = (int) readDoubleProperty("openslide.level[" + level + "].downsample");
 
 			// TODO: Let StorageProvider choose which TileArchive to use
-			TileArchive tileArchive = new ZipTileArchive(id, level);
+			TileArchive tileArchive = new TarTileArchive(id, level);
 
 			for (int row = 0; row <= rows; row++) {
 				for (int col = 0; col <= cols; col++) {
