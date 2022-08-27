@@ -56,7 +56,7 @@ public class BasicAuth implements Auth {
                 user.setId(data.get("id").getAsString());
                 user.setName(data.get("name").getAsString());
                 user.setEmail(data.get("email").getAsString());
-                user.hashPassword(data.get("password").getAsString());
+                user.setPassword(data.get("password").getAsString());
                 user.setOAuth(false);
                 user.setRoles(Set.copyOf(roles));
 

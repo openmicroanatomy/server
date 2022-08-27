@@ -139,7 +139,7 @@ public class User extends Owner {
         return password;
     }
 
-    protected void setPassword(String password) {
+    public void setPassword(String password) {
         this.password = password;
     }
 
