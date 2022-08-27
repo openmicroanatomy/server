@@ -1,4 +1,4 @@
-🔬 QuPath Edu Server
+🔬 Open Microanatomy Server
 ==================== 
 
 ---

@@ -100,7 +100,7 @@ public class PasswordController extends Controller {
                     .replace("{{name}}", user.getName());
 
 			Mailer mailer = new Mailer();
-			mailer.sendMail(user.getEmail(), "QuPath Edu Password Recovery", body);
+			mailer.sendMail(user.getEmail(), "Open Microanatomy Recovery", body);
 
             ctx.status(200);
         } catch (NoResultException e) {

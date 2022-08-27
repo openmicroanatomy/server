@@ -92,7 +92,7 @@ public class Application {
     );
 
     public Application() {
-        app.get("/", ctx -> ctx.html("QuPath Edu").status(200));
+        app.get("/", ctx -> ctx.html("OpenMicroanatomy").status(200));
 
         app.routes(() -> path("/api/v0/", () -> {
             before(ctx -> {
@@ -184,11 +184,11 @@ public class Application {
     private OpenApiOptions getOpenApiOptions() {
         Info applicationInfo = new Info()
                 .version("1.0")
-                .description("QuPath Edu Server");
+                .description("Open Microanatomy Server");
 
         OpenApiOptions apiOptions = new OpenApiOptions(applicationInfo)
                 .path("/docs")
-                .swagger(new SwaggerOptions("/swagger").title("QuPath Edu Server Documentation"))
+                .swagger(new SwaggerOptions("/swagger").title("Open Microanatomy Server Documentation"))
                 .roles(Set.of(ANYONE));
 
         return apiOptions;

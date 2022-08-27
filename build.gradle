@@ -41,7 +41,7 @@ dependencies {
 mainClassName = 'fi.ylihallila.server.Main'
 group = 'fi.yli-hallila'
 version = '1.1-SNAPSHOT'
-description = 'QuPath Edu Server'
+description = 'Open Microanatomy Server'
 java.sourceCompatibility = JavaVersion.VERSION_14
 
 jar {
