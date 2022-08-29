@@ -66,6 +66,8 @@ public class Main {
      * A series of operations and checks before the server is ready to run.
      */
     private static void preflight() {
+        createDirectories();
+        createConfigurationFile();
         migrateDatabase();
 
         checkDatabaseConnection();
@@ -74,7 +76,44 @@ public class Main {
     }
 
     /**
-     * This creates the database or updates it to the latest version. It *must* be run before Hibernate.
+     * Create all the necessary directories.
+     */
+    private static void createDirectories() {
+        try {
+            Files.createDirectories(Path.of("projects"));
+            Files.createDirectories(Path.of("slides"));
+            Files.createDirectories(Path.of("tiles"));
+            Files.createDirectories(Path.of("backups"));
+            Files.createDirectories(Path.of("temp"));
+            Files.createDirectories(Path.of("logos"));
+            Files.createDirectories(Path.of("uploads"));
+        } catch (IOException e) {
+            logger.error("Error while creating directories -- cannot continue, exiting", e);
+            System.exit(0);
+        }
+    }
+
+    /**
+     * Copies the reference configuration file from the .jar file.
+     */
+    private static void createConfigurationFile() {
+        Path config = Path.of(Constants.CONFIGURATION_FILE);
+
+        if (Files.exists(config)) {
+            return;
+        }
+
+        try (var reference = Main.class.getResourceAsStream("/reference.conf")) {
+            Files.write(config, reference.readAllBytes());
+        } catch (IOException | NullPointerException e) {
+            logger.error("Error while creating configuration file -- cannot continue, exiting", e);
+            System.exit(0);
+        }
+    }
+
+    /**
+     * Creates the database schema or updates it to the latest version.
+     * This must be run <b>before</b> Hibernate is instantiated due to how Flyway operates..
      */
     private static void migrateDatabase() {
         Flyway.configure()
