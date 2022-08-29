@@ -10,12 +10,16 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CustomToJsonMapper implements ToJsonMapper {
+/**
+ * A JsonMapper which removes any fields annotated with {@link Filters.VisibleToWriteOnly}
+ * or {@link Filters.VisibleToReadOnly} from the resulting JSON.
+ */
+public class FilteredJsonMapper implements ToJsonMapper {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final User user;
 
-    public CustomToJsonMapper(User user) {
+    public FilteredJsonMapper(User user) {
         this.user = user;
     }
 

@@ -3,7 +3,7 @@ package fi.ylihallila.server.controllers;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
-import fi.ylihallila.server.jackson.CustomToJsonMapper;
+import fi.ylihallila.server.jackson.FilteredJsonMapper;
 import fi.ylihallila.server.models.Subject;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.models.Workspace;
@@ -17,9 +17,7 @@ import io.javalin.plugin.openapi.annotations.OpenApi;
 import io.javalin.plugin.openapi.annotations.OpenApiContent;
 import io.javalin.plugin.openapi.annotations.OpenApiFormParam;
 import io.javalin.plugin.openapi.annotations.OpenApiResponse;
-import org.apache.commons.lang3.NotImplementedException;
 import org.hibernate.Session;
-import org.hibernate.jdbc.Work;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +61,7 @@ public class SubjectController extends Controller implements CrudHandler {
         workspace.addSubject(subject);
 
         var temp = JavalinJson.getToJsonMapper();
-        JavalinJson.setToJsonMapper(new CustomToJsonMapper(user));
+        JavalinJson.setToJsonMapper(new FilteredJsonMapper(user));
 
         ctx.status(201).json(subject);
 
@@ -146,7 +144,7 @@ public class SubjectController extends Controller implements CrudHandler {
         subject.setName(ctx.formParam("subject-name", subject.getName()));
 
         var temp = JavalinJson.getToJsonMapper();
-        JavalinJson.setToJsonMapper(new CustomToJsonMapper(user));
+        JavalinJson.setToJsonMapper(new FilteredJsonMapper(user));
 
         ctx.status(200).json(subject);
 

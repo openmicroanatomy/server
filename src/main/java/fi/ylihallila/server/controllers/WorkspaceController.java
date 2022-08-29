@@ -7,7 +7,7 @@ import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
 import fi.ylihallila.server.models.*;
 import fi.ylihallila.server.util.Constants;
-import fi.ylihallila.server.jackson.CustomToJsonMapper;
+import fi.ylihallila.server.jackson.FilteredJsonMapper;
 import fi.ylihallila.server.util.Util;
 import io.javalin.apibuilder.CrudHandler;
 import io.javalin.http.Context;
@@ -57,7 +57,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		session.save(workspace);
 
 		var temp = JavalinJson.getToJsonMapper();
-		JavalinJson.setToJsonMapper(new CustomToJsonMapper(user));
+		JavalinJson.setToJsonMapper(new FilteredJsonMapper(user));
 
 		ctx.status(200).json(workspace);
 
@@ -129,7 +129,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		}
 
 		var temp = JavalinJson.getToJsonMapper();
-		JavalinJson.setToJsonMapper(new CustomToJsonMapper(user));
+		JavalinJson.setToJsonMapper(new FilteredJsonMapper(user));
 
 		ctx.status(200).json(workspaces);
 
@@ -162,7 +162,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		}
 
 		var temp = JavalinJson.getToJsonMapper();
-		JavalinJson.setToJsonMapper(new CustomToJsonMapper(user));
+		JavalinJson.setToJsonMapper(new FilteredJsonMapper(user));
 
 		ctx.status(200).json(workspace);
 
