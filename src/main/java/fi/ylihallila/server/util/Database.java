@@ -37,6 +37,10 @@ public class Database {
 		}
 	}
 
+	public static SessionFactory getSessionFactory() {
+		return sessionFactory;
+	}
+
 	/**
 	 * Opens a new session. This session must be closed with {@link Session#close()}.
 	 * @return A new session

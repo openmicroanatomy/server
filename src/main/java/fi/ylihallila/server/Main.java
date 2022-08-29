@@ -23,7 +23,8 @@ import org.flywaydb.core.Flyway;
 
 public class Main {
 
-    private static Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+    private static Application app;
 
     public static void main(String[] args) throws IOException, InterruptedException {
         if (args.length == 1 && args[0].equalsIgnoreCase("--tiler")) {
@@ -40,24 +41,37 @@ public class Main {
             Constants.SERVER_PORT = parser.hasArgument("port") ? parser.getInt("port") : 7777; // Default port 7777
             Constants.ENABLE_SSL  = parser.hasFlag("secure");
 
-            Files.createDirectories(Path.of("projects"));
-            Files.createDirectories(Path.of("slides"));
-            Files.createDirectories(Path.of("tiles"));
-            Files.createDirectories(Path.of("backups"));
-            Files.createDirectories(Path.of("temp"));
-            Files.createDirectories(Path.of("logos"));
-            Files.createDirectories(Path.of("uploads"));
-
             preflight();
 
             try {
-                new Application();
+                app = new Application();
+
+                readInput();
+
             } catch (Exception e) {
                 if (e.getCause() != null && e.getCause().getClass() == IllegalStateException.class) {
                     logger.info("Add a valid keystore to launch the server in secure mode.");
                 }
 
                 logger.error("Error while launching server", e);
+            }
+        }
+    }
+
+    private static void readInput() {
+        Scanner in = new Scanner(System.in);
+
+        while (in.hasNextLine()) {
+            String input = in.nextLine();
+
+            if (input.isBlank()) {
+                continue;
+            }
+
+            if (input.equalsIgnoreCase("stop")) {
+                app.stop();
+            } else {
+                logger.info("Unknown command: {}", input);
             }
         }
     }
@@ -69,9 +83,7 @@ public class Main {
         createDirectories();
         createConfigurationFile();
         migrateDatabase();
-
         checkDatabaseConnection();
-
         createAdministratorAccountIfOneDoesNotExist();
     }
 

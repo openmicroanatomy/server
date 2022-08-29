@@ -15,6 +15,7 @@ import org.apache.http.HttpVersion;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,7 @@ public class Application {
 
     private Logger logger = LoggerFactory.getLogger(Application.class);
 
-    private Javalin app = Javalin.create(config -> {
+    private Javalin javalin = Javalin.create(config -> {
         config.registerPlugin(new OpenApiPlugin(getOpenApiOptions()));
         config.accessManager(Authenticator::accessManager);
         config.showJavalinBanner = false;
@@ -92,9 +93,12 @@ public class Application {
     );
 
     public Application() {
-        app.get("/", ctx -> ctx.html("OpenMicroanatomy").status(200));
+        javalin.get("/", ctx -> {
+            Thread.sleep(10000);
+            ctx.html("OpenMicroanatomy").status(200);
+        });
 
-        app.routes(() -> path("/api/v0/", () -> {
+        javalin.routes(() -> path("/api/v0/", () -> {
             before(ctx -> {
                 logger.debug("Creating Database Session for Request");
 
@@ -145,7 +149,7 @@ public class Application {
             /* Upload */
 
             post("upload/ckeditor",                FileController::upload,  roles(ANYONE));
-            app.options("/api/v0/upload/ckeditor", FileController::options, roles(ANYONE));
+            javalin.options("/api/v0/upload/ckeditor", FileController::options, roles(ANYONE));
 
             /* Slides */
 
@@ -175,6 +179,36 @@ public class Application {
             /* Organizations */
             crud("/organizations/:id", OrganizationController, roles(ANYONE));
         }));
+    }
+
+    public void stop() {
+        try {
+            javalin.stop();
+
+            SessionFactory factory = Database.getSessionFactory();
+
+            while (factory.getStatistics().getSessionOpenCount() > 0) {
+                logger.info("Waiting for database connections to close ...");
+                Thread.sleep(1000);
+            }
+
+            logger.info("Closing database ...");
+
+            factory.close();
+
+            logger.info("Database has closed");
+
+            logger.info("Server successfully stopped");
+
+        } catch (Exception e) {
+            logger.error("Error while stopping server, stopping anyway ...", e);
+        }
+
+        System.exit(0);
+    }
+
+    public Javalin getJavalin() {
+        return javalin;
     }
 
     public ScriptManager getScriptManager() {
