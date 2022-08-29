@@ -1,5 +1,6 @@
 package fi.ylihallila.server.generators;
 
+import com.google.common.primitives.Ints;
 import com.google.gson.GsonBuilder;
 import fi.ylihallila.server.archivers.TarTileArchive;
 import fi.ylihallila.server.archivers.TileArchive;
@@ -50,17 +51,16 @@ public class TileGenerator {
 		this(new File(slideName));
 	}
 
-	public TileGenerator(Path path ) throws IOException, InterruptedException {
+	public TileGenerator(Path path) throws IOException, InterruptedException {
 		this(path.toFile());
 	}
 
 	public TileGenerator(File slide) throws IOException, InterruptedException {
-		long startTime = System.currentTimeMillis();
-
 		openSlide = new OpenSlide(slide.getAbsoluteFile());
 
+		int compression = Ints.constrainToRange(Config.Config.getInt("tiler.compression"), 25, 100);
+		long startTime = System.currentTimeMillis();
 		String id = getOrGenerateUUID(FileNameUtils.getBaseName(slide.getName()));
-
 		Color backgroundColor = getBackgroundColor();
 
 		int slideHeight = readIntegerProperty("openslide.level[0].height");
@@ -115,6 +115,7 @@ public class TileGenerator {
 			for (int row = 0; row <= rows; row++) {
 				for (int col = 0; col <= cols; col++) {
 					executor.execute(new TileWorker(
+						compression,
 						downsample, level, row, col,
 						boundsX, boundsY,
 						tileWidth, tileHeight,

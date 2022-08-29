@@ -5,11 +5,16 @@ import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public class TileWorker implements Runnable {
 
@@ -17,6 +22,8 @@ public class TileWorker implements Runnable {
 
 	private final String slideName;
 	private final Color bgColor;
+
+	private final int compression;
 
 	private final int level;
 	private final int tileX;
@@ -28,7 +35,8 @@ public class TileWorker implements Runnable {
 	private final OpenSlide openSlide;
 	private final TileArchive archive;
 
-	public TileWorker(int downsample, int level, int row, int col, int offsetX, int offsetY, int tileWidth, int tileHeight, int slideWidth, int slideHeight, String slideName, Color bgColor, OpenSlide openSlide, TileArchive archive) {
+	public TileWorker(int compression, int downsample, int level, int row, int col, int offsetX, int offsetY, int tileWidth, int tileHeight, int slideWidth, int slideHeight, String slideName, Color bgColor, OpenSlide openSlide, TileArchive archive) {
+		this.compression = compression;
 		this.slideName = slideName;
 		this.bgColor = bgColor;
 		this.level = level;
@@ -81,15 +89,33 @@ public class TileWorker implements Runnable {
 				return;
 			}
 
-			ByteArrayOutputStream os = new ByteArrayOutputStream();
-			ImageIO.write(img, "jpg", os);
-
-			archive.addTile(level + "_"+ tileX + "_" + tileY + "_" + tileWidth + "_" + tileHeight + ".jpg", os.toByteArray());
-
-			os.flush();
+			String fileName = (level + "_"+ tileX + "_" + tileY + "_" + tileWidth + "_" + tileHeight + ".jpg");
+			archive.addTile(fileName, compressImage(img));
 		} catch (Exception e) {
 			logger.error("Error when generating tile: {}, row: {}, col: {}, x/y: {}/{}", slideName, tileX, tileY, tileWidth, tileHeight);
 			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Compress a tile using lossy JPEG compression.
+	 */
+	private byte[] compressImage(BufferedImage img) throws IOException {
+		try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+			ImageWriter     writer = ImageIO.getImageWritersByFormatName("jpg").next();
+			ImageWriteParam params = writer.getDefaultWriteParam();
+			params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+			params.setCompressionQuality(compression / 100.0f);
+
+			writer.setOutput(new MemoryCacheImageOutputStream(os));
+
+			IIOImage output = new IIOImage(img, null, null);
+			writer.write(null, output, params);
+			writer.dispose();
+
+			os.flush();
+
+			return os.toByteArray();
 		}
 	}
 
