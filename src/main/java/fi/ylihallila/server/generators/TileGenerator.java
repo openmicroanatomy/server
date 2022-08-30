@@ -6,7 +6,6 @@ import fi.ylihallila.server.archivers.TarTileArchive;
 import fi.ylihallila.server.archivers.TileArchive;
 import fi.ylihallila.server.storage.Allas;
 import fi.ylihallila.server.storage.FlatFile;
-import fi.ylihallila.server.storage.S3;
 import fi.ylihallila.server.storage.StorageProvider;
 import fi.ylihallila.server.util.Config;
 import fi.ylihallila.server.util.Constants;
@@ -87,10 +86,6 @@ public class TileGenerator {
 		}
 
 		StorageProvider storage = switch (Config.Config.getString("storage.provider").toLowerCase()) {
-			case "aws" -> new S3.Builder()
-					.setConfigDefaults()
-					.setBucket(id)
-					.build();
 			case "allas" -> new Allas.Builder()
 					.setConfigDefaults()
 					.setContainer(id)
