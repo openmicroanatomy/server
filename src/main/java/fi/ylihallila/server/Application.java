@@ -14,6 +14,7 @@ import io.swagger.v3.oas.models.info.Info;
 import org.apache.http.HttpVersion;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
@@ -45,6 +46,11 @@ public class Application {
 
         config.server(() -> {
             Server server = new Server();
+
+            // Set the thread prefix to "server-" instead of "qtp-" to improve logging.
+            if (server.getThreadPool() instanceof QueuedThreadPool) {
+                ((QueuedThreadPool) server.getThreadPool()).setName("server");
+            }
 
             // Built-in SSL is not supported: use at your own risk!
             // Set up a reverse proxy with nginx or Apache if possible.
