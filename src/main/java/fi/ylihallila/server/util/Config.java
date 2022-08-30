@@ -10,19 +10,7 @@ import java.nio.file.Path;
 
 public class Config {
 
-    private static final Logger logger = LoggerFactory.getLogger(Config.class);
     private static final Path configPath = Path.of("application.conf");
-
-    // Copy reference config to server directory
-    static {
-        if (!(Files.exists(configPath))) {
-            try {
-                Files.copy(Config.class.getResourceAsStream("/reference.conf"), configPath);
-            } catch (IOException e) {
-                logger.error("Could not copy reference config", e);
-            }
-        }
-    }
 
     /**
      * Loads the reference config (resources/reference.conf)
