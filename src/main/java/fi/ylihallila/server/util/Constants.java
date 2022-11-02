@@ -26,11 +26,9 @@ public class Constants {
     public final static String PENDING_DIRECTORY     = "pending/";
     public final static String PENDING_SLIDES        = PENDING_DIRECTORY + "%s.pending";
 
-    public final static String SLIDES_DIRECTORY      = "slides";
+    public final static String BACKUP_DIRECTORY      = "backups/";
 
-    public final static String BACKUP_FOLDER         = "backups/";
-
-    public final static String DATABASE_BACKUP_FORMAT = BACKUP_FOLDER + "database-%s-%s-%s-%s.zip";
+    public final static String DATABASE_BACKUP_FORMAT = BACKUP_DIRECTORY + "database-%s-%s-%s-%s.zip";
 
     public final static String TEMP_DIRECTORY        = "temp";
     public final static String TEMP_FILE             = "temp/%s";

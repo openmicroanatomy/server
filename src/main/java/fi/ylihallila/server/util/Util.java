@@ -75,7 +75,7 @@ public class Util {
      * @throws IOException if an I/O error occurs
      */
     public synchronized static List<Backup> getBackups(Predicate<? super Backup> filter) throws IOException {
-        Stream<Path> files = Files.list(Path.of(Constants.BACKUP_FOLDER));
+        Stream<Path> files = Files.list(Path.of(Constants.BACKUP_DIRECTORY));
 
         List<Backup> backups = new ArrayList<>();
 

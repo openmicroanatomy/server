@@ -28,7 +28,7 @@ public class DeleteOldBackups extends Script {
 
     @Override public void run() {
         long NOW = System.currentTimeMillis();
-        Path backupDirectory = Path.of(Constants.BACKUP_FOLDER);
+        Path backupDirectory = Path.of(Constants.BACKUP_DIRECTORY);
 
         logger.info("Clearing any old backups ...");
         int deleted = 0;
