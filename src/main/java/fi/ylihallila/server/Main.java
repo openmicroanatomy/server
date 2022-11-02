@@ -5,6 +5,7 @@ import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.generators.PropertiesGenerator;
 import fi.ylihallila.server.generators.TileGenerator;
 import fi.ylihallila.server.generators.Tiler;
+import fi.ylihallila.server.models.Organization;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.util.*;
 import org.hibernate.Session;
@@ -84,6 +85,7 @@ public class Main {
         createConfigurationFile();
         migrateDatabase();
         checkDatabaseConnection();
+        createInitialOrganizationIfOneDoesNotExist();
         createAdministratorAccountIfOneDoesNotExist();
     }
 
@@ -146,6 +148,61 @@ public class Main {
         }
     }
 
+    private static void createInitialOrganizationIfOneDoesNotExist() {
+        Session session = Database.openSession();
+        session.beginTransaction();
+
+        long count = (long) session.createQuery("SELECT COUNT (*) FROM Organization").getSingleResult();
+
+        if (count > 0) return;
+
+        System.out.println("================================================================");
+        System.out.println("No organizations exist, creating a new one ...");
+        System.out.println("If you believe this is an error: stop the server and confirm");
+        System.out.println("that the database file exists, is readable and is not corrupted.");
+        System.out.println("================================================================");
+
+        /* Organization name */
+
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Organization name: ");
+        String name = scanner.nextLine();
+
+        String confirm;
+
+        do {
+            System.out.println("Selected name: " + name);
+            System.out.print("Type 'yes' to confirm and 'no' to re-enter: ");
+
+            confirm = scanner.nextLine();
+
+            if (confirm.equals("no")) {
+                System.out.print("New organization name: ");
+                name = scanner.nextLine();
+            }
+        } while (!confirm.equals("yes"));
+
+        try {
+            Organization organization = new Organization();
+            organization.setId(UUID.randomUUID());
+            organization.setName(name);
+
+            session.save(organization);
+
+            session.getTransaction().commit();
+            session.close();
+
+            System.out.println("================================================================");
+            System.out.printf("Organization created [%s (%s)]%n", organization.getName(), organization.getId());
+            System.out.println("================================================================");
+        } catch (Exception e) {
+            System.err.println("Error while creating organization -- cannot continue, exiting");
+            e.printStackTrace();
+            System.exit(0);
+        }
+    }
+
     private static void createAdministratorAccountIfOneDoesNotExist() {
         if (Files.exists(Path.of(Constants.ADMINISTRATORS_FILE))) {
             return;
@@ -177,20 +234,26 @@ public class Main {
             repeatPassword = scanner.nextLine();
 
             if (!(password.equals(repeatPassword))) {
-                logger.error("Passwords do not match, try again ...");
+                System.err.print("Passwords do not match, try again ...");
             }
         } while (!(password.equals(repeatPassword)));
 
         try {
+            Session session = Database.openSession();
+            session.beginTransaction();
+
+            // Get the first organization inside the Organizations table, which we just created.
+            Organization organization = session.createQuery("from Organization", Organization.class)
+                    .setMaxResults(1)
+                    .getSingleResult();
+
             User user = new User();
             user.setId(UUID.randomUUID());
             user.setEmail(email);
             user.setName(name);
             user.hashPassword(password);
+            user.setOrganization(organization);
             user.setRoles(Set.of(Roles.ADMIN));
-
-            Session session = Database.openSession();
-            session.beginTransaction();
 
             session.save(user);
 
@@ -203,8 +266,7 @@ public class Main {
             );
 
             System.out.println("================================================================");
-            System.out.println("Administrator account created.");
-            System.out.println("Please log-in to your account and create the first organization.");
+            System.out.println("Administrator account created; assigned to " + organization.getName());
             System.out.println("================================================================");
         } catch (Exception e) {
             System.err.println("Error while creating administrator account -- cannot continue, exiting");
