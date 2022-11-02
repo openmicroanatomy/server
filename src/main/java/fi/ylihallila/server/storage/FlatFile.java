@@ -70,4 +70,9 @@ public class FlatFile implements StorageProvider {
     @Override public String getThumbnailURI() {
         return Config.getString("server.host") + "/tiles/{id}_thumbnail.jpg";
     }
+
+    @Override
+    public String getName() {
+        return "Local storage";
+    }
 }

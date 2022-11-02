@@ -36,4 +36,8 @@ public interface StorageProvider {
      */
     String getThumbnailURI();
 
+    /**
+     * @return string Friendly name for Storage Provider.
+     */
+    String getName();
 }

@@ -99,6 +99,11 @@ public class Allas implements StorageProvider {
         return THUMBNAIL_URL.replace("{host}", host);
     }
 
+    @Override
+    public String getName() {
+        return "CSC Allas";
+    }
+
     public static class Builder {
 
         private AccountFactory factory;

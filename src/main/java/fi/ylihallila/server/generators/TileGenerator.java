@@ -93,7 +93,7 @@ public class TileGenerator {
 			default -> new FlatFile();
 		};
 
-		logger.info("Using {} as storage provider", storage);
+		logger.info("Using {} as storage provider", storage.getName());
 
 		for (int level = levels - 1; level >= 0; level--) {
 			int levelHeight = (int) (readIntegerProperty("openslide.level[" + level + "].height") * boundsYMultiplier);
