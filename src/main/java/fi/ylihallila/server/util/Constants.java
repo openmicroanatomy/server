@@ -23,7 +23,8 @@ public class Constants {
      * Slides that are pending tiling & upload to a {@link fi.ylihallila.server.storage.StorageProvider StorageProvider}.
      * These files are scanned regularly by the {@link fi.ylihallila.server.generators.Tiler Tiler}
      */
-    public final static String PENDING_SLIDES        = "slides/%s.pending";
+    public final static String PENDING_DIRECTORY     = "pending/";
+    public final static String PENDING_SLIDES        = PENDING_DIRECTORY + "%s.pending";
 
     public final static String SLIDES_DIRECTORY      = "slides";
 

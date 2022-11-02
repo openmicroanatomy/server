@@ -31,12 +31,11 @@ public class DeletePendingSlides extends Script {
 
     @Override public void run() {
         long NOW = System.currentTimeMillis();
-        Path slidesDirectory = Path.of(Constants.SLIDES_DIRECTORY);
 
         logger.info("Clearing any pending slides ...");
         int deleted = 0;
 
-        try (Stream<Path> files = Files.list(slidesDirectory)) {
+        try (Stream<Path> files = Files.list(Path.of(Constants.PENDING_DIRECTORY))) {
             for (File file : files.map(Path::toFile).collect(Collectors.toList())) {
                 if (file.isDirectory()) {
                     continue;

@@ -96,6 +96,7 @@ public class Main {
         try {
             Files.createDirectories(Path.of("projects"));
             Files.createDirectories(Path.of("slides"));
+            Files.createDirectories(Path.of("pending"));
             Files.createDirectories(Path.of("tiles"));
             Files.createDirectories(Path.of("backups"));
             Files.createDirectories(Path.of("temp"));

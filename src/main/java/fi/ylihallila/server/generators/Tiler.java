@@ -40,26 +40,27 @@ public class Tiler implements Runnable {
         try {
             logger.info("Checking for pending slides ...");
 
-            List<Path> files = Files.list(Path.of(Constants.SLIDES_DIRECTORY).toAbsolutePath())
+            List<Path> files = Files.list(Path.of(Constants.PENDING_DIRECTORY).toAbsolutePath())
                     .filter(path -> path.toString().endsWith(".pending"))
                     .collect(Collectors.toList());
 
-            if (files.size() > 0) {
-                logger.info("Found " + files.size() + " pending slides, adding to queue.");
-
-                for (Path file : files) {
-                    logger.info("Adding {} to queue.", file.getFileName());
-
-                    executor.submit(() -> {
-                        try {
-                            new TileGenerator(file);
-                        } catch (IOException | InterruptedException e) {
-                            logger.error("Error while generating tiles for {}", file.getFileName(), e);
-                        }
-                    });
-                }
-            } else {
+            if (files.size() == 0) {
                 logger.info("No pending slides.");
+                return;
+            }
+
+            logger.info("Found " + files.size() + " pending slides, adding to queue.");
+
+            for (Path file : files) {
+                logger.info("Adding {} to queue.", file.getFileName());
+
+                executor.submit(() -> {
+                    try {
+                        new TileGenerator(file);
+                    } catch (IOException | InterruptedException e) {
+                        logger.error("Error while generating tiles for {}", file.getFileName(), e);
+                    }
+                });
             }
         } catch (IOException e) {
             logger.error("Error while checking for pending slides", e);
@@ -68,7 +69,7 @@ public class Tiler implements Runnable {
 
     private void registerWatchService() {
         try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
-            Path path = FileSystems.getDefault().getPath(Constants.SLIDES_DIRECTORY);
+            Path path = FileSystems.getDefault().getPath(Constants.PENDING_DIRECTORY);
             path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
 
             logger.info("Waiting for slides ...");
