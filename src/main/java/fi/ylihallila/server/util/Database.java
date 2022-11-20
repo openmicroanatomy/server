@@ -29,6 +29,7 @@ public class Database {
 					.build();
 
 			sessionFactory = metadata.buildSessionFactory();
+			sessionFactory.getStatistics().setStatisticsEnabled(true);
 		} catch (Exception e) {
 			StandardServiceRegistryBuilder.destroy(registry);
 			logger.error("Error while creating database", e);
@@ -47,5 +48,9 @@ public class Database {
 	 */
 	public static Session openSession() {
 		return sessionFactory.openSession();
+	}
+
+	public static long getCurrentlyOpenSessionsCount() {
+		return sessionFactory.getStatistics().getSessionOpenCount() - sessionFactory.getStatistics().getSessionCloseCount();
 	}
 }

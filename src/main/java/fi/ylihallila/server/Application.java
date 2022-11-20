@@ -192,9 +192,17 @@ public class Application {
 
             SessionFactory factory = Database.getSessionFactory();
 
-            while (factory.getStatistics().getSessionOpenCount() > 0) {
-                logger.info("Waiting for database connections to close ...");
-                Thread.sleep(1000);
+            for (int i = 1; i <= 30; i++) {
+                if (Database.getCurrentlyOpenSessionsCount() == 0) break;
+
+
+                logger.info("[{}/{}] Waiting for {} database connections to close ...", i, 30, Database.getCurrentlyOpenSessionsCount());
+
+                Thread.sleep(2000);
+
+                if (i == 30) {
+                    logger.info("Database connections not after 30 retries -- exiting forcefully ...");
+                }
             }
 
             logger.info("Closing database ...");
