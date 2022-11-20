@@ -30,7 +30,7 @@ public class DeleteTempFiles extends Script {
         long NOW = System.currentTimeMillis();
         Path tempDirectory = Path.of(Constants.TEMP_DIRECTORY);
 
-        logger.info("Deleting temp files ...");
+        logger.debug("Deleting temp files ...");
         int deleted = 0;
 
         try (Stream<Path> files = Files.list(tempDirectory)) {
@@ -47,6 +47,6 @@ public class DeleteTempFiles extends Script {
             logger.error("Error while deleting old temporary files", e);
         }
 
-        logger.info("Deleted {} temp files", deleted);
+        logger.debug("Deleted {} temp files", deleted);
     }
 }

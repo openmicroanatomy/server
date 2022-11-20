@@ -25,7 +25,7 @@ public class BackupDatabase extends Script {
         ZonedDateTime now = ZonedDateTime.now();
         String file = String.format(Constants.DATABASE_BACKUP_FORMAT, now.getDayOfMonth(), now.getMonthValue(), now.getYear(), now.toEpochSecond());
 
-        logger.info("Starting database backup ...");
+        logger.debug("Starting database backup ...");
 
         try (Session session = Database.openSession()) {
             session.beginTransaction();
@@ -39,6 +39,6 @@ public class BackupDatabase extends Script {
             logger.error("Error while creating database backup", e);
         }
 
-        logger.info("Database backed up successfully");
+        logger.debug("Database backed up successfully");
     }
 }

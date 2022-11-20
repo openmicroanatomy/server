@@ -30,7 +30,7 @@ public class DeleteOldBackups extends Script {
         long NOW = System.currentTimeMillis();
         Path backupDirectory = Path.of(Constants.BACKUP_DIRECTORY);
 
-        logger.info("Clearing any old backups ...");
+        logger.debug("Clearing any old backups ...");
         int deleted = 0;
 
         try (Stream<Path> files = Files.list(backupDirectory)) {
@@ -48,6 +48,6 @@ public class DeleteOldBackups extends Script {
             logger.error("Error while deleting old backups", e);
         }
 
-        logger.info("Deleted {} old backups", deleted);
+        logger.debug("Deleted {} old backups", deleted);
     }
 }
