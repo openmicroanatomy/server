@@ -151,11 +151,13 @@ public class Main {
 
     private static void createInitialOrganizationIfOneDoesNotExist() {
         Session session = Database.openSession();
-        session.beginTransaction();
 
         long count = (long) session.createQuery("SELECT COUNT (*) FROM Organization").getSingleResult();
 
-        if (count > 0) return;
+        if (count > 0) {
+            session.close();
+            return;
+        }
 
         System.out.println("================================================================");
         System.out.println("No organizations exist, creating a new one ...");
@@ -185,6 +187,8 @@ public class Main {
         } while (!confirm.equals("yes"));
 
         try {
+            session.beginTransaction();
+
             Organization organization = new Organization();
             organization.setId(UUID.randomUUID());
             organization.setName(name);
@@ -192,7 +196,6 @@ public class Main {
             session.save(organization);
 
             session.getTransaction().commit();
-            session.close();
 
             System.out.println("================================================================");
             System.out.printf("Organization created [%s (%s)]%n", organization.getName(), organization.getId());
@@ -201,6 +204,8 @@ public class Main {
             System.err.println("Error while creating organization -- cannot continue, exiting");
             e.printStackTrace();
             System.exit(0);
+        } finally {
+            session.close();
         }
     }
 
