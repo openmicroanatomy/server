@@ -100,7 +100,6 @@ public class Application {
 
     public Application() {
         javalin.get("/", ctx -> {
-            Thread.sleep(10000);
             ctx.html("OpenMicroanatomy").status(200);
         });
 
