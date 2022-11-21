@@ -66,9 +66,11 @@ public class TileGenerator {
 		int slideWidth  = readIntegerProperty("openslide.level[0].width");
 		int levels      = readIntegerProperty("openslide.level-count");
 
+		// Force tiles to be 1024x1024
 		int tileHeight = 1024; //readIntegerPropertyOrDefault("openslide.level[0].tile-height", 256);
 		int tileWidth  = 1024; //readIntegerPropertyOrDefault("openslide.level[0].tile-width",  256);
 
+		// Ignore bounds; currently not supported
 		int boundsX = 0; //readIntegerPropertyOrDefault(OpenSlide.PROPERTY_NAME_BOUNDS_X, 0);
 		int boundsY = 0; //readIntegerPropertyOrDefault(OpenSlide.PROPERTY_NAME_BOUNDS_Y, 0);
 

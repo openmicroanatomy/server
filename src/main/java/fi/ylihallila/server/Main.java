@@ -59,6 +59,9 @@ public class Main {
         }
     }
 
+    /**
+     * Read input from terminal and process any valid commands.
+     */
     private static void readInput() {
         Scanner in = new Scanner(System.in);
 
@@ -90,7 +93,7 @@ public class Main {
     }
 
     /**
-     * Create all the necessary directories.
+     * Create all the necessary directories. Exits if creation fails.
      */
     private static void createDirectories() {
         try {
@@ -109,7 +112,7 @@ public class Main {
     }
 
     /**
-     * Copies the reference configuration file from the .jar file.
+     * Copies the reference configuration file from the .jar file if one does not exist.
      */
     private static void createConfigurationFile() {
         Path config = Path.of(Constants.CONFIGURATION_FILE);
@@ -128,7 +131,7 @@ public class Main {
 
     /**
      * Creates the database schema or updates it to the latest version.
-     * This must be run <b>before</b> Hibernate is instantiated due to how Flyway operates..
+     * This must be run <b>before</b> Hibernate is instantiated due to how Flyway operates.
      */
     private static void migrateDatabase() {
         Flyway.configure()
@@ -138,7 +141,7 @@ public class Main {
     }
 
     /**
-     * Validates that Hibernate has a valid database connection.
+     * Validates that Hibernate has a valid database connection. Exits if database connection fails.
      */
     private static void checkDatabaseConnection() {
         try {
@@ -233,7 +236,7 @@ public class Main {
         String password, repeatPassword;
 
         do {
-            System.out.print("Password: ");
+            System.out.print("Password (min. 5 characters): ");
             password = scanner.nextLine();
 
             System.out.print("Repeat password: ");

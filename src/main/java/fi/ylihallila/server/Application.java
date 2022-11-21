@@ -186,6 +186,10 @@ public class Application {
         }));
     }
 
+    /**
+     * Gracefully stops Javalin and closes database connection.
+     * Waits for up to 60 seconds for any database sessions to close before forcefully exiting.
+     */
     public void stop() {
         try {
             javalin.stop();

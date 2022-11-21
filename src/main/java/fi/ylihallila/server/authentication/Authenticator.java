@@ -72,8 +72,10 @@ public class Authenticator {
 	}
 
 	/**
-	 * Checks if the user is logged in, if so, then returns the user object.
-	 * If not logged in, generate a guest user object which lacks all permissions and roles.
+	 * Returns a {@link User} object if logged in.
+	 * If not logged in, generates a {@link Guest.User} object which lacks all permissions and roles.
+	 * @param ctx request context.
+	 * @return {@link User} object if the user is logged in, otherwise a {@link Guest.User} object.
 	 */
 	public static User getUserOrCreateGuestUser(Context ctx) {
 		if (isLoggedIn(ctx)) {
