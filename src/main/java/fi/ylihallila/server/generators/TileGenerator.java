@@ -202,15 +202,12 @@ public class TileGenerator {
 		try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 			BufferedImage thumbnail = openSlide.createThumbnailImage(500);
 
-			Path path = Path.of(String.format(Constants.TEMP_FILE, id + "_thumbnail.jpg"));
-
 			ImageIO.write(thumbnail, "jpg", os);
 
-			Files.write(path, os.toByteArray());
+			String thumbnailFileName = storageProvider.getThumbnailNamingFormat()
+							.replace("{id}", id);
 
-			storageProvider.commitFile(path.toFile());
-
-			Files.delete(path);
+			storageProvider.commitFile(os.toByteArray(), thumbnailFileName);
 		} catch (IOException e) {
 			logger.error("Error while generating thumbnail", e);
 		}

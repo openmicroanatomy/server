@@ -17,20 +17,29 @@ import static fi.ylihallila.server.util.Config.Config;
 public class FlatFile implements StorageProvider {
 
     private final String TILE_NAME_FORMAT = "{id}/{level}/{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
-
     private final String TILE_URL         = "{host}/tiles/" + TILE_NAME_FORMAT;
-    private final String THUMBNAIL_URL    = "{host}/tiles/{id}_thumbnail.jpg";
+
+    private final String THUMBNAIL_NAME_FORMAT = "{id}/thumbnail.jpg";
+    private final String THUMBNAIL_URL         = "{host}/tiles/" + THUMBNAIL_NAME_FORMAT;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override public void commitFile(File file) {
         try {
-            Files.copy(
-                file.toPath(),
-                Path.of(Constants.TILE_DIRECTORY, file.getName())
-            );
+            commitFile(Files.readAllBytes(file.toPath()), file.getName());
         } catch (IOException e) {
             logger.error("Error while saving tile archive to flat file.");
+        }
+    }
+
+    @Override public void commitFile(byte[] bytes, String fileName) {
+        Path tileDirectory = Path.of(Constants.TILE_DIRECTORY);
+        Path output = tileDirectory.resolve(fileName);
+
+        try {
+            Files.write(output, bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -76,6 +85,10 @@ public class FlatFile implements StorageProvider {
 
     @Override public String getTileNamingFormat() {
         return TILE_NAME_FORMAT;
+    }
+
+    @Override public String getThumbnailNamingFormat() {
+        return THUMBNAIL_NAME_FORMAT;
     }
 
     @Override

@@ -16,9 +16,10 @@ import static fi.ylihallila.server.util.Config.Config;
 public class Allas implements StorageProvider {
 
     private final String TILE_NAME_FORMAT = "{level}_{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
-
     private final String TILE_URL         = "{host}/{id}/tiles/" + TILE_NAME_FORMAT;
-    private final String THUMBNAIL_URL    = "{host}/{id}_thumbnail.jpg";
+
+    private final String THUMBNAIL_NAME_FORMAT = "{id}/thumbnail.jpg";
+    private final String THUMBNAIL_URL         = "{host}/" + THUMBNAIL_NAME_FORMAT;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -75,6 +76,13 @@ public class Allas implements StorageProvider {
         logger.debug("Uploaded file {} to Allas Bucket {}", file.getName(), container.getName());
     }
 
+    @Override public void commitFile(byte[] bytes, String fileName) {
+        StoredObject object = container.getObject(fileName);
+        object.uploadObject(bytes);
+
+        logger.debug("Uploaded file {} to Allas Bucket {}", fileName, container.getName());
+    }
+
     /**
      * Uploads an archive to Allas Object Storage. The container object "tiles" is used,
      * as that will be the folder the archive contents will be extracted to.
@@ -100,9 +108,12 @@ public class Allas implements StorageProvider {
         return THUMBNAIL_URL.replace("{host}", host);
     }
 
-    @Override
-    public String getTileNamingFormat() {
+    @Override public String getTileNamingFormat() {
         return TILE_NAME_FORMAT;
+    }
+
+    @Override public String getThumbnailNamingFormat() {
+        return THUMBNAIL_NAME_FORMAT;
     }
 
     @Override

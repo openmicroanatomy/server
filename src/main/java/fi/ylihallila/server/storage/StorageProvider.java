@@ -15,6 +15,14 @@ public interface StorageProvider {
     void commitFile(File file);
 
     /**
+     * Save a byte array as a file.
+     *
+     * @param bytes Bytes to save.
+     * @param fileName Name for file.
+     */
+    void commitFile(byte[] bytes, String fileName);
+
+    /**
      * Save an archive.
      *
      * @param file archive to save.
@@ -43,6 +51,14 @@ public interface StorageProvider {
      * @return string Tile naming scheme with placeholders.
      */
     String getTileNamingFormat();
+
+    /**
+     * Returns the thumbnail naming format. Recommended that the name ends in <b>.jpg</b>.
+     * Supported placeholders are: <code>{id}</code>.
+     *
+     * @return string Thumbnail naming scheme with placeholders.
+     */
+    String getThumbnailNamingFormat();
 
     /**
      * @return string Friendly name for Storage Provider.
