@@ -215,51 +215,6 @@ public class SlideController extends Controller implements CrudHandler {
 		logger.info("Slide {} edited by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
 	}
 
-	@OpenApi(
-		tags = { "slide" },
-		summary = "Fetch a tile for a slide",
-		pathParams = {
-			@OpenApiParam(name = "id", required = true),
-			@OpenApiParam(name = "tileX",      type = Integer.class, required = true),
-			@OpenApiParam(name = "tileY",      type = Integer.class, required = true),
-			@OpenApiParam(name = "level",      type = Integer.class, required = true),
-			@OpenApiParam(name = "tileWidth",  type = Integer.class, required = true),
-			@OpenApiParam(name = "tileHeight", type = Integer.class, required = true),
-		},
-		responses = {
-			@OpenApiResponse(status = "200"),
-			@OpenApiResponse(status = "404")
-		},
-		method = HttpMethod.GET,
-		path = "/api/v0/slides/:id/tile/:tileX/:tileY/:level/:tileWidth/:tileHeight"
-	)
-	public void renderTile(Context ctx) throws Exception {
-		String slide   = ctx.pathParam("id");
-		int tileX      = ctx.pathParam("tileX", Integer.class).get();
-		int tileY      = ctx.pathParam("tileY", Integer.class).get();
-		int level      = ctx.pathParam("level", Integer.class).get();
-		int tileWidth  = ctx.pathParam("tileWidth", Integer.class).get();
-		int tileHeight = ctx.pathParam("tileHeight", Integer.class).get();
-
-		String fileName = String.format(Constants.TILE_FILE_FORMAT, slide, tileX, tileY, level, tileWidth, tileHeight);
-
-		if (Files.exists(Path.of(fileName), LinkOption.NOFOLLOW_LINKS)) {
-			logger.trace("Retrieving from disk [{}, {},{} / {} / {},{}]", fileName, tileX, tileY, level, tileWidth, tileHeight);
-
-			FileInputStream fis = new FileInputStream(Path.of(fileName).toString());
-			InputStream is = new ByteArrayInputStream(fis.readAllBytes());
-
-			ctx.status(200).contentType("image/jpg").result(is);
-
-			is.close();
-			fis.close();
-		} else {
-			logger.info("Couldn't find tile [{}, {},{} / {} / {},{}]", fileName, tileX, tileY, level, tileWidth, tileHeight);
-			throw new NotFoundResponse();
-		}
-	}
-
-
 	/* Private API */
 
 	private void getSlidePropertiesFromFile(Context ctx, String id) {

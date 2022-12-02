@@ -159,7 +159,6 @@ public class Application {
             /* Slides */
 
             crud("slides/:id", SlideController, roles(ANYONE));
-            get("slides/:id/tile/:tileX/:tileY/:level/:tileWidth/:tileHeight", SlideController::renderTile, roles(ANYONE));
 
             /* Workspaces */
 

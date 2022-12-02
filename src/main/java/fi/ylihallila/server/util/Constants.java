@@ -12,7 +12,6 @@ public class Constants {
     public final static String PROJECTS_FOLDER       = "projects/";
 
     public final static String TILE_DIRECTORY        = "tiles";
-    public final static String TILE_FILE_FORMAT      = TILE_DIRECTORY + "/%s/%s/%s_%s_%s_%s.png";
 
     public final static String ORGANIZATION_LOGOS    = "logos/%s.png";
 
