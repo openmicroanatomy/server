@@ -30,7 +30,7 @@ public class ScriptManager {
         var scheduledFuture = executor.scheduleAtFixedRate(script, script.getInterval(), script.getInterval(), TimeUnit.SECONDS);
         scheduledScripts.add(scheduledFuture);
 
-        logger.info("Scheduled a new script: {}", script.getDescription());
+        logger.info("Scheduled script: {}", script.getDescription());
 
         return scheduledFuture;
     }
