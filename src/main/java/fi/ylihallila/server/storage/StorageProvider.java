@@ -22,19 +22,27 @@ public interface StorageProvider {
     void commitArchive(File file);
 
     /**
-     * Returns the URI where the tiles are located. Contains placeholders {id}, {level}, {tileX}, {tileY},
-     * {tileHeight}, {tileWidth} and any possible Storage Provider specific placeholders.
+     * Returns the URI where the tiles are located.
+     * Supported placeholders: <code>{id}, {level}, {tileX}, {tileY}, {tileHeight}, {tileWidth}</code>.
      *
-     * @return string URI with placeholders.
+     * @return string tile URI with placeholders.
      */
     String getTilesURI();
 
     /**
-     * Returns the URI where the thumbnail is located. Contains placeholders {id}.
+     * Returns the URI where the thumbnail is located. Supported placeholders: <code>{id}</code>.
      *
-     * @return string URI with placeholders.
+     * @return string thumbnail URI with placeholders.
      */
     String getThumbnailURI();
+
+    /**
+     * Returns the individual tile naming format. Recommended that the name ends in <b>.jpg</b>.
+     * Supported placeholders are: <code>{id}, {level}, {tileX}, {tileY}, {tileHeight}, {tileWidth}</code>.
+     *
+     * @return string Tile naming scheme with placeholders.
+     */
+    String getTileNamingFormat();
 
     /**
      * @return string Friendly name for Storage Provider.

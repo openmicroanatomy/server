@@ -1,8 +1,8 @@
 package fi.ylihallila.server.storage;
 
+import fi.ylihallila.server.util.Constants;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarFile;
-import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,13 +16,18 @@ import static fi.ylihallila.server.util.Config.Config;
 
 public class FlatFile implements StorageProvider {
 
+    private final String TILE_NAME_FORMAT = "{id}/{level}/{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
+
+    private final String TILE_URL         = "{host}/tiles/" + TILE_NAME_FORMAT;
+    private final String THUMBNAIL_URL    = "{host}/tiles/{id}_thumbnail.jpg";
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override public void commitFile(File file) {
         try {
             Files.copy(
                 file.toPath(),
-                Path.of("tiles", file.getName())
+                Path.of(Constants.TILE_DIRECTORY, file.getName())
             );
         } catch (IOException e) {
             logger.error("Error while saving tile archive to flat file.");
@@ -31,44 +36,46 @@ public class FlatFile implements StorageProvider {
 
     @Override public void commitArchive(File file) {
         try {
-            Path archivePath = Path.of("tiles", file.getName());
-            Path tilePath    = Path.of("tiles", FileNameUtils.getBaseName(file.getName()));
+            Path tileDirectory = Path.of(Constants.TILE_DIRECTORY);
 
-            Files.copy(
-                file.toPath(),
-                archivePath
-            );
+            try (TarFile archive = new TarFile(file)) {
+                List<TarArchiveEntry> entries = archive.getEntries();
 
-            TarFile zipFile = new TarFile(archivePath.toFile());
-            List<TarArchiveEntry> entries = zipFile.getEntries();
-            for (TarArchiveEntry entry : entries) {
-                Path entryPath = tilePath.resolve(entry.getName());
+                for (TarArchiveEntry entry : entries) {
+                    Path entryPath = tileDirectory.resolve(entry.getName());
 
-                if (entry.isDirectory()) {
-                    Files.createDirectories(entryPath);
-                } else {
-                    Files.createDirectories(entryPath.getParent());
+                    if (entry.isDirectory()) {
+                        Files.createDirectories(entryPath);
+                    } else {
+                        Files.createDirectories(entryPath.getParent());
 
-                    try (InputStream in = zipFile.getInputStream(entry)){
-                        try (OutputStream out = new FileOutputStream(entryPath.toFile())){
-                            IOUtils.copy(in, out);
+                        try (InputStream in = archive.getInputStream(entry)) {
+                            try (OutputStream out = new FileOutputStream(entryPath.toFile())) {
+                                IOUtils.copy(in, out);
+                            }
                         }
                     }
                 }
             }
-
-            Files.delete(archivePath);
         } catch (IOException e) {
             logger.error("Error while saving tile archive to flat file.", e);
         }
     }
 
     @Override public String getTilesURI() {
-        return Config.getString("server.host") + "/tiles/{id}-level-{level}-tiles/{level}_{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
+        String host = Config.getString("server.host");
+
+        return TILE_URL.replace("{host}", host);
     }
 
     @Override public String getThumbnailURI() {
-        return Config.getString("server.host") + "/tiles/{id}_thumbnail.jpg";
+        String host = Config.getString("server.host");
+
+        return THUMBNAIL_URL.replace("{host}", host);
+    }
+
+    @Override public String getTileNamingFormat() {
+        return TILE_NAME_FORMAT;
     }
 
     @Override

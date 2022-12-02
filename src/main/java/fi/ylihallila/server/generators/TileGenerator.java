@@ -120,7 +120,8 @@ public class TileGenerator {
 						id,
 						backgroundColor,
 						openSlide,
-						tileArchive
+						tileArchive,
+						storage
 					));
 				}
 			}

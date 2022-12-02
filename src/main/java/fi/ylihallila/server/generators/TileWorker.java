@@ -1,6 +1,7 @@
 package fi.ylihallila.server.generators;
 
 import fi.ylihallila.server.archivers.TileArchive;
+import fi.ylihallila.server.storage.StorageProvider;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +35,9 @@ public class TileWorker implements Runnable {
 
 	private final OpenSlide openSlide;
 	private final TileArchive archive;
+	private final StorageProvider storageProvider;
 
-	public TileWorker(int compression, int downsample, int level, int row, int col, int offsetX, int offsetY, int tileWidth, int tileHeight, int slideWidth, int slideHeight, String slideName, Color bgColor, OpenSlide openSlide, TileArchive archive) {
+	public TileWorker(int compression, int downsample, int level, int row, int col, int offsetX, int offsetY, int tileWidth, int tileHeight, int slideWidth, int slideHeight, String slideName, Color bgColor, OpenSlide openSlide, TileArchive archive, StorageProvider storageProvider) {
 		this.compression = compression;
 		this.slideName = slideName;
 		this.bgColor = bgColor;
@@ -60,6 +62,7 @@ public class TileWorker implements Runnable {
 
 		this.openSlide = openSlide;
 		this.archive = archive;
+		this.storageProvider = storageProvider;
 	}
 
 	@Override
@@ -89,7 +92,14 @@ public class TileWorker implements Runnable {
 				return;
 			}
 
-			String fileName = (level + "_"+ tileX + "_" + tileY + "_" + tileWidth + "_" + tileHeight + ".jpg");
+			String fileName = storageProvider.getTileNamingFormat()
+					.replace("{id}", slideName)
+					.replace("{level}", String.valueOf(level))
+					.replace("{tileX}", String.valueOf(tileX))
+					.replace("{tileY}", String.valueOf(tileY))
+					.replace("{tileHeight}", String.valueOf(tileHeight))
+					.replace("{tileWidth}", String.valueOf(tileWidth));
+
 			archive.addTile(fileName, compressImage(img));
 		} catch (Exception e) {
 			logger.error("Error when generating tile: {}, row: {}, col: {}, x/y: {}/{}", slideName, tileX, tileY, tileWidth, tileHeight);
