@@ -7,7 +7,6 @@ import fi.ylihallila.server.models.Organization;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.util.Constants;
 import io.javalin.apibuilder.CrudHandler;
-import io.javalin.core.util.FileUtil;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
 import io.javalin.http.UploadedFile;

@@ -19,14 +19,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class SlideController extends Controller implements CrudHandler {
 
-	private Logger logger = LoggerFactory.getLogger(SlideController.class);
+	private final Logger logger = LoggerFactory.getLogger(SlideController.class);
 
 	@OpenApi(
 		tags = { "slide" },

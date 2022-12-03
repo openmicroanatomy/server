@@ -26,7 +26,7 @@ import java.util.UUID;
 
 public class ProjectController extends Controller implements CrudHandler {
 
-	private Logger logger = LoggerFactory.getLogger(ProjectController.class);
+	private final Logger logger = LoggerFactory.getLogger(ProjectController.class);
 
 	@OpenApi(
 		tags = { "projects" },

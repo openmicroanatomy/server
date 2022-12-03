@@ -32,7 +32,7 @@ import static io.javalin.core.security.SecurityUtil.roles;
 
 public class Application {
 
-    private Logger logger = LoggerFactory.getLogger(Application.class);
+    private final Logger logger = LoggerFactory.getLogger(Application.class);
 
     private Javalin javalin = Javalin.create(config -> {
         config.registerPlugin(new OpenApiPlugin(getOpenApiOptions()));
@@ -99,9 +99,7 @@ public class Application {
     );
 
     public Application() {
-        javalin.get("/", ctx -> {
-            ctx.html("OpenMicroanatomy").status(200);
-        });
+        javalin.get("/", ctx -> ctx.html("OpenMicroanatomy").status(200));
 
         javalin.routes(() -> path("/api/v0/", () -> {
             before(ctx -> {
