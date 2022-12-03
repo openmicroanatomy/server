@@ -116,7 +116,7 @@ public class UserController extends Controller implements CrudHandler {
 
 		ctx.status(201).json(newUser);
 
-		logger.info("User {} created by {} [Organization: {}]", newUser.getName(), user.getName(), user.getOrganization().getName());
+		logger.info("User {} ({}) created by {} [ID: ({}), Organization: {}]", newUser.getName(), newUser.getId(), user.getName(), user.getId(), user.getOrganization().getName());
 	}
 
 	@OpenApi(
@@ -174,7 +174,7 @@ public class UserController extends Controller implements CrudHandler {
 		var cleanedFormParamMap = ctx.formParamMap();
 		cleanedFormParamMap.remove("password");
 
-		logger.info("User {} was edited by {} [{}]", editedUser.getName(), user.getName(), cleanedFormParamMap);
+		logger.info("User {} ({}) was edited by {} ({}) [{}]", editedUser.getName(), editedUser.getId(), user.getName(), user.getId(), cleanedFormParamMap);
 	}
 
 	@OpenApi(
@@ -197,9 +197,9 @@ public class UserController extends Controller implements CrudHandler {
 			session.delete(deletedUser);
 			ctx.status(200);
 
-			logger.info("User {} [{}] deleted by {} [{}]", deletedUser.getName(), deletedUser.getId(), user.getName(), user.getId());
+			logger.info("User {} ({}) deleted by {} ({})", deletedUser.getName(), deletedUser.getId(), user.getName(), user.getId());
 		} else {
-			logger.warn("User {} [{}] tried to delete user {} [{}] but lacked permissions.", user.getName(), user.getId(), deletedUser.getName(), deletedUser.getId());
+			logger.warn("User {} ({}) tried to delete user {} ({}) but lacked permissions.", user.getName(), user.getId(), deletedUser.getName(), deletedUser.getId());
 
 			throw new UnauthorizedResponse("No permission to delete this user");
 		}
@@ -260,7 +260,7 @@ public class UserController extends Controller implements CrudHandler {
 		for (Roles role : Roles.getModifiableRoles()) {
 			if (ctx.formParamMap().containsKey(role.name())) {
 				if (role == Roles.ADMIN && !(user.hasRole(Roles.ADMIN))) {
-					logger.info("User {} [{}] tried to edit administrative roles for {} [{}] but lacked permissions", user.getName(), user.getId(), editedUser.getName(), editedUser.getId());
+					logger.info("User {} ({}) tried to edit administrative roles for {} ({}) but lacked permissions", user.getName(), user.getId(), editedUser.getName(), editedUser.getId());
 					continue;
 				}
 

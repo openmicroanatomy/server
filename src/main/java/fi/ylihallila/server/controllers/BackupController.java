@@ -59,6 +59,7 @@ public class BackupController extends Controller {
 
         String projectId = ctx.pathParam(":id", String.class).get();
         long timestamp = ctx.pathParam(":timestamp", Long.class).get();
+        User user = Authenticator.getUser(ctx);
 
         if (!(hasWritePermission(ctx, projectId))) {
             throw new UnauthorizedResponse();
@@ -75,6 +76,6 @@ public class BackupController extends Controller {
         Backup backup = backups.get(0);
         backup.restore();
 
-        logger.info("Backup {}@{} restored by {}", projectId, timestamp, Authenticator.getUsername(ctx).orElse("Unknown"));
+        logger.info("Backup {} [ID: {}, Timestamp: {}] restored by {} ({})", backup.getBaseName(), projectId, timestamp, user.getName(), user.getId());
     }
 }

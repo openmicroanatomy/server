@@ -63,7 +63,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 
 		JavalinJson.setToJsonMapper(temp);
 
-		logger.info("Workspace {} created by {}", workspaceId, user.getName());
+		logger.info("Workspace {} ({}) created by {} ({})", workspace.getName(), workspaceId, user.getName(), user.getId());
 	}
 
 	@OpenApi(
@@ -96,7 +96,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 
 		session.delete(workspace);
 
-		logger.info("Workspace {} deleted by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
+		logger.info("Workspace {} ({}) deleted by {} ({})", workspace.getName(), id, user.getName(), user.getId());
 	}
 
 	@OpenApi(
@@ -210,7 +210,7 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		editWritePermissions(session, workspace, ctx);
 		editReadPermissions(session, workspace, ctx);
 
-		logger.info("Workspace {} edited by {}", id, user.getName());
+		logger.info("Workspace {} ({}) edited by {} ({})", workspace.getName(), id, user.getName(), user.getId());
 	}
 
 	/* Private API */

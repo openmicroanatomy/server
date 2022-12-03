@@ -136,7 +136,7 @@ public class ProjectController extends Controller implements CrudHandler {
 
 		ctx.status(200);
 
-		logger.info("Project {} deleted by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
+		logger.info("Project {} ({}) deleted by {} ({})", project.getName(), id, user.getName(), user.getId());
 
 	}
 
@@ -264,7 +264,7 @@ public class ProjectController extends Controller implements CrudHandler {
 
 		subject.addProject(project);
 
-		logger.info("Project {} created by {}", projectId, user.getName());
+		logger.info("Project {} ({}) created by {} ({})", projectName, projectId, user.getName(), user.getId());
 	}
 
 	public void createPersonalProject(Context ctx) {
@@ -283,7 +283,7 @@ public class ProjectController extends Controller implements CrudHandler {
 
 		ctx.status(200).html(projectId);
 
-		logger.info("Personal project {} created by {}", projectId, user.getName());
+		logger.info("Personal project {} ({}) created by {} ({})", projectName, projectId, user.getName(), user.getId());
 	}
 
 	private void createProjectJsonFile(String projectId) {

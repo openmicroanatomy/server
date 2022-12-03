@@ -55,7 +55,7 @@ public class OrganizationController extends Controller implements CrudHandler {
 
         ctx.status(201).json(organization);
 
-        logger.info("Organization {} ({}) created by {}", name, id, user.getName());
+        logger.info("Organization {} ({}) created by {} ({})", name, id, user.getName(), user.getId());
     }
 
     @OpenApi(
@@ -84,7 +84,7 @@ public class OrganizationController extends Controller implements CrudHandler {
 
         session.delete(organization);
 
-        logger.info("Organization {} ({}) deleted by {}", organization.getName(), organization.getId(), user.getName());
+        logger.info("Organization {} ({}) deleted by {} ({})", organization.getName(), organization.getId(), user.getName(), user.getId());
     }
 
     @OpenApi(
@@ -174,6 +174,6 @@ public class OrganizationController extends Controller implements CrudHandler {
             }
         }
 
-        logger.info("Organization {} ({}) edited by {}", organization.getName(), id, user.getName());
+        logger.info("Organization {} ({}) edited by {} ({})", organization.getName(), id, user.getName(), user.getId());
     }
 }

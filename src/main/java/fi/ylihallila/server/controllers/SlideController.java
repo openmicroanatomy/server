@@ -212,7 +212,7 @@ public class SlideController extends Controller implements CrudHandler {
 
 		ctx.status(200);
 
-		logger.info("Slide {} edited by {}", id, Authenticator.getUsername(ctx).orElse("Unknown"));
+		logger.info("Slide {} ({}) edited by {} ({})", slide.getName(), id, user.getName(), user.getId());
 	}
 
 	/* Private API */
@@ -246,16 +246,17 @@ public class SlideController extends Controller implements CrudHandler {
 	private void processUploadedSlide(Context ctx, String slideName) throws IOException {
 		Optional<OpenSlide> openSlide = OpenSlideCache.get(String.format(Constants.TEMP_FILE, slideName));
 
+		String id = UUID.randomUUID().toString();
+		User user = Authenticator.getUser(ctx);
+
 		if (openSlide.isEmpty()) {
 			logger.error("Error when processing uploaded file: Couldn't create OpenSlide instance."
 				+ "\n" + "Possible solutions: file was corrupted during upload or the file isn't supported by OpenSlide");
 			return;
 		} else {
-			logger.info("Processing slide {}, uploaded by {}", slideName, Authenticator.getUsername(ctx).orElse("Unknown"));
+			logger.info("Processing slide {} ({}); uploaded by {} ({})", slideName, id, user.getName(), user.getId());
 		}
 
-		String id = UUID.randomUUID().toString();
-		User user = Authenticator.getUser(ctx);
 
 		// Add slide to database
 

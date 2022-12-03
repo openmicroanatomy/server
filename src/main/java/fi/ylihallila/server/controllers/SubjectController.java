@@ -67,7 +67,7 @@ public class SubjectController extends Controller implements CrudHandler {
 
         JavalinJson.setToJsonMapper(temp);
 
-        logger.info("Subject {} [Workspace: {}] created by {}", subjectName, workspace.getName(), Authenticator.getUsername(ctx).orElse("Unknown"));
+        logger.info("Subject {} [Workspace: {}] created by {} ({})", subjectName, workspace.getName(), user.getName(), user.getId());
     }
 
     @OpenApi(
@@ -106,7 +106,7 @@ public class SubjectController extends Controller implements CrudHandler {
 
         session.delete(subject);
 
-        logger.info("Subject {} ({}) deleted by {}", subject.getName(), id, user.getName());
+        logger.info("Subject {} ({}) deleted by {} ({})", subject.getName(), id, user.getName(), user.getId());
     }
 
     @OpenApi(
@@ -150,7 +150,7 @@ public class SubjectController extends Controller implements CrudHandler {
 
         JavalinJson.setToJsonMapper(temp);
 
-        logger.info("Subject {} edited by {}", id, user.getName());
+        logger.info("Subject {} ({}) edited by {} ({})", subject.getName(), subject.getId(), user.getName(), user.getId());
     }
 
     @OpenApi(ignore = true)
