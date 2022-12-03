@@ -47,8 +47,11 @@ public class Main {
             try {
                 app = new Application();
 
-                readInput();
-
+                // TODO: Disable input for Unit tests because otherwise tests never run, as the @BeforeAll method
+                //       waits for main() to return but it never returns because it waits for input.
+                if (!parser.hasFlag("test")) {
+                    readInput();
+                }
             } catch (Exception e) {
                 if (e.getCause() != null && e.getCause().getClass() == IllegalStateException.class) {
                     logger.info("Add a valid keystore to launch the server in secure mode.");

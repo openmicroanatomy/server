@@ -3,8 +3,10 @@ package fi.ylihallila.server.tests;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.models.*;
+import org.apache.commons.io.FileUtils;
 import org.hibernate.Session;
 
+import java.io.File;
 import java.util.Set;
 import java.util.List;
 
@@ -21,6 +23,8 @@ import java.util.List;
 public class DummyDb {
 
     public static void create() {
+        FileUtils.deleteQuietly(new File("database.mv.db"));
+
         Session session = Database.openSession();
         session.beginTransaction();
 
@@ -89,14 +93,14 @@ public class DummyDb {
         "cf869d47-686e-4e69-bc20-5a233feb2a54",
         "Workspace A",
         ORGANIZATION_A,
-        null
+        List.of()
     );
 
     public static Workspace WORKSPACE_B = new Workspace(
         "958af329-05cf-4a2a-9321-9a603d0ac6d7",
         "Workspace B",
         ORGANIZATION_B,
-        null
+        List.of()
     );
 
     public static Subject SUBJECT_A = new Subject(

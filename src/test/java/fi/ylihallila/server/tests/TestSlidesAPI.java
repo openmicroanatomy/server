@@ -19,9 +19,9 @@ public class TestSlidesAPI {
 
     @BeforeAll
     static void init() throws IOException, InterruptedException {
-        Main.main(new String[]{ "--insecure" });
-
         DummyDb.create();
+
+        Main.main(new String[]{ "--insecure", "--port", "1337", "--test" });
     }
 
     @Test

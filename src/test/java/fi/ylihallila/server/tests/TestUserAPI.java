@@ -18,11 +18,10 @@ public class TestUserAPI {
 
     @BeforeAll
     static void init() throws IOException, InterruptedException {
-        Main.main(new String[]{ "--insecure" });
-
         DummyDb.create();
-    }
 
+        Main.main(new String[]{ "--insecure", "--port", "1337", "--test" });
+    }
 
     @Test
     @Order(1)
@@ -119,13 +118,7 @@ public class TestUserAPI {
                 .basicAuth("admin@example.com", "admin")
                 .asString();
 
-        DummyDb.TEACHER.getRoles().remove(Roles.MANAGE_SLIDES);
-
-        String JSON = JavalinJson.toJson(DummyDb.TEACHER);
-
-        assertThat(response.getBody().length()).isEqualTo(JSON.length());
-
-        DummyDb.TEACHER.getRoles().add(Roles.MANAGE_SLIDES);
+        assertThat(response.getBody()).doesNotContain(Roles.MANAGE_SLIDES.name());
     }
 
     @Test

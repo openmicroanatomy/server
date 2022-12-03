@@ -1,7 +1,6 @@
 package fi.ylihallila.server.tests;
 
 import fi.ylihallila.server.Main;
-import fi.ylihallila.server.util.Constants;
 import io.javalin.plugin.json.JavalinJson;
 import kong.unirest.Unirest;
 import org.apache.commons.io.FileUtils;
@@ -22,18 +21,19 @@ public class TestProjectsAPI {
 
     @BeforeAll
     static void init() throws IOException, InterruptedException {
-        Main.main(new String[]{ "--insecure" });
-
         DummyDb.create();
 
-        Files.copy(
-            Path.of("Dummy.json"),
-            Path.of("projects/" + DummyDb.PROJECT_B.getId() + ".json")
+        Main.main(new String[]{ "--insecure", "--port", "1337", "--test" });
+
+
+        FileUtils.copyFile(
+            new File("Dummy.json"),
+            new File("projects/" + DummyDb.PROJECT_B.getId() + ".json")
         );
 
-        Files.copy(
-            Path.of("Dummy.json"),
-            Path.of("projects/" + DummyDb.PROJECT_A.getId() + ".json")
+        FileUtils.copyFile(
+            new File("Dummy.json"),
+            new File("projects/" + DummyDb.PROJECT_A.getId() + ".json")
         );
     }
 

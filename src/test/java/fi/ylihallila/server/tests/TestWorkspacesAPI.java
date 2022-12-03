@@ -1,12 +1,10 @@
 package fi.ylihallila.server.tests;
 
 import fi.ylihallila.server.Main;
-import io.javalin.plugin.json.JavalinJson;
 import kong.unirest.Unirest;
 import org.junit.jupiter.api.*;
 
 import java.io.IOException;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,9 +15,9 @@ public class TestWorkspacesAPI {
 
     @BeforeAll
     static void init() throws IOException, InterruptedException {
-        Main.main(new String[]{ "--insecure" });
-
         DummyDb.create();
+
+        Main.main(new String[]{ "--insecure", "--port", "1337", "--test" });
     }
 
     /* Getting Workspaces */
