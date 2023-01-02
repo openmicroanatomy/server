@@ -156,6 +156,8 @@ public class TileGenerator {
 
 		long endTime = System.currentTimeMillis();
 		System.out.print("\rTook " + (endTime - startTime) / 1000.0 + " seconds to generate & upload tiles.");
+
+		executor.shutdown();
 	}
 
 	/**
