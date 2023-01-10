@@ -4,11 +4,10 @@ plugins {
 }
 
 repositories {
-    mavenLocal()
-
     maven {
-        url = uri('https://repo.maven.apache.org/maven2/')
+        url uri("${projectDir}/maven")
     }
+
     mavenCentral()
 }
 
@@ -43,6 +42,8 @@ description = 'Open Microanatomy Server'
 java.sourceCompatibility = JavaVersion.VERSION_14
 
 jar {
+    duplicatesStrategy = 'warn'
+
     manifest {
         attributes('Implementation-Title': project.name,
                    'Implementation-Version': project.version,
