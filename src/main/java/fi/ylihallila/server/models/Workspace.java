@@ -47,16 +47,16 @@ public class Workspace {
 	 * to everyone. If an organization, only authenticated users with that organization can view this workspace.
 	 */
 	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "read", joinColumns = @JoinColumn(name = "owner_id"), inverseJoinColumns = @JoinColumn(name = "workspace_id"))
+	@JoinTable(name = "read", joinColumns = @JoinColumn(name = "workspace_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
 	@Filters.VisibleToWriteOnly
 	private final Set<Owner> read = new HashSet<>();
 
 	/**
-	 * Organizations / users who are allowed to write to this workspace.
+	 * Organizations / users who are allowed to write to this workspace. Users with write permission are also allowed to read.
 	 * By default, this is set to the user who created this workspace.
 	 */
 	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "write", joinColumns = @JoinColumn(name = "owner_id"), inverseJoinColumns = @JoinColumn(name = "workspace_id"))
+	@JoinTable(name = "write", joinColumns = @JoinColumn(name = "workspace_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
 	@Filters.VisibleToWriteOnly
 	private final Set<Owner> write = new HashSet<>();
 
