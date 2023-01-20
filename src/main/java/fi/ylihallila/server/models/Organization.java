@@ -2,6 +2,7 @@ package fi.ylihallila.server.models;
 
 import javax.persistence.*;
 
+import java.util.Collection;
 import java.util.Objects;
 
 import static fi.ylihallila.server.util.Config.Config;
@@ -9,6 +10,12 @@ import static fi.ylihallila.server.util.Config.Config;
 @Entity
 @DiscriminatorValue("Organization")
 public class Organization extends Owner {
+
+	@OneToMany(mappedBy = "organization", orphanRemoval = true)
+	private Collection<User> users;
+
+	@OneToMany(mappedBy = "owner", orphanRemoval = true)
+	private Collection<Workspace> workspaces;
 
 	public Organization() {}
 
