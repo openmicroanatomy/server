@@ -50,6 +50,8 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		Workspace workspace = new Workspace();
 		workspace.setId(workspaceId);
 		workspace.setName(workspaceName);
+
+		// TODO: Allow administrators to override current organization
 		workspace.setOwner(user.getOrganization());
 		workspace.setSubjects(Collections.emptyList());
 		workspace.setWritePermissions(List.of(user));
@@ -90,8 +92,12 @@ public class WorkspaceController extends Controller implements CrudHandler {
 			throw new NotFoundResponse();
 		}
 
+		if (!(workspace.hasWritePermission(user))) {
+			throw new ForbiddenResponse("Missing write permission.");
+		}
+
 		if (!(workspace.getOwner().equals(user.getOrganization()))) {
-			throw new ForbiddenResponse();
+			throw new ForbiddenResponse("Workspace does not belong to your organization.");
 		}
 
 		session.delete(workspace);

@@ -112,6 +112,13 @@ public class TokenAuth implements Auth {
     }
 
     public static DecodedJWT validate(Context ctx) {
+        var microsoftAuthenticationEnabled = Config.getBoolean("auth.microsoft.enabled");
+
+        if (!microsoftAuthenticationEnabled) {
+            logger.debug("Tried to authenticate with Microsoft while it's disabled.");
+            throw new UnauthorizedResponse("Microsoft Authentication is not enabled.");
+        }
+
         String token = ctx.header("token", String.class).get();
 
         try {

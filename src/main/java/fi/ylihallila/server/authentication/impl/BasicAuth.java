@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static fi.ylihallila.server.util.Config.Config;
+
 public class BasicAuth implements Auth {
 
     private static final Logger logger = LoggerFactory.getLogger(BasicAuth.class);
@@ -117,6 +119,13 @@ public class BasicAuth implements Auth {
     }
 
     public User getUserObject(Context ctx) {
+        var basicAuthenticationEnabled = Config.getBoolean("auth.simple.enabled");
+
+        if (!basicAuthenticationEnabled) {
+            logger.debug("Tried to authenticate with Basic Authentication while it's disabled.");
+            throw new UnauthorizedResponse("Logging using username & password is not enabled.");
+        }
+
         try {
             Session session = ctx.use(Session.class);
 
