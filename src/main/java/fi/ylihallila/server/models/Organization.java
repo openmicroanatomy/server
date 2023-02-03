@@ -1,5 +1,7 @@
 package fi.ylihallila.server.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 
 import java.util.Collection;
@@ -12,9 +14,13 @@ import static fi.ylihallila.server.util.Config.Config;
 public class Organization extends Owner {
 
 	@OneToMany(mappedBy = "organization", orphanRemoval = true)
+	@Transient
+	@JsonIgnore
 	private Collection<User> users;
 
 	@OneToMany(mappedBy = "owner", orphanRemoval = true)
+	@Transient
+	@JsonIgnore
 	private Collection<Workspace> workspaces;
 
 	public Organization() {}

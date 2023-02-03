@@ -270,12 +270,13 @@ public class Main {
             session.save(user);
 
             session.getTransaction().commit();
-            session.close();
 
             Files.writeString(
                 Path.of(Constants.ADMINISTRATORS_FILE),
                 new Gson().toJson(List.of(user))
             );
+
+            session.close();
 
             System.out.println("================================================================");
             System.out.println("Administrator account created; assigned to " + organization.getName());
