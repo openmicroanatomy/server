@@ -10,6 +10,7 @@ import io.javalin.http.staticfiles.Location;
 import io.javalin.plugin.openapi.OpenApiOptions;
 import io.javalin.plugin.openapi.OpenApiPlugin;
 import io.javalin.plugin.openapi.ui.SwaggerOptions;
+import io.javalin.plugin.rendering.vue.JavalinVue;
 import io.swagger.v3.oas.models.info.Info;
 import org.apache.http.HttpVersion;
 import org.eclipse.jetty.server.*;
@@ -83,6 +84,7 @@ public class Application {
     }).start();
 
     private final OrganizationController   OrganizationController = new OrganizationController();
+    private final DashboardController      DashboardController    = new DashboardController();
     private final WorkspaceController      WorkspaceController    = new WorkspaceController();
     private final PasswordController       PasswordController     = new PasswordController();
     private final ProjectController        ProjectController      = new ProjectController();
@@ -99,7 +101,9 @@ public class Application {
     );
 
     public Application() {
-        javalin.get("/", ctx -> ctx.html("OpenMicroanatomy").status(200));
+        JavalinVue.rootDirectory("/vue", Location.CLASSPATH);
+
+        javalin.get("/", DashboardController::index, roles(ANYONE));
 
         javalin.routes(() -> path("/api/v0/", () -> {
             before(ctx -> {
