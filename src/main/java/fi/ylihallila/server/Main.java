@@ -23,8 +23,6 @@ public class Main {
     public static void main(String[] args) throws IOException, InterruptedException {
         if (args.length == 1 && args[0].equalsIgnoreCase("--tiler")) {
             new Tiler();
-        } else if (args.length == 1 && args[0].equalsIgnoreCase("--debug")) {
-            new SimpleDebugger();
         } else if (args.length == 2 && args[0].equalsIgnoreCase("--generate")) {
             new TileGenerator(args[1]);
         } else if (args.length == 2 && args[0].equalsIgnoreCase("--properties")) {
