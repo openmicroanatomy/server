@@ -1,12 +1,8 @@
 package fi.ylihallila.server;
 
-import com.google.gson.Gson;
-import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.generators.PropertiesGenerator;
 import fi.ylihallila.server.generators.TileGenerator;
 import fi.ylihallila.server.generators.Tiler;
-import fi.ylihallila.server.models.Organization;
-import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.util.*;
 import org.hibernate.Session;
 import org.slf4j.Logger;
@@ -15,10 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Set;
 import java.util.Scanner;
-import java.util.UUID;
 
 import org.flywaydb.core.Flyway;
 
@@ -40,7 +33,6 @@ public class Main {
             CommandLineParser parser = new CommandLineParser(args);
 
             Constants.SERVER_PORT = parser.hasArgument("port") ? parser.getInt("port") : 7777; // Default port 7777
-            Constants.ENABLE_SSL  = parser.hasFlag("secure");
 
             preflight();
 
@@ -91,8 +83,7 @@ public class Main {
         createConfigurationFile();
         migrateDatabase();
         checkDatabaseConnection();
-        createInitialOrganizationIfOneDoesNotExist();
-        createAdministratorAccountIfOneDoesNotExist();
+        checkIsServerInitialized();
     }
 
     /**
@@ -155,136 +146,26 @@ public class Main {
         }
     }
 
-    private static void createInitialOrganizationIfOneDoesNotExist() {
+    /**
+     * Checks that an organization and a user exists, which means that the server is ready to be used.
+     */
+    private static void checkIsServerInitialized() {
         Session session = Database.openSession();
+        session.beginTransaction();
 
-        long count = (long) session.createQuery("SELECT COUNT (*) FROM Organization").getSingleResult();
+        long organizations = session.createQuery("SELECT COUNT(*) FROM Organization", Long.class).getSingleResult();
+        long users = session.createQuery("SELECT COUNT(*) FROM User", Long.class).getSingleResult();
 
-        if (count > 0) {
-            session.close();
-            return;
-        }
+        session.getTransaction().commit();
+        session.close();
 
-        System.out.println("================================================================");
-        System.out.println("No organizations exist, creating a new one ...");
-        System.out.println("If you believe this is an error: stop the server and confirm");
-        System.out.println("that the database file exists, is readable and is not corrupted.");
-        System.out.println("================================================================");
+        Constants.IS_SETUP = organizations > 0 && users > 0;
 
-        /* Organization name */
-
-        Scanner scanner = new Scanner(System.in);
-
-        System.out.print("Organization name: ");
-        String name = scanner.nextLine();
-
-        String confirm;
-
-        do {
-            System.out.println("Selected name: " + name);
-            System.out.print("Type 'yes' to confirm and 'no' to re-enter: ");
-
-            confirm = scanner.nextLine();
-
-            if (confirm.equals("no")) {
-                System.out.print("New organization name: ");
-                name = scanner.nextLine();
-            }
-        } while (!confirm.equals("yes"));
-
-        try {
-            session.beginTransaction();
-
-            Organization organization = new Organization();
-            organization.setId(UUID.randomUUID());
-            organization.setName(name);
-
-            session.save(organization);
-
-            session.getTransaction().commit();
-
-            System.out.println("================================================================");
-            System.out.printf("Organization created [%s (%s)]%n", organization.getName(), organization.getId());
-            System.out.println("================================================================");
-        } catch (Exception e) {
-            System.err.println("Error while creating organization -- cannot continue, exiting");
-            e.printStackTrace();
-            System.exit(0);
-        } finally {
-            session.close();
-        }
-    }
-
-    private static void createAdministratorAccountIfOneDoesNotExist() {
-        if (Files.exists(Path.of(Constants.ADMINISTRATORS_FILE))) {
-            return;
-        }
-
-        System.out.println("================================================================");
-        System.out.println("Missing administrators file, creating a new one ...");
-        System.out.println("If you believe this is an error, then stop the server and");
-        System.out.println("confirm that the administrators.json file exist and is readable.");
-        System.out.println("================================================================");
-
-        /* User details */
-
-        Scanner scanner = new Scanner(System.in);
-
-        System.out.print("Email: ");
-        String email = scanner.nextLine();
-
-        System.out.print("Name: ");
-        String name = scanner.nextLine();
-
-        String password, repeatPassword;
-
-        do {
-            System.out.print("Password (min. 5 characters): ");
-            password = scanner.nextLine();
-
-            System.out.print("Repeat password: ");
-            repeatPassword = scanner.nextLine();
-
-            if (!(password.equals(repeatPassword))) {
-                System.err.print("Passwords do not match, try again ...");
-            }
-        } while (!(password.equals(repeatPassword)));
-
-        try {
-            Session session = Database.openSession();
-            session.beginTransaction();
-
-            // Get the first organization inside the Organizations table, which we just created.
-            Organization organization = session.createQuery("from Organization", Organization.class)
-                    .setMaxResults(1)
-                    .getSingleResult();
-
-            User user = new User();
-            user.setId(UUID.randomUUID());
-            user.setEmail(email);
-            user.setName(name);
-            user.hashPassword(password);
-            user.setOrganization(organization);
-            user.setRoles(Set.of(Roles.ADMIN));
-
-            session.save(user);
-
-            session.getTransaction().commit();
-
-            Files.writeString(
-                Path.of(Constants.ADMINISTRATORS_FILE),
-                new Gson().toJson(List.of(user))
-            );
-
-            session.close();
-
-            System.out.println("================================================================");
-            System.out.println("Administrator account created; assigned to " + organization.getName());
-            System.out.println("================================================================");
-        } catch (Exception e) {
-            System.err.println("Error while creating administrator account -- cannot continue, exiting");
-            e.printStackTrace();
-            System.exit(0);
+        if (!(Constants.IS_SETUP)) {
+            System.out.println("========================================");
+            System.out.println("Server not initialized! Open the dashboard to initialize server.");
+            System.out.println("Go to https://openmicroanatomy.github.io/docs/ for more details.");
+            System.out.println("========================================");
         }
     }
 }

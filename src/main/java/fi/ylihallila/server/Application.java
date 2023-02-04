@@ -87,7 +87,8 @@ public class Application {
     public Application() {
         JavalinVue.rootDirectory("/vue", Location.CLASSPATH);
 
-        javalin.get("/", DashboardController::index, roles(ANYONE));
+        javalin.get("/", DashboardController::index);
+        javalin.post("/initialize", DashboardController::initialize);
 
         javalin.routes(() -> path("/api/v0/", () -> {
             before(ctx -> {

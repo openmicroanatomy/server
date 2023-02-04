@@ -39,7 +39,11 @@ public class Constants {
 
     /* The following constants are set at runtime during server launch */
 
-    public static boolean ENABLE_SSL;
     public static int     SERVER_PORT;
+
+    /**
+     * True if server is ready to be used i.e. an (administrator) user and an organization exists.
+     */
+    public static boolean IS_SETUP;
 
 }
