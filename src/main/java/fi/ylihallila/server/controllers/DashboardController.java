@@ -31,8 +31,8 @@ public class DashboardController extends Controller {
         Session session = Database.openSession();
         session.beginTransaction();
 
-        long organizations = (long) session.createQuery("SELECT COUNT (*) FROM Organization").getSingleResult();
-        long users = (long) session.createQuery("SELECT COUNT (*) FROM User").getSingleResult();
+        long organizations = session.createQuery("SELECT COUNT (*) FROM Organization", Long.class).getSingleResult();
+        long users = session.createQuery("SELECT COUNT (*) FROM User", Long.class).getSingleResult();
 
         session.getTransaction().commit();
         session.close();
@@ -75,12 +75,12 @@ public class DashboardController extends Controller {
         Session session = Database.openSession();
         session.beginTransaction();
 
-        state.Users         = (long) session.createQuery("SELECT COUNT (*) FROM User").getSingleResult();
-        state.Organizations = (long) session.createQuery("SELECT COUNT (*) FROM Organization").getSingleResult();
-        state.Workspaces    = (long) session.createQuery("SELECT COUNT (*) FROM Workspace").getSingleResult();
-        state.Courses       = (long) session.createQuery("SELECT COUNT (*) FROM Subject").getSingleResult();
-        state.Lessons       = (long) session.createQuery("SELECT COUNT (*) FROM Project").getSingleResult();
-        state.Slides        = (long) session.createQuery("SELECT COUNT (*) FROM Slide").getSingleResult();
+        state.Users         = session.createQuery("SELECT COUNT (*) FROM User", Long.class).getSingleResult();
+        state.Organizations = session.createQuery("SELECT COUNT (*) FROM Organization", Long.class).getSingleResult();
+        state.Workspaces    = session.createQuery("SELECT COUNT (*) FROM Workspace", Long.class).getSingleResult();
+        state.Courses       = session.createQuery("SELECT COUNT (*) FROM Subject", Long.class).getSingleResult();
+        state.Lessons       = session.createQuery("SELECT COUNT (*) FROM Project", Long.class).getSingleResult();
+        state.Slides        = session.createQuery("SELECT COUNT (*) FROM Slide", Long.class).getSingleResult();
 
         session.getTransaction().commit();
         session.close();
