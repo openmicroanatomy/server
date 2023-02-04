@@ -151,6 +151,11 @@ public class UserController extends Controller implements CrudHandler {
 				editOrganization(editedUser, ctx);
 			}
 		} else if (user.hasRole(Roles.MANAGE_USERS)) {
+			// Only administrators can edit other administrators.
+			if (editedUser.hasRole(Roles.ADMIN) && !(user.hasRole(Roles.ADMIN))) {
+				throw new UnauthorizedResponse("Not authorized to edit that user.");
+			}
+
 			// User can be edited if the user belongs to the same organization or the editing user has the role ADMIN
 
 			if (user.hasRole(Roles.ADMIN)) {

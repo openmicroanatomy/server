@@ -131,4 +131,15 @@ public class TestUserAPI {
 
         assertThat(response.getStatus()).isEqualTo(200);
     }
+
+    @Test
+    @Order(4)
+    public void TeacherCannotEditAdmin() {
+        var response = Unirest.patch(API_URL + "/users/" + DummyDb.ADMIN.getId())
+                .basicAuth("teacher@example.com", "teacher")
+                .field("name", "Administrator")
+                .asString();
+
+        assertThat(response.getStatus()).isEqualTo(401);
+    }
 }
