@@ -2,12 +2,12 @@ package fi.ylihallila.server.generators;
 
 import com.google.common.primitives.Ints;
 import com.google.gson.GsonBuilder;
+import fi.ylihallila.server.Application;
 import fi.ylihallila.server.archivers.TarTileArchive;
 import fi.ylihallila.server.archivers.TileArchive;
 import fi.ylihallila.server.storage.Allas;
 import fi.ylihallila.server.storage.FlatFile;
 import fi.ylihallila.server.storage.StorageProvider;
-import fi.ylihallila.server.util.Config;
 import fi.ylihallila.server.util.Constants;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.openslide.OpenSlide;
@@ -57,7 +57,7 @@ public class TileGenerator {
 	public TileGenerator(File slide) throws IOException, InterruptedException {
 		openSlide = new OpenSlide(slide.getAbsoluteFile());
 
-		int compression = Ints.constrainToRange(Config.Config.getInt("tiler.compression"), 25, 100);
+		int compression = Ints.constrainToRange(Application.getConfiguration().tileCompression(), 25, 100);
 		long startTime = System.currentTimeMillis();
 		String id = getOrGenerateUUID(FileNameUtils.getBaseName(slide.getName()));
 		Color backgroundColor = getBackgroundColor();
@@ -87,7 +87,7 @@ public class TileGenerator {
 			boundsXMultiplier = 1.0 * boundsWidth  / slideWidth;
 		}
 
-		StorageProvider storage = switch (Config.Config.getString("storage.provider").toLowerCase()) {
+		StorageProvider storage = switch (Application.getConfiguration().storageProvider()) {
 			case "allas" -> new Allas.Builder()
 					.setConfigDefaults()
 					.setContainer(id)

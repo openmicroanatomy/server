@@ -1,5 +1,6 @@
 package fi.ylihallila.server.storage;
 
+import fi.ylihallila.server.Application;
 import fi.ylihallila.server.util.Constants;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarFile;
@@ -11,8 +12,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
-import static fi.ylihallila.server.util.Config.Config;
 
 public class FlatFile implements StorageProvider {
 
@@ -72,15 +71,11 @@ public class FlatFile implements StorageProvider {
     }
 
     @Override public String getTilesURI() {
-        String host = Config.getString("server.host");
-
-        return TILE_URL.replace("{host}", host);
+        return TILE_URL.replace("{host}", Application.getConfiguration().host());
     }
 
     @Override public String getThumbnailURI() {
-        String host = Config.getString("server.host");
-
-        return THUMBNAIL_URL.replace("{host}", host);
+        return THUMBNAIL_URL.replace("{host}", Application.getConfiguration().host());
     }
 
     @Override public String getTileNamingFormat() {

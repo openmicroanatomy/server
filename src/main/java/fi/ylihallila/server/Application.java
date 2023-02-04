@@ -1,8 +1,10 @@
 package fi.ylihallila.server;
 
+import com.typesafe.config.ConfigFactory;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.controllers.*;
 import fi.ylihallila.server.scripts.*;
+import fi.ylihallila.server.util.Configuration;
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.util.Database;
 import io.javalin.Javalin;
@@ -12,28 +14,32 @@ import io.javalin.plugin.openapi.OpenApiPlugin;
 import io.javalin.plugin.openapi.ui.SwaggerOptions;
 import io.javalin.plugin.rendering.vue.JavalinVue;
 import io.swagger.v3.oas.models.info.Info;
-import org.apache.http.HttpVersion;
 import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.Set;
 
 import static fi.ylihallila.server.commons.Roles.*;
-import static fi.ylihallila.server.util.Config.Config;
 import static io.javalin.apibuilder.ApiBuilder.*;
 import static io.javalin.core.security.SecurityUtil.roles;
 
 public class Application {
 
     private final Logger logger = LoggerFactory.getLogger(Application.class);
+
+    private static final Path configPath = Path.of("application.conf");
+
+    /**
+     * Loads the reference config (resources/reference.conf)
+     */
+    private static final com.typesafe.config.Config baseConfig = ConfigFactory.load();
+
+    private static final Configuration configuration = new Configuration(ConfigFactory.parseFile(configPath.toFile()).withFallback(baseConfig));
 
     private Javalin javalin = Javalin.create(config -> {
         config.registerPlugin(new OpenApiPlugin(getOpenApiOptions()));
@@ -53,31 +59,9 @@ public class Application {
                 ((QueuedThreadPool) server.getThreadPool()).setName("server");
             }
 
-            // Built-in SSL is not supported: use at your own risk!
-            // Set up a reverse proxy with nginx or Apache if possible.
-            if (Constants.ENABLE_SSL) {
-                HttpConfiguration httpConfig = new HttpConfiguration();
-                httpConfig.setSecureScheme("https");
-                httpConfig.setSecurePort(Constants.SERVER_PORT);
-
-                SecureRequestCustomizer src = new SecureRequestCustomizer();
-                httpConfig.addCustomizer(src);
-
-                HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(httpConfig);
-                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(getSslContextFactory(), HttpVersion.HTTP_1_1.toString());
-
-                ServerConnector sslConnector = new ServerConnector(server,
-                    new OptionalSslConnectionFactory(sslConnectionFactory, HttpVersion.HTTP_1_1.toString()),
-                    sslConnectionFactory,
-                    httpConnectionFactory);
-                sslConnector.setPort(Constants.SERVER_PORT);
-
-                server.addConnector(sslConnector);
-            } else {
-                ServerConnector connector = new ServerConnector(server);
-                connector.setPort(Constants.SERVER_PORT);
-                server.addConnector(connector);
-            }
+            ServerConnector connector = new ServerConnector(server);
+            connector.setPort(Constants.SERVER_PORT);
+            server.addConnector(connector);
 
             return server;
         });
@@ -246,19 +230,7 @@ public class Application {
         return apiOptions;
     }
 
-    private SslContextFactory getSslContextFactory() {
-        try {
-            SslContextFactory sslContextFactory = new SslContextFactory();
-
-            URL path = Application.class.getProtectionDomain().getCodeSource().getLocation();
-
-            sslContextFactory.setKeyStorePath(path.toURI().resolve(Config.getString("ssl.keystore.path")).toASCIIString());
-            sslContextFactory.setKeyStorePassword(Config.getString("ssl.keystore.password"));
-            return sslContextFactory;
-        } catch (URISyntaxException e) {
-            logger.error("Couldn't start HTTPS server, no valid keystore.");
-        }
-
-        return null;
+    public static Configuration getConfiguration() {
+        return configuration;
     }
 }

@@ -1,5 +1,7 @@
 package fi.ylihallila.server.storage;
 
+import fi.ylihallila.server.Application;
+import fi.ylihallila.server.util.Configuration;
 import org.javaswift.joss.client.factory.AccountFactory;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.client.factory.AuthenticationMethodScope;
@@ -10,8 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-
-import static fi.ylihallila.server.util.Config.Config;
 
 public class Allas implements StorageProvider {
 
@@ -131,12 +131,14 @@ public class Allas implements StorageProvider {
         }
 
         public Builder setConfigDefaults() {
-            factory.setUsername(Config.getString("allas.username"))
-                    .setPassword(Config.getString("allas.password"))
-                    .setAuthUrl(Config.getString("allas.auth.url"))
-                    .setDomain(Config.getString("allas.domain"))
-                    .setTenantId(Config.getString("allas.tenant.id"))
-                    .setTenantName(Config.getString("allas.tenant.name"))
+            Configuration.AllasConfiguration config = Application.getConfiguration().allas();
+
+            factory.setUsername(config.username())
+                    .setPassword(config.password())
+                    .setAuthUrl(config.authUrl())
+                    .setDomain(config.domain())
+                    .setTenantId(config.tenantId())
+                    .setTenantName(config.tenantName())
                     .setAuthenticationMethod(AuthenticationMethod.KEYSTONE_V3)
                     .setAuthenticationMode(AuthenticationMethodScope.PROJECT_NAME)
                     .setMock(false);

@@ -1,13 +1,12 @@
 package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import fi.ylihallila.server.Application;
 
 import javax.persistence.*;
 
 import java.util.Collection;
 import java.util.Objects;
-
-import static fi.ylihallila.server.util.Config.Config;
 
 @Entity
 @DiscriminatorValue("Organization")
@@ -36,7 +35,7 @@ public class Organization extends Owner {
 	}
 
 	public String getLogoUrl() {
-		return Config.getString("server.host") + "/logos/" + id + ".png";
+		return Application.getConfiguration().host() + "/logos/" + id + ".png";
 	}
 
 	@Override

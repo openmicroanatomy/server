@@ -7,6 +7,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
+import fi.ylihallila.server.Application;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.util.Database;
 import fi.ylihallila.server.authentication.Auth;
@@ -25,8 +26,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
 import java.util.Set;
 
-import static fi.ylihallila.server.util.Config.Config;
-
 public class TokenAuth implements Auth {
 
     private static final Logger logger = LoggerFactory.getLogger(TokenAuth.class);
@@ -35,7 +34,7 @@ public class TokenAuth implements Auth {
      * GUID of Microsoft Application, used to verify that the
      * provided JWT was supplied by our application.
      */
-    private static final String APP_ID = Config.getString("microsoft.app.id");
+    private static final String APP_ID = Application.getConfiguration().microsoft().appId();
 
     /**
      * Each JWT can be signed using a different private key. JWKs provide
@@ -47,7 +46,7 @@ public class TokenAuth implements Auth {
 
     public TokenAuth() {
         try {
-            provider = new UrlJwkProvider(new URL(Config.getString("microsoft.jwk.provider")));
+            provider = new UrlJwkProvider(new URL(Application.getConfiguration().microsoft().jwkProvider()));
         } catch (IOException e) {
             logger.error(e.getLocalizedMessage(), e);
         }

@@ -1,5 +1,6 @@
 package fi.ylihallila.server.controllers;
 
+import fi.ylihallila.server.Application;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.util.Constants;
@@ -17,8 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.UUID;
-
-import static fi.ylihallila.server.util.Config.Config;
 
 public class FileController extends Controller {
 
@@ -79,7 +78,7 @@ public class FileController extends Controller {
 
             FileUtils.copyInputStreamToFile(image, new File(Constants.EDITOR_UPLOADS_FOLDER, fileName));
 
-            String url = String.format(Constants.EDITOR_UPLOADS_URL, Config.getString("server.host"), fileName);
+            String url = String.format(Constants.EDITOR_UPLOADS_URL, Application.getConfiguration().host(), fileName);
             var data = Map.of("url", url);
 
             ctx.status(200).json(data);
@@ -105,7 +104,7 @@ public class FileController extends Controller {
      * Defaults to {@link Constants#DEFAULT_MAX_UPLOAD_SIZE} if something goes wrong.
      */
     private long getMaxUploadSizeBytes() {
-        String uploadMaxSize = Config.getString("uploads.max.size");
+        String uploadMaxSize = Application.getConfiguration().uploadMaxSize();
 
         try {
             if (uploadMaxSize.endsWith("M")) {
