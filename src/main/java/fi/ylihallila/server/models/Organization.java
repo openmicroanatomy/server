@@ -1,6 +1,8 @@
 package fi.ylihallila.server.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import fi.ylihallila.server.util.Constants;
 
 import javax.persistence.*;
 
@@ -35,8 +37,9 @@ public class Organization extends Owner {
 		this.name = name;
 	}
 
+	@JsonProperty
 	public String getLogoUrl() {
-		return Config.getString("server.host") + "/logos/" + id + ".png";
+		return Config.getString("server.host") + "/" + String.format(Constants.ORGANIZATION_LOGOS, id);
 	}
 
 	@Override
