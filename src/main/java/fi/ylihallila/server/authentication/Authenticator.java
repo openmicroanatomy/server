@@ -33,17 +33,17 @@ public class Authenticator {
 				}
 			}
 		} catch (UnprocessableEntityResponse e) {
-			ctx.status(422).json(new Error(e.getLocalizedMessage()));
+			ctx.status(422).json(new Error(e.getMessage()));
 		} catch (NotFoundResponse e) {
-			ctx.status(404).json(new Error(e.getLocalizedMessage()));
+			ctx.status(404).json(new Error(e.getMessage()));
 		} catch (ForbiddenResponse e) {
-			ctx.status(403).json(new Error(e.getLocalizedMessage()));
+			ctx.status(403).json(new Error(e.getMessage()));
 		} catch (UnauthorizedResponse e) {
-			ctx.status(401).json(new Error(e.getLocalizedMessage()));
+			ctx.status(401).json(new Error(e.getMessage()));
 		} catch (BadRequestResponse e) {
-			ctx.status(400).json(new Error(e.getLocalizedMessage()));
+			ctx.status(400).json(new Error(e.getMessage()));
 		} catch (InternalServerErrorResponse e) {
-			ctx.status(500).json(new Error(e.getLocalizedMessage()));
+			ctx.status(500).json(new Error(e.getMessage()));
 		} catch (Exception e) {
 			ctx.status(500).json(new Error("Internal server error"));
 			logger.error("Unknown exception", e);
