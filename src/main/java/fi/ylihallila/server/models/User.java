@@ -189,9 +189,9 @@ public class User extends Owner {
         try {
             session.getTransaction().begin();
 
-            return session.createQuery("from Workspace w join w.write write where write =: user")
+            return session.createQuery("SELECT COUNT(*) FROM Workspace w JOIN w.write write WHERE write =: user", Long.class)
                     .setParameter("user", this)
-                    .getResultList().size() > 0;
+                    .getSingleResult() > 0;
         } finally {
             session.getTransaction().commit();
             session.close();
