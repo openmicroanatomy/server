@@ -31,45 +31,6 @@ public class BasicAuth implements Auth {
 
     private static final Logger logger = LoggerFactory.getLogger(BasicAuth.class);
 
-    static {
-        try {
-            Session session = Database.openSession();
-            session.beginTransaction();
-
-            JsonArray users = (JsonArray) JsonParser.parseString(Files.readString(Path.of(Constants.ADMINISTRATORS_FILE)));
-
-            for (JsonElement element : users) {
-                JsonObject data = element.getAsJsonObject();
-                JsonArray array = data.getAsJsonArray("roles");
-
-                Set<Roles> roles = IntStream.range(0, array.size())
-                        .mapToObj(array::get)
-                        .map(o -> Roles.valueOf(o.getAsString()))
-                        .collect(Collectors.toSet());
-
-                User user = session.find(User.class, data.get("id").getAsString());
-
-                if (user == null) {
-                    user = new User();
-                }
-
-                user.setId(data.get("id").getAsString());
-                user.setName(data.get("name").getAsString());
-                user.setEmail(data.get("email").getAsString());
-                user.setPassword(data.get("password").getAsString());
-                user.setOAuth(false);
-                user.setRoles(Set.copyOf(roles));
-
-                session.saveOrUpdate(user);
-            }
-
-            session.getTransaction().commit();
-            session.close();
-        } catch (Exception e) {
-            logger.error("Error while registering administrator accounts", e);
-        }
-    }
-
     @Override
     public boolean isLoggedIn(Context ctx) {
         if (!ctx.basicAuthCredentialsExist()) {
