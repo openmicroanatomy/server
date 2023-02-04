@@ -93,26 +93,15 @@ public class User extends Owner {
 
         EmailValidator validator = EmailValidator.getInstance(false, true);
 
-        if (validator.isValid(email)) {
-            Session session = Database.openSession();
-            session.getTransaction().begin();
-
-            Query query = session.createQuery("from User where email = :email", User.class);
-            query.setParameter("email", email);
-
-            int count = query.getResultList().size();
-
-            session.getTransaction().commit();
-            session.close();
-
-            if (count == 0) {
-                this.email = email;
-            } else {
-                throw new BadRequestResponse("Email already in use.");
-            }
-        } else {
+        if (!(validator.isValid(email))) {
             throw new BadRequestResponse("Invalid email");
         }
+
+        if (isEmailInUse(email)) {
+            throw new BadRequestResponse("Email already in use.");
+        }
+
+        this.email = email;
     }
 
     public Organization getOrganization() {
@@ -249,6 +238,20 @@ public class User extends Owner {
         session.close();
 
         return subject;
+    }
+
+    private boolean isEmailInUse(String email) {
+        Session session = Database.openSession();
+        session.getTransaction().begin();
+
+        long count = session.createQuery("SELECT COUNT(*) FROM User WHERE email = :email", Long.class)
+                .setParameter("email", email)
+                .getSingleResult();
+
+        session.getTransaction().commit();
+        session.close();
+
+        return count != 0;
     }
 
     @Override
