@@ -182,6 +182,8 @@ public class User extends Owner {
     @Transient
     @JsonIgnore
     public boolean hasWriteAccessSomewhere() {
+        if (hasRole(Roles.ADMIN)) return true;
+
         Session session = Database.openSession();
 
         try {

@@ -128,36 +128,32 @@ public class SlideController extends Controller implements CrudHandler {
 
 	@OpenApi(
 		tags = { "slide" },
-		summary = "Get all slides and their properties. Properties are defined in the OpenSlide documentation.",
+		queryParams = @OpenApiParam(
+			name = "properties",
+			description = "When true, includes properties for slides.",
+			type = boolean.class
+		),
+		summary = "Get all slides with or without properties; to get individual slide properties use the <code>/slides/:id</code> endpoint.",
 		responses = {
 			@OpenApiResponse(status = "200", content = @OpenApiContent(from = Slide.class, isArray = true))
 		}
 	)
 	@Override public void getAll(@NotNull Context ctx) {
 		Session session = ctx.use(Session.class);
+		User user = Authenticator.getUser(ctx);
+		boolean withProperties = validate(ctx, "properties", boolean.class, false);
+
+		if (!(user.hasRole(Roles.MODERATOR) || user.hasRole(Roles.MANAGE_SLIDES) || user.hasWriteAccessSomewhere())) {
+			throw new UnauthorizedResponse("Listing slides requires write access to a workspace.");
+		}
 
 		List<Slide> slides = session.createQuery("from Slide", Slide.class).list();
 
-		List<HashMap<String, Object>> slidesWithProperties = slides.stream().map(slide -> {
-			HashMap<String, Object> data = new HashMap<>();
-			data.put("name", slide.getName());
-			data.put("id", slide.getId());
-			data.put("owner", slide.getOwner());
-
-			File propertiesFile = new File(String.format(Constants.SLIDE_PROPERTIES_FILE, slide.getId()));
-
-			if (propertiesFile.exists()) {
-				try {
-					data.put("properties", Util.getMapper().readValue(propertiesFile, Map.class));
-				} catch (IOException e) {
-					logger.error("Error while trying to get properties for slide {}", slide.getId(), e);
-				}
-			}
-
-			return data;
-		}).collect(Collectors.toList());
-
-		ctx.status(200).json(slidesWithProperties);
+		if (withProperties) {
+			ctx.status(200).json(addPropertiesToSlides(slides));
+		} else {
+			ctx.status(200).json(slides);
+		}
 	}
 
 	@OpenApi(
@@ -215,6 +211,27 @@ public class SlideController extends Controller implements CrudHandler {
 	}
 
 	/* Private API */
+
+	private List<HashMap<String, Object>> addPropertiesToSlides(Collection<Slide> slides) {
+		return slides.stream().map(slide -> {
+			HashMap<String, Object> data = new HashMap<>();
+			data.put("name", slide.getName());
+			data.put("id", slide.getId());
+			data.put("owner", slide.getOwner());
+
+			File propertiesFile = new File(String.format(Constants.SLIDE_PROPERTIES_FILE, slide.getId()));
+
+			if (propertiesFile.exists()) {
+				try {
+					data.put("properties", Util.getMapper().readValue(propertiesFile, Map.class));
+				} catch (IOException e) {
+					logger.error("Error while trying to get properties for slide {}", slide.getId(), e);
+				}
+			}
+
+			return data;
+		}).collect(Collectors.toList());
+	}
 
 	private void getSlidePropertiesFromFile(Context ctx, String id) {
 		try {

@@ -1,14 +1,12 @@
 package fi.ylihallila.server.tests;
 
 import fi.ylihallila.server.Main;
-import io.javalin.plugin.json.JavalinJson;
 import kong.unirest.Unirest;
 import org.junit.jupiter.api.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,18 +24,27 @@ public class TestSlidesAPI {
 
     @Test
     @Order(1)
-    public void GetAllSlides() {
+    public void GetAllSlidesAsGuest() {
         var response = Unirest.get(API_URL + "/slides").asString();
 
-        assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getBody().length()).isGreaterThan(
-            JavalinJson.toJson(List.of(DummyDb.SLIDE_A, DummyDb.SLIDE_B)).length()
-        );
+        assertThat(response.getStatus()).isIn(401, 403);
+        assertThat(response.getBody()).doesNotContain(DummyDb.SLIDE_A.getId(), DummyDb.SLIDE_B.getId());
     }
 
     @Test
     @Order(1)
-    public void GetSlideProperties() throws IOException {
+    public void GetAllSlidesAsTeacher() {
+        var response = Unirest.get(API_URL + "/slides")
+                .basicAuth("teacher@example.com", "teacher")
+                .asString();
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getBody()).contains(DummyDb.SLIDE_A.getId(), DummyDb.SLIDE_B.getId());
+    }
+
+    @Test
+    @Order(1)
+    public void GetSlidePropertiesAsGuest() throws IOException {
         var response = Unirest.get(API_URL + "/slides/" + DummyDb.SLIDE_A.getId()).asString();
 
         assertThat(response.getStatus()).isEqualTo(200);
