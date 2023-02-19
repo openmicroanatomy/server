@@ -2,6 +2,7 @@ package fi.ylihallila.server;
 
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.controllers.*;
+import fi.ylihallila.server.generators.Tiler;
 import fi.ylihallila.server.scripts.*;
 import fi.ylihallila.server.util.Constants;
 import fi.ylihallila.server.util.Database;
@@ -20,6 +21,7 @@ import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -33,6 +35,20 @@ import static io.javalin.core.security.SecurityUtil.roles;
 public class Application {
 
     private final Logger logger = LoggerFactory.getLogger(Application.class);
+
+    @Nonnull
+    private static Application INSTANCE;
+
+    @Nonnull
+    public static Application getInstance() {
+        return INSTANCE;
+    }
+
+    private final Tiler tiler = new Tiler();
+
+    private final ScriptManager scriptManager = new ScriptManager(
+        new BackupDatabase(), new DeleteOldBackups(), new DeleteTempFiles()
+    );
 
     private Javalin javalin = Javalin.create(config -> {
         config.registerPlugin(new OpenApiPlugin(getOpenApiOptions()));
@@ -94,11 +110,9 @@ public class Application {
     private final FileController           FileController         = new FileController();
     private final AuthenticationController AuthController         = new AuthenticationController();
 
-    private final ScriptManager scriptManager = new ScriptManager(
-        new BackupDatabase(), new DeleteOldBackups(), new DeleteTempFiles()
-    );
-
     public Application() {
+        INSTANCE = this;
+
         javalin.get("/", ctx -> ctx.html("OpenMicroanatomy").status(200));
 
         javalin.routes(() -> path("/api/v0/", () -> {
@@ -157,6 +171,7 @@ public class Application {
             /* Slides */
 
             crud("slides/:id", SlideController, roles(ANYONE));
+            post("slides/:id/tile", SlideController::tile, roles(MANAGE_SLIDES));
 
             /* Workspaces */
 
@@ -223,6 +238,10 @@ public class Application {
 
     public Javalin getJavalin() {
         return javalin;
+    }
+
+    public Tiler getTiler() {
+        return tiler;
     }
 
     public ScriptManager getScriptManager() {

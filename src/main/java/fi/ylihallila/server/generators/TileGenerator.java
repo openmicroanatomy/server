@@ -4,12 +4,15 @@ import com.google.common.primitives.Ints;
 import com.google.gson.GsonBuilder;
 import fi.ylihallila.server.archivers.TarTileArchive;
 import fi.ylihallila.server.archivers.TileArchive;
+import fi.ylihallila.server.models.Slide;
 import fi.ylihallila.server.storage.Allas;
 import fi.ylihallila.server.storage.FlatFile;
 import fi.ylihallila.server.storage.StorageProvider;
 import fi.ylihallila.server.util.Config;
 import fi.ylihallila.server.util.Constants;
+import fi.ylihallila.server.util.Database;
 import org.apache.commons.compress.utils.FileNameUtils;
+import org.hibernate.Session;
 import org.openslide.OpenSlide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,17 +29,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
 
-public class TileGenerator {
+public class TileGenerator implements Runnable {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-	private final ForkJoinPool executor = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
+	private final ForkJoinPool executor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
 
-	private final OpenSlide openSlide;
+	private OpenSlide openSlide;
+	private final File slideFile;
 
 	/**
 	 * How long should the tile generation process take for one slide.
-	 *
-	 * After the duration specified any remaining tiles are ignored and the generated tiles are uploaded.
+	 * After the specified duration any remaining tiles are ignored.
 	 */
 	private final long TIMEOUT = Duration.ofMinutes(30).toMillis();
 
@@ -44,22 +47,30 @@ public class TileGenerator {
 		ImageIO.setUseCache(false);
 	}
 
-	// TODO: Catch exceptions so generation can try and continue.
-
-	public TileGenerator(String slideName) throws IOException, InterruptedException {
-		this(new File(slideName));
+	public TileGenerator(File slideFile) {
+		this.slideFile = slideFile;
 	}
 
-	public TileGenerator(Path path) throws IOException, InterruptedException {
-		this(path.toFile());
+	@Override
+	public void run() {
+		if (!(slideFile.exists())) {
+			logger.info("Tried to tile {} but slide was missing -- perhaps it was tiled already?", slideFile);
+			return;
+		}
+
+		try {
+			Tile();
+		} catch (IOException | InterruptedException e) {
+			logger.error("Error while generating tiles for {}", slideFile.getName(), e);
+		}
 	}
 
-	public TileGenerator(File slide) throws IOException, InterruptedException {
-		openSlide = new OpenSlide(slide.getAbsoluteFile());
-
-		int compression = Ints.constrainToRange(Config.Config.getInt("tiler.compression"), 25, 100);
+	private void Tile() throws IOException, InterruptedException {
 		long startTime = System.currentTimeMillis();
-		String id = getOrGenerateUUID(FileNameUtils.getBaseName(slide.getName()));
+
+		this.openSlide = new OpenSlide(slideFile);
+		int compression = Ints.constrainToRange(Config.Config.getInt("tiler.compression"), 25, 100);
+		String id = getOrGenerateUUID(FileNameUtils.getBaseName(slideFile.getName()));
 		Color backgroundColor = getBackgroundColor();
 
 		int slideHeight = readIntegerProperty("openslide.level[0].height");
@@ -95,7 +106,7 @@ public class TileGenerator {
 			default -> new FlatFile();
 		};
 
-		logger.info("Using {} as storage provider", storage.getName());
+		logger.info("Starting to tile {}; using {} as storage provider", id, storage.getName());
 
 		for (int level = levels - 1; level >= 0; level--) {
 			int levelHeight = (int) (readIntegerProperty("openslide.level[" + level + "].height") * boundsYMultiplier);
@@ -148,16 +159,45 @@ public class TileGenerator {
 			Files.delete(archive.toPath());
 		}
 
+		System.out.println();
+
 		generateThumbnail(id, storage);
 		generateProperties(id, storage);
 
 		logger.debug("Deleting original slide");
-		Files.delete(slide.toPath());
+		Files.delete(slideFile.toPath());
 
 		long endTime = System.currentTimeMillis();
-		System.out.print("\rTook " + (endTime - startTime) / 1000.0 + " seconds to generate & upload tiles.");
+		logger.info("Took " + (endTime - startTime) / 1000.0 + " seconds to generate & upload tiles for {}.", id);
 
 		executor.shutdown();
+
+		markSlideAsTiled(id);
+	}
+
+	private void markSlideAsTiled(String id) {
+		Session session = Database.openSession();
+
+		try {
+			session.beginTransaction();
+
+			Slide slide = session.find(Slide.class, id);
+
+			if (slide == null) return;
+
+			slide.setTiled(true);
+
+			session.save(slide);
+			session.getTransaction().commit();
+		} catch (Exception e) {
+			logger.error("Error while marking slide as tiled", e);
+
+			if (session.getTransaction() != null) {
+				session.getTransaction().rollback();
+			}
+		} finally {
+			session.close();
+		}
 	}
 
 	/**
@@ -253,5 +293,9 @@ public class TileGenerator {
 
 	private boolean hasTimedOut(float startTime) {
 		return (System.currentTimeMillis() - startTime) > TIMEOUT;
+	}
+
+	public File getSlideFile() {
+		return slideFile;
 	}
 }

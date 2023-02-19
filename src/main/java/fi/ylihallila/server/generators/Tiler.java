@@ -3,111 +3,83 @@ package fi.ylihallila.server.generators;
 import fi.ylihallila.server.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
+import java.util.concurrent.*;
 
 /**
  * Searches the slides directory for slides that are pending upload and submits
  * them to the TileGenerator, which tiles & saves the tiles using
  * the Storage Provider defined in the server configuration.
  */
-public class Tiler implements Runnable {
+public class Tiler {
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public Tiler() {
-        // Sets the logger process to tiler so we log into tiler.log
-        MDC.put("process", "tiler");
-
-        run();
-    }
-
-    @Override
-    public void run() {
         checkForPendingSlides();
-
-        registerWatchService();
     }
 
+    /**
+     * Add provided slide to tile generation queue. Does not check if the slide is already queued.
+     * @param path to slide
+     */
+    public void addSlideToTilerQueue(Path path) {
+        File file = path.toFile();
+
+        if (!(file.exists())) {
+            logger.debug("Tried to add slide to tiler queue, but file did not exist.");
+            return;
+        }
+
+        if (!(file.canRead())) {
+            logger.debug("Tried to add slide to tiler queue, but did not have read permission.");
+            return;
+        }
+
+        executor.execute(new TileGenerator(file));
+    }
+
+    /**
+     * Tries to check whether this file is already queued for tiling. This does not work if the slide is already
+     * being tiled, thus is being executed and isn't in the queue.
+     * @param path to slide being tiled.
+     * @return true if queued already.
+     */
+    public boolean isAlreadyQueued(Path path) {
+        File file = path.toFile();
+
+        var isQueued = executor.getQueue()
+            .stream()
+            .anyMatch(runnable -> {
+                if (runnable instanceof TileGenerator generator) {
+                    return generator.getSlideFile().equals(file);
+                }
+
+                return false;
+            });
+
+        return isQueued;
+    }
+
+    /**
+     * Checks for any slides that are pending to be tiled and prints a warning.
+     */
     private void checkForPendingSlides() {
-        try {
-            logger.info("Checking for pending slides ...");
+        try (var paths = Files.list(Path.of(Constants.PENDING_DIRECTORY).toAbsolutePath())) {
+            logger.info("Checking for slides pending tiling ...");
 
-            List<Path> files = Files.list(Path.of(Constants.PENDING_DIRECTORY).toAbsolutePath())
-                    .filter(path -> path.toString().endsWith(".pending"))
-                    .collect(Collectors.toList());
+            var files = paths.filter(path -> path.toString().endsWith(".pending"))
+                        .toList();
 
-            if (files.size() == 0) {
-                logger.info("No pending slides.");
-                return;
-            }
-
-            logger.info("Found " + files.size() + " pending slides, adding to queue.");
-
-            for (Path file : files) {
-                logger.info("Adding {} to queue.", file.getFileName());
-
-                executor.submit(() -> {
-                    try {
-                        new TileGenerator(file);
-                    } catch (IOException | InterruptedException e) {
-                        logger.error("Error while generating tiles for {}", file.getFileName(), e);
-                    }
-                });
+            if (files.size() > 0) {
+                logger.info("Found " + files.size() + " slides, which are pending to be tiled.");
             }
         } catch (IOException e) {
-            logger.error("Error while checking for pending slides", e);
-        }
-    }
-
-    private void registerWatchService() {
-        try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
-            Path path = FileSystems.getDefault().getPath(Constants.PENDING_DIRECTORY);
-            path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
-
-            logger.info("Waiting for slides ...");
-
-            var valid = true;
-            while (valid) {
-                WatchKey wk = watchService.take();
-
-                for (WatchEvent<?> event : wk.pollEvents()) {
-                    if (event.kind() == StandardWatchEventKinds.OVERFLOW) {
-                        continue;
-                    }
-
-                    Path dir = (Path) wk.watchable();
-                    Path changed = (Path) event.context();
-                    String fileName = changed.getFileName().toString();
-
-                    if (fileName.endsWith(".pending")) {
-                        System.out.println();
-                        logger.info("Found new slide {}. Added to generation queue.", fileName);
-
-                        executor.submit(() -> {
-                            try {
-                                new TileGenerator(dir.resolve(changed));
-                            } catch (IOException | InterruptedException e) {
-                                logger.error("Error while generating tiles for {}", fileName, e);
-                            }
-                        });
-                    }
-                }
-
-                valid = wk.reset();
-                if (!valid) {
-                    logger.error("WatchKey has been unregistered. Please restart the tiler instance.");
-                }
-            }
-        } catch (IOException | InterruptedException e) {
-            logger.error("WatchService error, tiler unavailable.", e);
+            logger.error("Error while checking for pending slides pending tiling", e);
         }
     }
 }

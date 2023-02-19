@@ -1,8 +1,10 @@
 package fi.ylihallila.server.controllers;
 
+import fi.ylihallila.server.Application;
 import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.exceptions.UnprocessableEntityResponse;
+import fi.ylihallila.server.generators.Tiler;
 import fi.ylihallila.server.models.Slide;
 import fi.ylihallila.server.models.User;
 import fi.ylihallila.server.util.Constants;
@@ -210,6 +212,50 @@ public class SlideController extends Controller implements CrudHandler {
 		logger.info("Slide {} ({}) edited by {} ({})", slide.getName(), id, user.getName(), user.getId());
 	}
 
+	@OpenApi(
+		tags = { "slide" },
+		summary = "Add slide to tiling queue",
+		pathParams = {
+			@OpenApiParam(name = "id", required = true)
+		},
+		responses = {
+			@OpenApiResponse(status = "200"),
+			@OpenApiResponse(status = "403"),
+			@OpenApiResponse(status = "404"),
+		}
+	)
+	public void tile(@NotNull Context ctx) {
+		String id = ctx.pathParam("id", String.class).get();
+		Path path = Path.of(String.format(Constants.PENDING_SLIDES, id));
+
+		User user = Authenticator.getUser(ctx);
+		Session session = ctx.use(Session.class);
+
+		Slide slide = session.find(Slide.class, id);
+
+		if (slide == null) {
+			throw new NotFoundResponse();
+		}
+
+		if (!(slide.hasPermission(user))) {
+			throw new ForbiddenResponse();
+		}
+
+		if (!(path.toFile().exists())) {
+			throw new UnprocessableEntityResponse("Original slide not found; try retrying later or re-uploading slide.");
+		}
+
+		Tiler tiler = Application.getInstance().getTiler();
+
+		if (tiler.isAlreadyQueued(path)) {
+			throw new UnprocessableEntityResponse("Slide already queued for processing.");
+		}
+
+		tiler.addSlideToTilerQueue(path);
+
+		ctx.status(200).json(Map.of("Message", "Successfully added to tiling queue."));
+	}
+
 	/* Private API */
 
 	private List<HashMap<String, Object>> addPropertiesToSlides(Collection<Slide> slides) {
@@ -273,22 +319,23 @@ public class SlideController extends Controller implements CrudHandler {
 			logger.info("Processing slide {} ({}); uploaded by {} ({})", slideName, id, user.getName(), user.getId());
 		}
 
-
 		// Add slide to database
-
 		Session session = ctx.use(Session.class);
 
 		Slide slide = new Slide();
 		slide.setName(slideName);
 		slide.setId(id);
 		slide.setOwner(user.getOrganization());
+		slide.setTiled(false);
+
 		session.save(slide);
 
 		// Mark slide as pending tiling. See Tiler for further processing.
-
-		Files.move(
+		Path pendingSlide = Files.move(
 			Path.of(String.format(Constants.TEMP_FILE, slideName)),
 			Path.of(String.format(Constants.PENDING_SLIDES, id))
 		);
+
+		Application.getInstance().getTiler().addSlideToTilerQueue(pendingSlide);
 	}
 }

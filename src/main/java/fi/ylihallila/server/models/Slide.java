@@ -33,6 +33,11 @@ public class Slide {
     @ManyToOne
     private Owner owner;
 
+    /**
+     * Indicates whether this slide has been tiled and is ready to be used.
+     */
+    private boolean tiled = false;
+
     public Slide() {}
 
     public Slide(String id, String name, Owner owner) {
@@ -78,12 +83,21 @@ public class Slide {
                 (owner.getId().equals(user.getOrganization().getId()) || owner.getId().equals(user.getId()));
     }
 
+    public boolean isTiled() {
+        return tiled;
+    }
+
+    public void setTiled(boolean tiled) {
+        this.tiled = tiled;
+    }
+
     @Override
     public String toString() {
         return "Slide{" +
-                "name='" + name + '\'' +
-                ", id='" + id + '\'' +
-                ", owner='" + owner + '\'' +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", owner=" + owner +
+                ", tiled=" + tiled +
                 '}';
     }
 }
