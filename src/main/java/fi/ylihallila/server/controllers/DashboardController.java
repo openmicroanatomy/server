@@ -2,6 +2,7 @@ package fi.ylihallila.server.controllers;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import fi.ylihallila.server.authentication.Authenticator;
 import fi.ylihallila.server.commons.Roles;
 import fi.ylihallila.server.models.Error;
 import fi.ylihallila.server.models.Organization;
@@ -29,6 +30,11 @@ public class DashboardController extends Controller {
 
     public void index(Context ctx) {
         if (Constants.IS_SETUP) {
+            if (!(Authenticator.hasRoles(ctx, Roles.ADMIN))) {
+                ctx.status(401).header("WWW-Authenticate", "Basic");
+                return;
+            }
+
             dashboard(ctx);
         } else {
             setup(ctx);

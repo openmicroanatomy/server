@@ -87,8 +87,41 @@ public class Application {
     public Application() {
         JavalinVue.rootDirectory("/vue", Location.CLASSPATH);
 
-        javalin.get("/", DashboardController::index);
-        javalin.post("/initialize", DashboardController::initialize);
+        javalin.get("/", ctx -> ctx.html("<b>OpenMicroanatomy</b>"));
+
+        // Bug with Javalin causes before() and after() handlers not to run at the route() root without trailing slash (i.e. /admin)
+        // so we do this trick where the index is actually /dashboard and we redirect the user there.
+        javalin.get("/admin", ctx -> ctx.redirect("/admin/dashboard"));
+
+        javalin.routes(() -> path("/admin/", () -> {
+            // TODO: Copied from below -- remove after implementing Request/Thread -based database sessions
+            before(ctx -> {
+                logger.debug("Creating Database Session for Request");
+
+                Session session = Database.openSession();
+                session.beginTransaction();
+
+                ctx.register(Session.class, session);
+            });
+
+            // TODO: Copied from below -- remove after implementing Request/Thread -based database sessions
+            after(ctx -> {
+                logger.debug("Destroying Database Session for Request");
+
+                Session session = ctx.use(Session.class);
+
+                if (session != null) {
+                    if (session.getTransaction() != null) {
+                        session.getTransaction().commit();
+                    }
+
+                    session.close();
+                }
+            });
+
+            get("/dashboard",   DashboardController::index);
+            post("/initialize", DashboardController::initialize);
+        }));
 
         javalin.routes(() -> path("/api/v0/", () -> {
             before(ctx -> {
