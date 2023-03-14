@@ -14,7 +14,7 @@ import java.util.List;
 
 import static fi.ylihallila.server.util.Config.Config;
 
-public class FlatFile implements StorageProvider {
+public class LocalSlideStorage implements StorageProvider {
 
     private final String TILE_NAME_FORMAT = "{id}/{level}/{tileX}_{tileY}_{tileWidth}_{tileHeight}.jpg";
     private final String TILE_URL         = "{host}/tiles/" + TILE_NAME_FORMAT;

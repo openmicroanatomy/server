@@ -6,7 +6,7 @@ import fi.ylihallila.server.archivers.TarTileArchive;
 import fi.ylihallila.server.archivers.TileArchive;
 import fi.ylihallila.server.models.Slide;
 import fi.ylihallila.server.storage.Allas;
-import fi.ylihallila.server.storage.FlatFile;
+import fi.ylihallila.server.storage.LocalSlideStorage;
 import fi.ylihallila.server.storage.StorageProvider;
 import fi.ylihallila.server.util.Config;
 import fi.ylihallila.server.util.Constants;
@@ -98,12 +98,17 @@ public class TileGenerator implements Runnable {
 			boundsXMultiplier = 1.0 * boundsWidth  / slideWidth;
 		}
 
-		StorageProvider storage = switch (Config.Config.getString("storage.provider").toLowerCase()) {
+		var provider = Config.Config.getString("storage.provider").toLowerCase();
+		StorageProvider storage = switch (provider) {
 			case "allas" -> new Allas.Builder()
 					.setConfigDefaults()
 					.setContainer(id)
 					.build();
-			default -> new FlatFile();
+			case "local" -> new LocalSlideStorage();
+			default -> {
+				logger.warn("Unknown slide storage provider '{}'; defaulting to local slide storage.", provider);
+				yield new LocalSlideStorage();
+			}
 		};
 
 		logger.info("Starting to tile {}; using {} as storage provider", id, storage.getName());
