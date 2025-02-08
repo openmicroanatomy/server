@@ -116,11 +116,10 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		 * can view that workspace.
 		 */
 
-		// TODO: Remove hidden projects from API
-
 		List<Workspace> workspaces = session.createQuery("from Workspace", Workspace.class).stream()
 				.filter(workspace -> !(workspace.getName().contains(Constants.PERSONAL_WORKSPACE_NAME))) // Remove all Personal Workspaces
 				.filter(workspace -> workspace.hasReadPermission(user))
+				.peek(workspace -> filterHiddenProjects(workspace, user))
 				.sorted(Comparator.comparing(Workspace::getName))
 				.collect(Collectors.toList());
 
@@ -134,6 +133,17 @@ public class WorkspaceController extends Controller implements CrudHandler {
 		ctx.status(200).json(workspaces);
 
 		JavalinJson.setToJsonMapper(temp);
+	}
+
+	private static void filterHiddenProjects(Workspace workspace, User user) {
+		for (Subject subject : workspace.getSubjects()) {
+			subject.setProjects(
+				subject.getProjects().stream().filter(project ->
+					!project.isHidden() || workspace.hasWritePermission(user)
+				)
+				.collect(Collectors.toList())
+			);
+		}
 	}
 
 	@OpenApi(
