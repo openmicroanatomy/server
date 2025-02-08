@@ -36,7 +36,6 @@ public class Main {
             CommandLineParser parser = new CommandLineParser(args);
 
             Constants.SERVER_PORT = parser.hasArgument("port") ? parser.getInt("port") : 7777; // Default port 7777
-            Constants.ENABLE_SSL  = parser.hasFlag("secure");
 
             preflight();
 
@@ -49,10 +48,6 @@ public class Main {
                     readInput();
                 }
             } catch (Exception e) {
-                if (e.getCause() != null && e.getCause().getClass() == IllegalStateException.class) {
-                    logger.info("Add a valid keystore to launch the server in secure mode.");
-                }
-
                 logger.error("Error while launching server", e);
             }
         }

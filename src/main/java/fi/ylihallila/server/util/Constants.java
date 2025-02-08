@@ -39,7 +39,6 @@ public class Constants {
 
     /* The following constants are set at runtime during server launch */
 
-    public static boolean ENABLE_SSL;
-    public static int     SERVER_PORT;
+    public static int SERVER_PORT;
 
 }

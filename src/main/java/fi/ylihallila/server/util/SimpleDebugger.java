@@ -28,8 +28,6 @@ public class SimpleDebugger {
         logger.debug("auth.simple.enabled: " + Config.getString("auth.simple.enabled"));
         logger.debug("auth.microsoft.enabled: " + Config.getString("auth.microsoft.enabled"));
         logger.debug("roles.manage.personal.projects.default: " + Config.getBoolean("roles.manage.personal.projects.default"));
-        logger.debug("ssl.keystore: " + Config.getString("ssl.keystore.path"));
-        logger.debug("ssl.keystore.password: " + Config.getString("ssl.keystore.password"));
         logger.debug("storage.provider: " + Config.getString("storage.provider"));
         logger.debug("allas.username: " + Config.getString("allas.username"));
         logger.debug("allas.password: " + Config.getString("allas.password"));

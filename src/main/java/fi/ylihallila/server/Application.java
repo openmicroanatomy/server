@@ -12,9 +12,7 @@ import io.javalin.plugin.openapi.OpenApiOptions;
 import io.javalin.plugin.openapi.OpenApiPlugin;
 import io.javalin.plugin.openapi.ui.SwaggerOptions;
 import io.swagger.v3.oas.models.info.Info;
-import org.apache.http.HttpVersion;
 import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -22,13 +20,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.Set;
 
 import static fi.ylihallila.server.commons.Roles.*;
-import static fi.ylihallila.server.util.Config.Config;
 import static io.javalin.apibuilder.ApiBuilder.*;
 import static io.javalin.core.security.SecurityUtil.roles;
 
@@ -61,37 +56,11 @@ public class Application {
         config.enableCorsForAllOrigins();
 
         config.server(() -> {
-            Server server = new Server();
+            Server server = new Server(Constants.SERVER_PORT);
 
             // Set the thread prefix to "server-" instead of "qtp-" to improve logging.
             if (server.getThreadPool() instanceof QueuedThreadPool) {
                 ((QueuedThreadPool) server.getThreadPool()).setName("server");
-            }
-
-            // Built-in SSL is not supported: use at your own risk!
-            // Set up a reverse proxy with nginx or Apache if possible.
-            if (Constants.ENABLE_SSL) {
-                HttpConfiguration httpConfig = new HttpConfiguration();
-                httpConfig.setSecureScheme("https");
-                httpConfig.setSecurePort(Constants.SERVER_PORT);
-
-                SecureRequestCustomizer src = new SecureRequestCustomizer();
-                httpConfig.addCustomizer(src);
-
-                HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(httpConfig);
-                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(getSslContextFactory(), HttpVersion.HTTP_1_1.toString());
-
-                ServerConnector sslConnector = new ServerConnector(server,
-                    new OptionalSslConnectionFactory(sslConnectionFactory, HttpVersion.HTTP_1_1.toString()),
-                    sslConnectionFactory,
-                    httpConnectionFactory);
-                sslConnector.setPort(Constants.SERVER_PORT);
-
-                server.addConnector(sslConnector);
-            } else {
-                ServerConnector connector = new ServerConnector(server);
-                connector.setPort(Constants.SERVER_PORT);
-                server.addConnector(connector);
             }
 
             return server;
@@ -259,21 +228,5 @@ public class Application {
                 .roles(Set.of(ANYONE));
 
         return apiOptions;
-    }
-
-    private SslContextFactory getSslContextFactory() {
-        try {
-            SslContextFactory sslContextFactory = new SslContextFactory();
-
-            URL path = Application.class.getProtectionDomain().getCodeSource().getLocation();
-
-            sslContextFactory.setKeyStorePath(path.toURI().resolve(Config.getString("ssl.keystore.path")).toASCIIString());
-            sslContextFactory.setKeyStorePassword(Config.getString("ssl.keystore.password"));
-            return sslContextFactory;
-        } catch (URISyntaxException e) {
-            logger.error("Couldn't start HTTPS server, no valid keystore.");
-        }
-
-        return null;
     }
 }
