@@ -97,7 +97,7 @@ public class ProjectController extends Controller implements CrudHandler {
 
 		ctx.status(200).json(project);
 
-		logger.info("Project {} ({}) edited by {} ({})", project.getName(), project.getId(), user.getName(), user.getId());
+		logger.info("Project {} ({}) edited by {} ({}) [{}]", project.getName(), project.getId(), user.getName(), user.getId(), ctx.formParamMap());
 	}
 
 	@OpenApi(
