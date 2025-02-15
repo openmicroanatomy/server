@@ -60,6 +60,7 @@ public class PasswordResetRequest {
         return expiryDate;
     }
 
+    @Transient
     public boolean hasExpired() {
         return System.currentTimeMillis() > getExpiryDate();
     }

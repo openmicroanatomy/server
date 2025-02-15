@@ -42,7 +42,6 @@ public class User extends Owner {
     /**
      * If true, this user authenticates via OAuth and has no password.
      */
-    @Column
     private boolean oauth;
 
     /**

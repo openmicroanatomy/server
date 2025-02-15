@@ -10,9 +10,17 @@ public class Owner {
 
 	@Id
 	@Column(name = "id", updatable = false, nullable = false)
+	/* We cannot use @GeneratedValue here, because Hibernate would override our manually provided UUID's */
 	public String id;
 
 	public String name;
+
+	public Owner() {}
+
+	public Owner(String id, String name) {
+		this.id = id;
+		this.name = name;
+	}
 
 	public void setId(UUID id) {
 		this.setId(id.toString());

@@ -140,10 +140,8 @@ public class Workspace {
 	}
 
 	public boolean hasWritePermission(Owner owner) {
-		if (owner instanceof User) {
-			User user = (User) owner;
-
-			if (user.hasRole(Roles.ADMIN) || this.write.contains(user.getOrganization())) {
+		if (owner instanceof User user) {
+            if (user.hasRole(Roles.ADMIN) || this.write.contains(user.getOrganization())) {
 				return true;
 			}
 		}

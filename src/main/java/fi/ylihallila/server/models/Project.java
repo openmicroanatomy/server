@@ -97,8 +97,8 @@ public class Project {
 	}
 
 	@Transient
-	public String getOwner() {
-		return getSubject().getWorkspace().getOwner().getId();
+	public Owner getOwner() {
+		return getSubject().getWorkspace().getOwner();
 	}
 
 	public long getCreatedAt() {

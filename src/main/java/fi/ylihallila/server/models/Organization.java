@@ -16,12 +16,10 @@ import static fi.ylihallila.server.util.Config.Config;
 public class Organization extends Owner {
 
 	@OneToMany(mappedBy = "organization", orphanRemoval = true)
-	@Transient
 	@JsonIgnore
 	private Collection<User> users;
 
 	@OneToMany(mappedBy = "owner", orphanRemoval = true)
-	@Transient
 	@JsonIgnore
 	private Collection<Workspace> workspaces;
 
@@ -32,14 +30,26 @@ public class Organization extends Owner {
 		this.name = name;
 	}
 
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	@JsonProperty
+    @JsonProperty
+	@Transient
 	public String getLogoUrl() {
 		return Config.getString("server.host") + "/" + String.format(Constants.ORGANIZATION_LOGOS, id);
+	}
+
+	public Collection<User> getUsers() {
+		return users;
+	}
+
+	public void setUsers(Collection<User> users) {
+		this.users = users;
+	}
+
+	public Collection<Workspace> getWorkspaces() {
+		return workspaces;
+	}
+
+	public void setWorkspaces(Collection<Workspace> workspaces) {
+		this.workspaces = workspaces;
 	}
 
 	@Override
