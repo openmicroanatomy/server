@@ -1,10 +1,10 @@
-FROM gradle:jdk17-alpine as build
+FROM gradle:jdk17-alpine AS build
 
 COPY --chown=gradle:gradle . /home/gradle/src
 WORKDIR /home/gradle/src
 RUN gradle build --no-daemon
 
-FROM eclipse-temurin:19.0.1_10-jre-ubi9-minimal as main
+FROM eclipse-temurin:19.0.1_10-jre-ubi9-minimal AS main
 
 RUN adduser -m -g 0 -u 1000 oma; mkdir /home/oma/server; chown -R oma /home/oma/server; microdnf -y update; microdnf -y install libtiff libxcb libXrender libXext
 
